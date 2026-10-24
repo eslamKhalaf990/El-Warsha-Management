@@ -5,6 +5,8 @@ import 'package:provider/provider.dart';
 import 'package:warsha_app/controllers/update_drag_drop.dart';
 import 'package:warsha_app/utils/const_values.dart';
 import 'package:warsha_app/utils/default_text.dart';
+import 'package:warsha_app/utils/image_helper.dart';
+import 'package:warsha_app/views/products/image_library_dialog.dart';
 
 class UpdateDragDropImageUpload extends StatefulWidget {
   const UpdateDragDropImageUpload({super.key, required this.productImage});
@@ -20,7 +22,19 @@ class _UpdateDragDropImageUploadState extends State<UpdateDragDropImageUpload> {
   @override
   void initState() {
     super.initState();
-    Provider.of<UpdateDragDropController>(context, listen: false).loadFromUrl(widget.productImage);
+    Provider.of<UpdateDragDropController>(context, listen: false).loadFromUrl(ImageHelper.fullUrl(widget.productImage));
+  }
+
+  Future<void> _chooseFromLibrary(UpdateDragDropController drop) async {
+    final picked = await showImageLibraryDialog(
+      context,
+      currentImage: drop.libraryFilename != null
+          ? "/images/${drop.libraryFilename}"
+          : widget.productImage,
+    );
+    if (picked != null) {
+      await drop.selectFromLibrary(picked.filename, picked.url);
+    }
   }
 
   @override
@@ -78,6 +92,12 @@ class _UpdateDragDropImageUploadState extends State<UpdateDragDropImageUpload> {
                     // color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
+                const SizedBox(height: 10),
+                TextButton.icon(
+                  onPressed: () => _chooseFromLibrary(drop),
+                  icon: const Icon(Iconsax.gallery, size: 20),
+                  label: const DefaultText(txt: 'Choose from library'),
+                ),
               ],
             )
                 : Stack(
@@ -91,6 +111,15 @@ class _UpdateDragDropImageUploadState extends State<UpdateDragDropImageUpload> {
                     height: double.infinity,
                   ),
                 ) : const Center(child: DefaultText(txt: "Loading...")),
+                Positioned(
+                  left: 10,
+                  bottom: 10,
+                  child: ElevatedButton.icon(
+                    onPressed: () => _chooseFromLibrary(drop),
+                    icon: const Icon(Iconsax.gallery, size: 18),
+                    label: const DefaultText(txt: 'Choose from library'),
+                  ),
+                ),
                 Positioned(
                   top: 0,
                   right: 0,

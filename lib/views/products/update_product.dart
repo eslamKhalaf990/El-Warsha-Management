@@ -224,6 +224,9 @@ class UpdateProduct extends StatelessWidget {
                                 flex: 3,
                                 child: DefaultButton(
                                   onTap: () async {
+                                    final drop = Provider.of<UpdateDragDropController>(
+                                        context,
+                                        listen: false);
                                     String status =
                                         await productVM.updateProduct(
                                       productName: update.productName.text,
@@ -238,21 +241,26 @@ class UpdateProduct extends StatelessWidget {
                                           update.discount.text,
                                       productQuantity:
                                           update.productQuantity.text,
-                                      imageBytes:
-                                          Provider.of<UpdateDragDropController>(
-                                                  context,
-                                                  listen: false)
-                                              .droppedBytes, id: productModel.id,
+                                      // Upload bytes only for a newly dropped/browsed file;
+                                      // a library image is assigned by filename instead
+                                      imageBytes: drop.isNewFile
+                                          ? drop.droppedBytes
+                                          : null,
+                                      imageName: drop.droppedFileName,
+                                      libraryFilename: drop.libraryFilename,
+                                      id: productModel.id,
                                     );
-                                    if (status == "product_updated") {
+                                    if (status == "product_updated" ||
+                                        status == "image_not_assigned") {
                                       Navigator.pop(context);
                                       Provider.of<ProductVM>(context, listen: false).initAllProducts();
                                       Provider.of<ProductVM>(context, listen: false).getAllProducts();
                                       ScaffoldMessenger.of(context)
                                           .showSnackBar(
-                                        const SnackBar(
-                                          content: Text(
-                                              "Product updated successfully"),
+                                        SnackBar(
+                                          content: Text(status == "product_updated"
+                                              ? "Product updated successfully"
+                                              : "Product saved, but the selected image could not be assigned"),
                                         ),
                                       );
                                     }

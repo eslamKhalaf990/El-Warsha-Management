@@ -1,3 +1,4 @@
+import 'package:warsha_app/utils/image_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
@@ -156,7 +157,7 @@ class ProductWidget extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(12),
       child: Image.network(
-        productModel.image,
+        ImageHelper.fullUrl(productModel.image),
         width: 65,
         height: 65,
         fit: BoxFit.cover,

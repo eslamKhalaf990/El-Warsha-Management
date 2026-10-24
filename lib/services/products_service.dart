@@ -191,4 +191,42 @@ class ProductService {
 
     return await request.send();
   }
+
+  /// All images in the shared image library: [{ "filename": ..., "url": "/images/..." }]
+  Future<http.Response> getLibraryImages(String token) async {
+    debugPrint("getLibraryImages called");
+    try {
+      return await http.get(
+        Uri.parse(Baseurl.productImagesAPI),
+        headers: {"Authorization": 'Bearer $token'},
+      ).timeout(const Duration(seconds: Constants.TIMEOUT));
+    } on TimeoutException {
+      throw Exception('The request timed out. Please try again later.');
+    } catch (e) {
+      throw Exception('Failed to get library images: $e');
+    }
+  }
+
+  /// Assigns an existing library image to a product
+  Future<http.Response> assignProductImage({
+    required String id,
+    required String filename,
+    required String token,
+  }) async {
+    debugPrint("assignProductImage $filename -> product $id");
+    try {
+      return await http.put(
+        Uri.parse("${Baseurl.updateProductAPI}/$id/image"),
+        headers: {
+          'Content-Type': 'application/json',
+          "Authorization": 'Bearer $token',
+        },
+        body: jsonEncode({'filename': filename}),
+      ).timeout(const Duration(seconds: Constants.TIMEOUT));
+    } on TimeoutException {
+      throw Exception('The request timed out. Please try again later.');
+    } catch (e) {
+      throw Exception('Failed to assign image: $e');
+    }
+  }
 }

@@ -24,6 +24,8 @@ class UpdateProductVM extends ChangeNotifier {
     required String productCategory,
     required String productQuantity,
     required Uint8List? imageBytes,
+    String? imageName,
+    String? libraryFilename,
   }) async {
     String status = "";
     try {
@@ -40,6 +42,7 @@ class UpdateProductVM extends ChangeNotifier {
         discount: productDiscount,
         quantity: productQuantity,
         imageBytes: imageBytes,
+        imageName: imageName,
         token: _userViewModel.token
       );
 
@@ -48,6 +51,19 @@ class UpdateProductVM extends ChangeNotifier {
       if (response.statusCode == 200) {
         status = "product_updated";
         debugPrint("Product updated: $responseBody");
+
+        // Image picked from the library: assign it after saving the details
+        if (libraryFilename != null) {
+          final assignResponse = await _productService.assignProductImage(
+            id: id,
+            filename: libraryFilename,
+            token: _userViewModel.token,
+          );
+          if (assignResponse.statusCode != 200) {
+            status = "image_not_assigned";
+            debugPrint("Assign image failed: ${assignResponse.statusCode} - ${assignResponse.body}");
+          }
+        }
       } else {
         status = "product_not_updated";
         debugPrint("Update failed: ${response.statusCode} - $responseBody");

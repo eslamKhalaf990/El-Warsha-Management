@@ -248,7 +248,7 @@ class ProductWidget extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(15),
         child: Image.network(
-          product.image,
+          ImageHelper.fullUrl(product.image),
           width: size,
           height: size,
           fit: BoxFit.cover,

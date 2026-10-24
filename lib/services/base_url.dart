@@ -1,5 +1,7 @@
 class Baseurl {
-  static String baseURL = "http://localhost:8080/";
+  // static String baseURL = "http://localhost:8080/";
+  // static String baseURL = "http://68.168.222.245:8080/"; // NEW SERVER (direct)
+  static String baseURL = "https://puzzles-grown-strike-upc.trycloudflare.com/"; // PROD (cloudflare tunnel)
   // static String baseURL = "https://research-mlb-potentially-frequently.trycloudflare.com/"; // PROD
   // static String baseURLImages = "${baseURL}api/files/"; // PROD
   //
@@ -34,6 +36,7 @@ class Baseurl {
   static String addProductAPI = '${baseURL}products';
   static String updateProductAPI = '${baseURL}products';
   static String deleteProductAPI = '${baseURL}products';
+  static String productImagesAPI = '${baseURL}products/images';
   static String addCategoryAPI = '${baseURL}category';
   /// ===============   Products APIs    ============== ///
 

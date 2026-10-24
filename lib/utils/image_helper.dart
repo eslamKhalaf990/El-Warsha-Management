@@ -1,3 +1,5 @@
+import 'package:warsha_app/services/base_url.dart';
+
 class ImageHelper {
   static String? extractFileId(String url) {
     try {
@@ -19,4 +21,14 @@ class ImageHelper {
     return null;
   }
 
+  /// Turns a backend imageUrl ("/images/abc.jpg") into a full URL.
+  /// Absolute URLs are returned unchanged; empty or "-" gives "".
+  static String fullUrl(String? path) {
+    if (path == null || path.isEmpty || path == "-") return "";
+    if (path.startsWith("http")) return path;
+    final base = Baseurl.baseURL.endsWith("/")
+        ? Baseurl.baseURL.substring(0, Baseurl.baseURL.length - 1)
+        : Baseurl.baseURL;
+    return path.startsWith("/") ? "$base$path" : "$base/$path";
+  }
 }
