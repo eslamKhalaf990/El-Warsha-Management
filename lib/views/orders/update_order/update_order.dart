@@ -12,24 +12,91 @@ import 'package:warsha_app/utils/default_text.dart';
 import 'package:warsha_app/view_models/customers_v_m.dart';
 import 'package:warsha_app/view_models/add_product_v_m.dart';
 import 'package:warsha_app/view_models/update_order_v_m.dart';
+import 'package:warsha_app/views/orders/order_ui.dart';
 import 'package:warsha_app/views/orders/update_order/customer_to_update.dart';
 import 'package:warsha_app/views/orders/update_order/product_to_update.dart';
 import 'package:warsha_app/views/orders/update_order/update_order_details.dart';
 
-class UpdateOrder extends StatelessWidget {
+class UpdateOrder extends StatefulWidget {
   final OrderModel existingOrder;
   const UpdateOrder({super.key, required this.existingOrder});
+
+  @override
+  State<UpdateOrder> createState() => _UpdateOrderState();
+}
+
+class _UpdateOrderState extends State<UpdateOrder> {
+  @override
+  void initState() {
+    super.initState();
+    // Pre-fill once, after the first frame (the VMs notify listeners).
+    WidgetsBinding.instance.addPostFrameCallback((_) => _load());
+  }
+
+  Future<void> _load() async {
+    context.read<OrderVM>().clearError();
+    context.read<UpdatePaymentDetails>().loadPayment(widget.existingOrder);
+    final updateVM = context.read<UpdateOrderVM>();
+    updateVM.loadOrder(widget.existingOrder);
+
+    // Product discounts aren't in the order response; take them from the
+    // catalogue, as the backend does when the order is saved.
+    final products = await context.read<ProductVM>().allProducts ?? const [];
+    if (!mounted) return;
+    updateVM.applyUnitDiscounts({
+      for (final p in products)
+        if (int.tryParse(p.id) case final id?) id: double.tryParse(p.discount) ?? 0,
+    });
+  }
+
+  Future<void> _submit(UpdateOrderVM orderVM, UpdatePaymentDetails payment,
+      CustomerProvider customers) async {
+    final customer = orderVM.orderModel.customer;
+    final orderId = orderVM.orderModel.orderId;
+    if (customer == null || orderId == null) return;
+    if (orderVM.orderModel.orderItems.isEmpty) {
+      showOrderMessage(context, 'Please add at least one product', isError: true);
+      return;
+    }
+
+    // No bankAccountId: the backend keeps the down payment in its original account.
+    final request = OrderRequest(
+      customerId: customer.customerId,
+      items: orderVM.orderModel.orderItems
+          .map((item) => OrderLineRequest(
+                productId: item.productId,
+                quantity: item.orderedQuantity,
+                unitPrice: item.unitPrice,
+              ))
+          .toList(),
+      delivery: double.tryParse(payment.delivery.text) ?? 0,
+      downPayment: double.tryParse(payment.downPayment.text) ?? 0,
+      discount: double.tryParse(payment.discount.text) ?? 0,
+      notes: payment.notes.text,
+      paymentMethod: payment.paymentMethod.text,
+      orderSource: payment.platformSource.text,
+    );
+
+    final ordersVM = context.read<OrderVM>();
+    final updated = await ordersVM.updateOrder(orderId, request);
+    if (!mounted) return;
+
+    if (!updated) {
+      showOrderError(context, ordersVM.lastError, isShownField: isOrderFormField);
+      return;
+    }
+
+    showOrderMessage(context, 'Order #$orderId updated');
+    refreshAfterOrderChange(context);
+    payment.clearPaymentDetails();
+    customers.clearCustomer();
+    Navigator.pop(context);
+  }
 
   @override
   Widget build(BuildContext context) {
     final orderVM = context.read<UpdateOrderVM>();
     final payment = context.read<UpdatePaymentDetails>();
-
-    // Pre-fill only once if editing
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      orderVM.loadOrder(existingOrder);
-      payment.loadPayment(existingOrder);
-    });
 
     return Consumer<CustomerProvider>(
       builder: (context, value, child) => Scaffold(
@@ -65,39 +132,7 @@ class UpdateOrder extends StatelessWidget {
                                   child: ElevatedButton(
                                     onPressed: Provider.of<OrderVM>(context).isSaving
                                         ? null
-                                        : () async {
-                                            final customer = orderVM.orderModel.customer;
-                                            final orderId = orderVM.orderModel.orderId;
-                                            if (customer == null || orderId == null) return;
-
-                                            // No bankAccountId: the backend keeps the
-                                            // down payment in its original account.
-                                            final request = OrderRequest(
-                                              customerId: customer.customerId,
-                                              items: orderVM.orderModel.orderItems
-                                                  .map((item) => OrderLineRequest(
-                                                        productId: item.productId,
-                                                        quantity: item.orderedQuantity,
-                                                        unitPrice: item.unitPrice,
-                                                      ))
-                                                  .toList(),
-                                              delivery: double.tryParse(payment.delivery.text) ?? 0,
-                                              downPayment: double.tryParse(payment.downPayment.text) ?? 0,
-                                              discount: double.tryParse(payment.discount.text) ?? 0,
-                                              notes: payment.notes.text,
-                                              paymentMethod: payment.paymentMethod.text,
-                                              orderSource: payment.platformSource.text,
-                                            );
-
-                                            final updated = await Provider.of<OrderVM>(context, listen: false)
-                                                .updateOrder(orderId, request);
-                                            if (!updated || !context.mounted) return;
-
-                                            Navigator.pop(context);
-                                            payment.clearPaymentDetails();
-                                            value.clearCustomer();
-                                            Provider.of<ProductVM>(context, listen: false).initAllProducts();
-                                          },
+                                        : () => _submit(orderVM, payment, value),
                                     child: Provider.of<OrderVM>(context).isSaving
                                         ? const SizedBox(
                                             height: 20,
@@ -122,14 +157,14 @@ class UpdateOrder extends StatelessWidget {
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       const Text(
-                                        "Total Price",
+                                        "Amount Due",
                                         style: TextStyle(
                                           color: Colors.white,
                                           fontSize: 10,
                                         ),
                                       ),
                                       Text(
-                                        "${(Provider.of<UpdatePaymentDetails>(context).totalPrice + Provider.of<UpdateOrderVM>(context).getTotalPrice())} EGP",
+                                        "${Provider.of<UpdatePaymentDetails>(context).totalsFor(Provider.of<UpdateOrderVM>(context).orderModel.orderItems).amountDue.toStringAsFixed(2)} EGP",
                                         style: const TextStyle(
                                           color: Colors.white,
                                           fontWeight: FontWeight.bold,

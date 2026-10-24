@@ -73,6 +73,7 @@ class CRUDOrder extends StatelessWidget {
     return [
       ElevatedButton.icon(
         onPressed: () {
+          context.read<OrderVM>().clearError();
           Navigator.push(
             context,
             MaterialPageRoute(

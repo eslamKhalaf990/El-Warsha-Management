@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:warsha_app/models/orderItemModel.dart';
 import 'package:warsha_app/models/orderModel.dart';
+import 'package:warsha_app/models/order_totals.dart';
 
 class PaymentProvider extends ChangeNotifier {
   final TextEditingController downPayment = TextEditingController();
@@ -8,8 +10,6 @@ class PaymentProvider extends ChangeNotifier {
   final TextEditingController platformSource = TextEditingController();
   final TextEditingController delivery = TextEditingController();
   final TextEditingController notes = TextEditingController();
-
-  double _basePrice = 0;
 
   PaymentProvider() {
 
@@ -20,13 +20,6 @@ class PaymentProvider extends ChangeNotifier {
     notes.addListener(_onFieldChanged);
   }
 
-  double get basePrice => _basePrice;
-
-  set basePrice(double value) {
-    _basePrice = value;
-    notifyListeners();
-  }
-
   void loadPayment(OrderModel existingOrder) {
     downPayment.text = existingOrder.downPayment.toString();
     paymentMethod.text = existingOrder.paymentMethod ??"-";
@@ -35,24 +28,18 @@ class PaymentProvider extends ChangeNotifier {
     delivery.text = existingOrder.delivery.toString();
     notes.text = existingOrder.notes ?? "-";
 
-    // if you want to set base price too, calculate from items
-    if (existingOrder.orderItems.isNotEmpty) {
-      _basePrice = existingOrder.orderItems.fold(0, (sum, item) {
-        final unitPrice = item.unitPrice;
-        return sum + unitPrice * item.quantityToOrder;
-      });
-    }
-
     notifyListeners();
   }
 
-  double get totalPrice {
-    final double discountValue = double.tryParse(discount.text) ?? 0;
-    final double downPaymentValue = double.tryParse(downPayment.text) ?? 0;
-    final double deliveryValue = double.tryParse(delivery.text) ?? 0;
-
-    return (_basePrice - discountValue - downPaymentValue) + deliveryValue;
-  }
+  /// Live totals for [items] with the amounts typed in this form, using the
+  /// backend's formula (product discounts + this extra discount).
+  OrderTotals totalsFor(List<OrderItemModel> items) => OrderTotals.compute(
+        items: items,
+        quantityOf: (item) => item.quantityToOrder,
+        extraDiscount: double.tryParse(discount.text) ?? 0,
+        delivery: double.tryParse(delivery.text) ?? 0,
+        downPayment: double.tryParse(downPayment.text) ?? 0,
+      );
 
   void _onFieldChanged() {
     notifyListeners();
@@ -76,7 +63,6 @@ class PaymentProvider extends ChangeNotifier {
     platformSource.clear();
     delivery.clear();
     notes.clear();
-    _basePrice = 0;
     notifyListeners();
   }
 }

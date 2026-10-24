@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:warsha_app/models/orderItemModel.dart';
 import 'package:warsha_app/utils/const_values.dart';
 import 'package:warsha_app/utils/default_text.dart';
+import 'package:warsha_app/view_models/order_v_m.dart';
 import 'package:warsha_app/view_models/update_order_v_m.dart';
 
 class UpdateOrderItem extends StatelessWidget {
@@ -15,6 +16,7 @@ class UpdateOrderItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final order = orderItem;
+    final quantityError = context.watch<OrderVM>().fieldError('items[$index].quantity');
 
     return Container(
       decoration: BoxDecoration(
@@ -47,10 +49,18 @@ class UpdateOrderItem extends StatelessWidget {
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                child: Text(
-                  order.orderedQuantity.toString(),
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
+                child: quantityError == null
+                    ? Text(
+                        order.orderedQuantity.toString(),
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      )
+                    : Tooltip(
+                        message: quantityError,
+                        child: Text(
+                          order.orderedQuantity.toString(),
+                          style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.red),
+                        ),
+                      ),
               ),
               IconButton(
                 onPressed: (){

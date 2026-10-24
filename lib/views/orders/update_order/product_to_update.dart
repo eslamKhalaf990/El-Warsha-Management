@@ -56,7 +56,7 @@ class ProductToUpdate extends StatelessWidget {
                     productName: product.name,
                     quantity: int.parse(product.quantity),
                     unitPrice: double.parse(product.sellingPrice),
-                  );
+                  )..unitDiscount = double.tryParse(product.discount) ?? 0;
 
                   if (!isSelected) {
                     orderVM.addToOrderItems = orderItemModel;

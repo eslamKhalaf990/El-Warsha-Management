@@ -10,7 +10,6 @@ import 'package:warsha_app/models/product_model.dart';
 import 'package:warsha_app/utils/const_values.dart';
 import 'package:warsha_app/utils/default_button.dart';
 import 'package:warsha_app/utils/default_text.dart';
-import 'package:warsha_app/utils/navigator.dart';
 import 'package:warsha_app/view_models/accountings_v_m.dart';
 
 // View Models
@@ -19,6 +18,7 @@ import 'package:warsha_app/view_models/add_product_v_m.dart';
 import 'package:warsha_app/view_models/customers_v_m.dart';
 import 'package:warsha_app/controllers/add_order/add_payment.dart';
 import 'package:warsha_app/view_models/order_v_m.dart';
+import 'package:warsha_app/views/orders/order_ui.dart';
 
 class AddOrderBeta extends StatelessWidget {
   const AddOrderBeta({super.key});
@@ -85,9 +85,10 @@ class AddOrderBeta extends StatelessWidget {
 }
 
 // --- REUSABLE DECORATION STYLE ---
-InputDecoration _inputDecoration(String label, IconData icon) {
+InputDecoration _inputDecoration(String label, IconData icon, {String? errorText}) {
   return InputDecoration(
     labelText: label,
+    errorText: errorText,
     prefixIcon: Icon(icon, size: 18, color: Colors.grey),
     filled: true,
     fillColor: Colors.grey.shade50,
@@ -194,8 +195,12 @@ class CustomerSelectionSection extends StatelessWidget {
           const SizedBox(height: 20),
 
           // ADDRESS DISPLAY
-          Consumer<AddOrderVM>(
-            builder: (context, vm, _) {
+          Consumer2<AddOrderVM, OrderVM>(
+            builder: (context, vm, orderVM, _) {
+              final customerError = orderVM.fieldError('customerId');
+              if (customerError != null) {
+                return Text(customerError, style: const TextStyle(color: Colors.red, fontSize: 12));
+              }
               if (vm.orderModel.customer == null) {
                 return const SizedBox.shrink();
               }
@@ -372,7 +377,8 @@ class _OrderLineItemsSectionState extends State<OrderLineItemsSection> {
                                   double.parse(selectedProduct!.sellingPrice),
                               productName: selectedProduct!.name,
                             );
-                            item.quantityToOrder = int.parse(_qtyController.text);
+                            item.quantityToOrder = int.tryParse(_qtyController.text) ?? 1;
+                            item.unitDiscount = double.tryParse(selectedProduct!.discount) ?? 0;
                             vm.addToOrderItems = item;
                             setState(() {
                               selectedProduct = null;
@@ -396,8 +402,8 @@ class _OrderLineItemsSectionState extends State<OrderLineItemsSection> {
           ),
 
           // --- ADDED ITEMS LIST ---
-          Consumer<AddOrderVM>(
-            builder: (context, vm, _) {
+          Consumer2<AddOrderVM, OrderVM>(
+            builder: (context, vm, orderVM, _) {
               if (vm.orderModel.orderItems.isEmpty) {
                 return Center(
                   child: Padding(
@@ -415,8 +421,11 @@ class _OrderLineItemsSectionState extends State<OrderLineItemsSection> {
                 );
               }
 
+              final items = vm.orderModel.orderItems;
               return Column(
-                children: vm.orderModel.orderItems.map((item) {
+                children: List.generate(items.length, (index) {
+                  final item = items[index];
+                  final quantityError = orderVM.fieldError('items[$index].quantity');
                   return Container(
                     margin: const EdgeInsets.only(bottom: 10),
                     padding: const EdgeInsets.all(12),
@@ -443,6 +452,9 @@ class _OrderLineItemsSectionState extends State<OrderLineItemsSection> {
                               Text(
                                   "${item.unitPrice} EGP × ${item.quantityToOrder}",
                                   style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                              if (quantityError != null)
+                                Text(quantityError,
+                                    style: const TextStyle(fontSize: 12, color: Colors.red)),
                             ],
                           ),
                         ),
@@ -462,7 +474,7 @@ class _OrderLineItemsSectionState extends State<OrderLineItemsSection> {
                       ],
                     ),
                   );
-                }).toList(),
+                }),
               );
             },
           )
@@ -478,6 +490,7 @@ class OrderSummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final payment = Provider.of<PaymentProvider>(context);
+    final orderVM = Provider.of<OrderVM>(context);
 
     return Container(
       decoration: BoxDecoration(
@@ -502,7 +515,8 @@ class OrderSummaryCard extends StatelessWidget {
 
           // 1. Platform Source
           DropdownButtonFormField<String>(
-            decoration: _inputDecoration("Source", Iconsax.global),
+            decoration: _inputDecoration("Source", Iconsax.global,
+                errorText: orderVM.fieldError('orderSource')),
             initialValue: payment.platformSource.text.isNotEmpty
                 ? payment.platformSource.text
                 : null,
@@ -521,7 +535,8 @@ class OrderSummaryCard extends StatelessWidget {
 
           // 2. Payment Method
           DropdownButtonFormField<String>(
-            decoration: _inputDecoration("Method", Iconsax.card),
+            decoration: _inputDecoration("Method", Iconsax.card,
+                errorText: orderVM.fieldError('paymentMethod')),
             initialValue: payment.paymentMethod.text.isNotEmpty
                 ? payment.paymentMethod.text
                 : null,
@@ -543,7 +558,8 @@ class OrderSummaryCard extends StatelessWidget {
               Expanded(
                 child: TextField(
                   controller: payment.delivery,
-                  decoration: _inputDecoration("Delivery", Iconsax.truck),
+                  decoration: _inputDecoration("Delivery", Iconsax.truck,
+                      errorText: orderVM.fieldError('delivery')),
                   keyboardType: TextInputType.number,
                 ),
               ),
@@ -551,8 +567,8 @@ class OrderSummaryCard extends StatelessWidget {
               Expanded(
                 child: TextField(
                   controller: payment.discount,
-                  decoration:
-                      _inputDecoration("Discount", Iconsax.discount_shape),
+                  decoration: _inputDecoration("Extra discount", Iconsax.discount_shape,
+                      errorText: orderVM.fieldError('discount')),
                   keyboardType: TextInputType.number,
                 ),
               ),
@@ -562,7 +578,8 @@ class OrderSummaryCard extends StatelessWidget {
 
           TextField(
             controller: payment.downPayment,
-            decoration: _inputDecoration("Down Payment", Iconsax.moneys),
+            decoration: _inputDecoration("Down Payment", Iconsax.moneys,
+                errorText: orderVM.fieldError('downPayment')),
             keyboardType: TextInputType.number,
           ),
 
@@ -580,35 +597,15 @@ class OrderSummaryCard extends StatelessWidget {
             color: Theme.of(context).colorScheme.tertiary.withAlpha(50),
           ),
 
-          // 4. TOTAL
-          Consumer<AddOrderVM>(builder: (context, orderVM, _) {
-            double productsTotal = orderVM.getTotalPrice();
-            double delivery = double.tryParse(payment.delivery.text) ?? 0;
-            double discount = double.tryParse(payment.discount.text) ?? 0;
-            double downPayment = double.tryParse(payment.downPayment.text) ?? 0;
-            double grandTotal = productsTotal + delivery - discount - downPayment;
-
+          // 4. TOTALS
+          Consumer<AddOrderVM>(builder: (context, addOrderVM, _) {
             return Container(
               padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 20),
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.tertiary.withAlpha(25),
                 borderRadius: BorderRadius.circular(15),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text("Grand Total",
-                      style:
-                          TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                  Text(
-                    "$grandTotal EGP",
-                    style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w900,
-                        color: Theme.of(context).colorScheme.tertiary),
-                  ),
-                ],
-              ),
+              child: OrderTotalsView(payment.totalsFor(addOrderVM.orderModel.orderItems)),
             );
           }),
 
@@ -624,8 +621,8 @@ class OrderSummaryCard extends StatelessWidget {
                 _submitOrder(context);
               },
               margin: EdgeInsets.zero,
-              isValid: !Provider.of<OrderVM>(context).isSaving,
-              isLoading: Provider.of<OrderVM>(context).isSaving,
+              isValid: !orderVM.isSaving,
+              isLoading: orderVM.isSaving,
               border: 15,
             ),
           )
@@ -690,58 +687,37 @@ class OrderSummaryCard extends StatelessWidget {
       bankAccountId = bankAccount.id;
     }
 
-    try {
-      // Map Items
-      final List<OrderLineRequest> itemsToCreate =
-          addOrderVM.orderModel.orderItems.map((item) {
-        return OrderLineRequest(
-          productId: item.productId,
-          quantity: item.quantityToOrder,
-          unitPrice: item.unitPrice,
-        );
-      }).toList();
+    final request = OrderRequest(
+      customerId: addOrderVM.orderModel.customer!.customerId,
+      delivery: deliveryCost,
+      discount: discountAmount,
+      downPayment: downPaymentAmount,
+      notes: payment.notes.text,
+      orderSource: payment.platformSource.text,
+      paymentMethod: payment.paymentMethod.text,
+      items: addOrderVM.orderModel.orderItems
+          .map((item) => OrderLineRequest(
+                productId: item.productId,
+                quantity: item.quantityToOrder,
+                unitPrice: item.unitPrice,
+              ))
+          .toList(),
+      bankAccountId: bankAccountId,
+    );
 
-      // Build Request
-      final OrderRequest request = OrderRequest(
-        customerId: addOrderVM.orderModel.customer!.customerId,
-        delivery: deliveryCost,
-        discount: discountAmount,
-        downPayment: downPaymentAmount,
-        notes: payment.notes.text,
-        orderSource: payment.platformSource.text,
-        paymentMethod: payment.paymentMethod.text,
-        items: itemsToCreate,
-        bankAccountId: bankAccountId,
-      );
+    final created = await orderVM.addOrder(request);
+    if (!context.mounted) return;
 
-      final bool success = await orderVM.addOrder(request);
-
-      if (!context.mounted) return;
-
-      if (success) {
-        Provider.of<ProductVM>(context, listen: false).initAllProducts();
-        Provider.of<AccountingVM>(context, listen: false).initAccounting();
-
-        // Clear Forms
-        payment.clearPaymentDetails();
-        addOrderVM.clearOrder();
-
-        // Navigation (Pop twice as per your logic)
-        Navigator.pop(context);
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text('Failed: ${orderVM.errorMessage}'),
-              backgroundColor: Colors.red),
-        );
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(navigatorKey.currentContext!).showSnackBar(
-        SnackBar(
-            content: Text('Error: ${e.toString()}'),
-            backgroundColor: Colors.red),
-      );
+    if (created == null) {
+      showOrderError(context, orderVM.lastError, isShownField: isOrderFormField);
+      return;
     }
+
+    showOrderMessage(context, 'Order #${created.orderId} added');
+    refreshAfterOrderChange(context);
+    payment.clearPaymentDetails();
+    addOrderVM.clearOrder();
+    Navigator.pop(context);
   }
 
   Future<BankAccount?> showTransferDialog(

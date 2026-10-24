@@ -4,8 +4,9 @@ import 'package:provider/provider.dart';
 import 'package:warsha_app/controllers/update_order/updatePaymentDetails.dart';
 import 'package:warsha_app/utils/const_values.dart';
 import 'package:warsha_app/utils/default_text.dart';
+import 'package:warsha_app/view_models/order_v_m.dart';
 import 'package:warsha_app/view_models/update_order_v_m.dart';
-import 'package:warsha_app/views/products/add_product.dart';
+import 'package:warsha_app/views/orders/order_ui.dart';
 import 'customer_details.dart';
 import 'delivery_address.dart';
 import 'order_item_widget.dart';
@@ -15,8 +16,8 @@ class UpdateOrderDetails extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer2<UpdatePaymentDetails, UpdateOrderVM>(
-      builder: (context, payment, order, child) => CustomScrollView(
+    return Consumer3<UpdatePaymentDetails, UpdateOrderVM, OrderVM>(
+      builder: (context, payment, order, ordersVM, child) => CustomScrollView(
         slivers: [
           const SliverToBoxAdapter(
             child: Padding(
@@ -29,6 +30,8 @@ class UpdateOrderDetails extends StatelessWidget {
 
           //customer info
           const SliverToBoxAdapter(child: CustomerDetails()),
+          if (ordersVM.fieldError('customerId') case final error?)
+            SliverToBoxAdapter(child: _errorLine(error)),
 
           const SliverToBoxAdapter(child: SizedBox(height: 15)),
 
@@ -91,6 +94,12 @@ class UpdateOrderDetails extends StatelessWidget {
                   ),
                 ),
 
+          // per-line errors (the rows are too small to hold them)
+          for (var i = 0; i < order.orderModel.orderItems.length; i++)
+            if (ordersVM.fieldError('items[$i].quantity') case final error?)
+              SliverToBoxAdapter(
+                  child: _errorLine('${order.orderModel.orderItems[i].productName}: $error')),
+
           const SliverToBoxAdapter(child: SizedBox(height: 15)),
           SliverToBoxAdapter(
             child: Column(
@@ -113,9 +122,10 @@ class UpdateOrderDetails extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: DropdownButtonFormField<String>(
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
+                      errorText: ordersVM.fieldError('orderSource'),
                       labelText: "Which platform did you get the order from?",
-                      prefixIcon: Icon(Iconsax.message, size: 20),
+                      prefixIcon: const Icon(Iconsax.message, size: 20),
                     ),
                     initialValue: payment.platformSource.text.isNotEmpty
                         ? payment.platformSource.text.toLowerCase()
@@ -165,9 +175,10 @@ class UpdateOrderDetails extends StatelessWidget {
                         padding: const EdgeInsets.only(left: 20.0),
                         child: TextField(
                           controller: payment.downPayment,
-                          decoration: const InputDecoration(
+                          decoration: InputDecoration(
+                            errorText: ordersVM.fieldError('downPayment'),
                             labelText: "Down Payment",
-                            prefixIcon: Icon(Iconsax.wallet_1, size: 20),
+                            prefixIcon: const Icon(Iconsax.wallet_1, size: 20),
                             suffixText: "EGP",
                           ),
                           keyboardType: TextInputType.number,
@@ -180,9 +191,10 @@ class UpdateOrderDetails extends StatelessWidget {
                         padding: const EdgeInsets.only(right: 20.0),
                         child: TextField(
                           controller: payment.delivery,
-                          decoration: const InputDecoration(
+                          decoration: InputDecoration(
+                            errorText: ordersVM.fieldError('delivery'),
                             labelText: "Delivery Charge",
-                            prefixIcon: Icon(Iconsax.truck, size: 20),
+                            prefixIcon: const Icon(Iconsax.truck, size: 20),
                             suffixText: "EGP",
                           ),
                           keyboardType: TextInputType.number,
@@ -196,9 +208,11 @@ class UpdateOrderDetails extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: TextField(
                     controller: payment.discount,
-                    decoration: const InputDecoration(
-                      labelText: "Discount",
-                      prefixIcon: Icon(Iconsax.discount_shape, size: 20),
+                    decoration: InputDecoration(
+                      errorText: ordersVM.fieldError('discount'),
+                      helperText: "On top of product discounts",
+                      labelText: "Extra discount",
+                      prefixIcon: const Icon(Iconsax.discount_shape, size: 20),
                       suffixText: "EGP",
                     ),
                     keyboardType: TextInputType.number,
@@ -208,9 +222,10 @@ class UpdateOrderDetails extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: DropdownButtonFormField<String>(
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
+                      errorText: ordersVM.fieldError('paymentMethod'),
                       labelText: "Payment Method",
-                      prefixIcon: Icon(Iconsax.wallet_1, size: 20),
+                      prefixIcon: const Icon(Iconsax.wallet_1, size: 20),
                     ),
                     initialValue: payment.paymentMethod.text.isNotEmpty
                         ? payment.paymentMethod.text.toLowerCase()
@@ -244,9 +259,21 @@ class UpdateOrderDetails extends StatelessWidget {
             ),
           ),
 
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
+              child: OrderTotalsView(payment.totalsFor(order.orderModel.orderItems)),
+            ),
+          ),
+
           const SliverToBoxAdapter(child: SizedBox(height: 80)),
         ],
       ),
     );
   }
+
+  Widget _errorLine(String message) => Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
+        child: Text(message, style: const TextStyle(color: Colors.red, fontSize: 12)),
+      );
 }

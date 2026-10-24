@@ -3,7 +3,6 @@ import 'package:warsha_app/core/network/api_exception.dart';
 import 'package:warsha_app/models/order_request.dart';
 import 'package:warsha_app/models/order_status.dart';
 import 'package:warsha_app/services/orders_service.dart';
-import 'package:warsha_app/utils/navigator.dart';
 import '../models/orderModel.dart';
 
 enum ViewState { idle, loading, error }
@@ -25,6 +24,7 @@ class OrderVM extends ChangeNotifier {
   ViewState _state = ViewState.idle;
   bool _isSaving = false;
   String _errorMessage = '';
+  ApiException? _lastError;
 
   // Orders
   List<OrderModel> _orders = [];
@@ -43,6 +43,22 @@ class OrderVM extends ChangeNotifier {
   ViewState get state => _state;
   bool get isSaving => _isSaving;
   String get errorMessage => _errorMessage;
+
+  /// The failure of the last load or save, for the screens to show.
+  ApiException? get lastError => _lastError;
+
+  /// The backend's message for [field] (e.g. `discount`, `items[0].quantity`)
+  /// when the last save failed validation.
+  String? fieldError(String field) =>
+      (_lastError?.isValidation ?? false) ? _lastError!.messageFor(field) : null;
+
+  /// Forgets the last failure, e.g. when a form is opened again.
+  void clearError() {
+    if (_lastError == null && _errorMessage.isEmpty) return;
+    _lastError = null;
+    _errorMessage = '';
+    notifyListeners();
+  }
 
   // ✨ MODIFIED getter to check all filter types
   List<OrderModel> get orders =>
@@ -71,10 +87,10 @@ class OrderVM extends ChangeNotifier {
         to: now,
       );
       _filteredOrders = List.from(_orders);
-      _errorMessage = '';
+      _setError(null);
       _state = ViewState.idle;
     } on ApiException catch (e) {
-      _errorMessage = e.message;
+      _setError(e);
       _state = ViewState.error;
     }
 
@@ -82,128 +98,71 @@ class OrderVM extends ChangeNotifier {
   }
 
   // ────────────────────────────
-  // ADD ORDER
+  // ADD / UPDATE / STATUS / DELETE
+  // Each returns true on success; on failure [lastError] says why.
   // ────────────────────────────
-  Future<bool> addOrder(OrderRequest request) async {
-    _isSaving = true;
-    _errorMessage = '';
-    _state = ViewState.idle;
-    notifyListeners();
 
-    try {
-      final created = await _orderService.create(request);
-      _orders.insert(0, created);
-      _filterOrders();
-      _showSnackBar("Order #${created.orderId} added successfully");
-      return true;
-    } on ApiException catch (e) {
-      _errorMessage = e.message;
-      _showSnackBar(e.message, isError: true);
-      return false;
-    } finally {
-      _isSaving = false;
-      notifyListeners();
-    }
-  }
+  /// Returns the created order, or null on failure.
+  Future<OrderModel?> addOrder(OrderRequest request) => _save(() async {
+        final created = await _orderService.create(request);
+        _orders.insert(0, created);
+        _filterOrders();
+        return created;
+      });
 
-  // ────────────────────────────
-  // UPDATE ORDER
-  // ────────────────────────────
-  Future<bool> updateOrder(int orderId, OrderRequest request) async {
-    _isSaving = true;
-    _errorMessage = '';
-    notifyListeners();
+  Future<bool> updateOrder(int orderId, OrderRequest request) async =>
+      await _save(() async => _replaceOrder(await _orderService.update(orderId, request))) != null;
 
-    try {
-      _replaceOrder(await _orderService.update(orderId, request));
-      _showSnackBar("Order #$orderId updated successfully");
-      return true;
-    } on ApiException catch (e) {
-      _errorMessage = e.message;
-      _showSnackBar(e.message, isError: true);
-      return false;
-    } finally {
-      _isSaving = false;
-      notifyListeners();
-    }
-  }
-
-  // ────────────────────────────
-  // UPDATE STATUS
-  // ────────────────────────────
-  /// Cancelling goes through the cancel endpoint, which also refunds the
-  /// down payment. Completing needs the [bankAccountId] that gets paid.
+  /// Cancelling goes through the cancel endpoint, which also returns the stock
+  /// and refunds the down payment. Completing needs the [bankAccountId] that
+  /// receives the amount due.
   Future<bool> updateOrderStatus({
     required int orderId,
     required OrderStatus status,
     int? bankAccountId,
-  }) async {
-    _isSaving = true;
-    _errorMessage = '';
-    notifyListeners();
-
-    try {
-      final updated = status == OrderStatus.cancelled
+  }) async =>
+      await _save(() async => _replaceOrder(status == OrderStatus.cancelled
           ? await _orderService.cancel(orderId)
-          : await _orderService.changeStatus(orderId, status, bankAccountId: bankAccountId);
-      _replaceOrder(updated);
-      if (status == OrderStatus.cancelled) {
-        _showSnackBar("Order #$orderId cancelled successfully", isError: true);
-      }
-      return true;
-    } on ApiException catch (e) {
-      _errorMessage = e.message;
-      _showSnackBar(e.message, isError: true);
-      return false;
-    } finally {
-      _isSaving = false;
-      notifyListeners();
-    }
-  }
+          : await _orderService.changeStatus(orderId, status, bankAccountId: bankAccountId))) !=
+      null;
 
-  // ────────────────────────────
-  // DELETE ORDER
-  // ────────────────────────────
-  Future<bool> deleteOrder(int id) async {
+  Future<bool> deleteOrder(int id) async =>
+      await _save(() async {
+        await _orderService.delete(id);
+        _orders.removeWhere((order) => order.orderId == id);
+        _filteredOrders.removeWhere((order) => order.orderId == id);
+        return true;
+      }) !=
+      null;
+
+  Future<T?> _save<T extends Object>(Future<T> Function() action) async {
     _isSaving = true;
-    _errorMessage = '';
+    _setError(null);
     notifyListeners();
 
     try {
-      await _orderService.delete(id);
-      _orders.removeWhere((order) => order.orderId == id);
-      _filteredOrders.removeWhere((order) => order.orderId == id);
-      _showSnackBar("Order #$id deleted successfully", isError: true);
-      return true;
+      return await action();
     } on ApiException catch (e) {
-      _errorMessage = e.message;
-      _showSnackBar(e.message, isError: true);
-      return false;
+      _setError(e);
+      return null;
     } finally {
       _isSaving = false;
       notifyListeners();
     }
   }
 
-  void _replaceOrder(OrderModel updated) {
+  void _setError(ApiException? e) {
+    _lastError = e;
+    _errorMessage = e?.message ?? '';
+  }
+
+  OrderModel _replaceOrder(OrderModel updated) {
     int indexIn(List<OrderModel> list) => list.indexWhere((o) => o.orderId == updated.orderId);
     final i = indexIn(_orders);
     if (i >= 0) _orders[i] = updated;
     final j = indexIn(_filteredOrders);
     if (j >= 0) _filteredOrders[j] = updated;
-  }
-
-  // Moves to the views in step 6.
-  void _showSnackBar(String message, {bool isError = false}) {
-    final context = navigatorKey.currentContext;
-    if (context == null) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: isError ? Colors.red : Colors.grey,
-        duration: const Duration(seconds: 2),
-      ),
-    );
+    return updated;
   }
 
   // ────────────────────────────

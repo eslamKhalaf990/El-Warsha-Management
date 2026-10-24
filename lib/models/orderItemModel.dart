@@ -14,6 +14,10 @@ class OrderItemModel {
   /// Quantity being edited on the "update order" screen.
   int orderedQuantity = 1;
 
+  /// The product's per-unit discount, for live totals on the order forms.
+  /// Not part of the API response; the backend applies it itself.
+  double unitDiscount = 0;
+
   OrderItemModel({
     required this.productId,
     required this.productName,

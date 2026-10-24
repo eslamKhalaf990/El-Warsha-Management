@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:warsha_app/models/orderItemModel.dart';
 import 'package:warsha_app/models/orderModel.dart';
+import 'package:warsha_app/models/order_totals.dart';
 
 class UpdatePaymentDetails extends ChangeNotifier {
   final TextEditingController downPayment = TextEditingController();
@@ -9,8 +11,6 @@ class UpdatePaymentDetails extends ChangeNotifier {
   final TextEditingController platformSource = TextEditingController();
   final TextEditingController delivery = TextEditingController();
 
-  double _basePrice = 0;
-
   UpdatePaymentDetails() {
 
     // Listen for changes
@@ -19,14 +19,6 @@ class UpdatePaymentDetails extends ChangeNotifier {
     delivery.addListener(_onFieldChanged);
     notes.addListener(_onFieldChanged);
   }
-
-  double get basePrice => _basePrice;
-
-  set basePrice(double value) {
-    _basePrice = value;
-    notifyListeners();
-  }
-
 
   void loadPayment(OrderModel existingOrder) {
     downPayment.text = (existingOrder.downPayment ?? 0).toString();
@@ -41,13 +33,15 @@ class UpdatePaymentDetails extends ChangeNotifier {
     notifyListeners();
   }
 
-  double get totalPrice {
-    final double discountValue = double.tryParse(discount.text) ?? 0;
-    final double downPaymentValue = double.tryParse(downPayment.text) ?? 0;
-    final double deliveryValue = double.tryParse(delivery.text) ?? 0;
-
-    return (_basePrice - discountValue - downPaymentValue) + deliveryValue;
-  }
+  /// Live totals for [items] with the amounts typed in this form, using the
+  /// backend's formula (product discounts + this extra discount).
+  OrderTotals totalsFor(List<OrderItemModel> items) => OrderTotals.compute(
+        items: items,
+        quantityOf: (item) => item.orderedQuantity,
+        extraDiscount: double.tryParse(discount.text) ?? 0,
+        delivery: double.tryParse(delivery.text) ?? 0,
+        downPayment: double.tryParse(downPayment.text) ?? 0,
+      );
 
   void _onFieldChanged() {
     notifyListeners();
@@ -65,7 +59,6 @@ class UpdatePaymentDetails extends ChangeNotifier {
   }
 
   void clearPaymentDetails (){
-    downPayment.clear();
     downPayment.clear();
     paymentMethod.clear();
     discount.clear();

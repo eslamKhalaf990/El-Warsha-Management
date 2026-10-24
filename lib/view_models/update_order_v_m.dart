@@ -11,6 +11,15 @@ class UpdateOrderVM extends ChangeNotifier {
 
   UpdateOrderVM();
   
+  /// Sets each line's per-unit product discount ([unitDiscounts] maps
+  /// productId → discount), which the backend re-applies on save.
+  void applyUnitDiscounts(Map<int, double> unitDiscounts) {
+    for (final item in orderModel.orderItems) {
+      item.unitDiscount = unitDiscounts[item.productId] ?? item.unitDiscount;
+    }
+    notifyListeners();
+  }
+
   void loadOrder(OrderModel existingOrder) {
 
     // Create a new OrderModel with the same data
@@ -77,14 +86,6 @@ class UpdateOrderVM extends ChangeNotifier {
     notifyListeners();
   }
 
-  double getTotalPrice() {
-    double itemsTotal = 0.0;
-    itemsTotal = orderModel.orderItems.fold(0, (sum, item) {
-      final unitPrice = item.unitPrice;
-      return sum + unitPrice * (item.orderedQuantity);
-    });
-    return itemsTotal;
-  }
 
   @override
   void dispose() {
