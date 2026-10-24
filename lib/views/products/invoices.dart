@@ -1,9 +1,11 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:pdfrx/pdfrx.dart';
 import 'package:printing/printing.dart';
+import 'package:provider/provider.dart';
+import 'package:warsha_app/core/network/api_client.dart';
+import 'package:warsha_app/core/network/api_exception.dart';
 import 'package:warsha_app/utils/default_text.dart';
 
 class PDFViewPage extends StatefulWidget {
@@ -26,16 +28,11 @@ class _PDFViewPageState extends State<PDFViewPage> {
 
   Future<void> _loadPdf() async {
     try {
-      final response = await http
-          .get(Uri.parse(widget.pdfPath))
-          .timeout(const Duration(seconds: 30));
-      if (response.statusCode == 200) {
-        setState(() => pdfBytes = response.bodyBytes);
-      } else {
-        setState(() => error = "Failed to load PDF with status: ${response.statusCode}");
-      }
-    } catch (e) {
-      setState(() => error = "Error loading PDF: $e");
+      // Invoices are admin-only, so they go through ApiClient to carry the token.
+      final bytes = await context.read<ApiClient>().getBytes(widget.pdfPath);
+      if (mounted) setState(() => pdfBytes = bytes);
+    } on ApiException catch (e) {
+      if (mounted) setState(() => error = e.message);
     }
   }
 
