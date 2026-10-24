@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:warsha_app/controllers/navigation.dart';
 import 'package:warsha_app/utils/app_bar_widget.dart';
 import 'package:warsha_app/utils/const_values.dart';
+import 'package:warsha_app/view_models/user_v_m.dart';
 import '../utils/default_text.dart';
 
 // A breakpoint to decide when to switch from mobile to desktop layout
@@ -189,6 +190,14 @@ class _SideNavRail extends StatelessWidget {
                 ],
               ),
             ),
+          ),
+
+          // 3. Log out, pinned to the bottom
+          _NavigationItem(
+            title: 'Log out',
+            icon: Iconsax.logout,
+            isSelected: false,
+            onTap: () => context.read<UserViewModel>().logout(),
           ),
         ],
       ),

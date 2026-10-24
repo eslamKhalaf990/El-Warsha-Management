@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:warsha_app/core/network/api_client.dart';
 import 'package:warsha_app/controllers/add_order/add_customer.dart';
 import 'package:warsha_app/controllers/add_order/add_product.dart';
 import 'package:warsha_app/controllers/drag_drop_controller.dart';
@@ -28,8 +29,7 @@ import 'package:warsha_app/view_models/update_order_v_m.dart';
 import 'package:warsha_app/view_models/update_product_v_m.dart';
 import 'package:warsha_app/view_models/user_v_m.dart';
 import 'package:warsha_app/view_models/vendors_v_m.dart';
-import 'package:warsha_app/views/auth/login.dart';
-import 'package:warsha_app/views/home.dart';
+import 'package:warsha_app/views/auth/auth_gate.dart';
 import 'controllers/add_order/add_payment.dart';
 import 'controllers/filter_orders.dart';
 import 'controllers/transaction_provider.dart';
@@ -37,134 +37,134 @@ import 'controllers/update_order/update_product.dart';
 import 'view_models/order_v_m.dart';
 
 void main() {
-    runApp(
-      MultiProvider(
-        providers: [
-          ChangeNotifierProvider(create: (_)=> DragDropController()),
-          ChangeNotifierProvider(create: (_)=> UpdateDragDropController()),
-          ChangeNotifierProvider(create: (_)=> ProductProvider()),
-          ChangeNotifierProvider(create: (_)=> Navigation()),
-          ChangeNotifierProvider(create: (_)=> CustomerProvider()),
-          ChangeNotifierProvider(create: (_)=> UpdateCustomerProvider()),
-          ChangeNotifierProvider(create: (_)=> UpdatePaymentDetails()),
-          ChangeNotifierProvider(create: (_)=> UpdateProductProvider()),
-          ChangeNotifierProvider(create: (_)=> PaymentProvider()),
-          ChangeNotifierProvider(create: (_)=> GovernorateProvider()),
-          ChangeNotifierProvider(create: (_) => TransactionsProvider()),
+  WidgetsFlutterBinding.ensureInitialized();
 
-          //providers used for dependency injection
-          Provider<ProductService>(create: (_) => ProductService()),
-          Provider<VendorService>(create: (_) => VendorService()),
-          Provider<CategoryService>(create: (_) => CategoryService()),
-          Provider<ShippingZoneService>(create: (_) => ShippingZoneService()),
-          Provider<AccountingService>(create: (_) => AccountingService()),
-          Provider<HomeService>(create: (_) => HomeService()),
-          Provider<UserService>(create: (_) => UserService()),
-          Provider<OrdersService>(create: (_) => OrdersService()),
-          Provider<CustomerService>(create: (_) => CustomerService()),
+  // App-lifetime objects: the HTTP client and the login session.
+  final apiClient = ApiClient();
+  final userViewModel = UserViewModel(UserService(apiClient));
+  apiClient
+    ..tokenProvider = (() => userViewModel.isAuthenticated ? userViewModel.token : null)
+    ..onUnauthorized = userViewModel.handleSessionExpired;
+  userViewModel.restoreSession();
 
-          Provider<OrdersService>(
-            create: (_) => OrdersService()
-          ),
-
-
-          ChangeNotifierProvider<UserViewModel>(
-            create: (context) => UserViewModel(
-              context.read<UserService>(),
-            ),
-          ),
-
-          // 2. Provide the ChangeNotifier (ViewModel)
-          // It depends on OrderService and fetches data immediately.
-          ChangeNotifierProvider<OrderVM>(
-            create: (context) => OrderVM(
-              context.read<OrdersService>(),
-              context.read<UserViewModel>(),
-            )..fetchOrders(),
-          ),
-
-          //injecting product with api services
-          ChangeNotifierProvider<ProductVM>(
-            create: (context) => ProductVM(
-              context.read<ProductService>(),
-              context.read<UserViewModel>(),
-            ),
-          ),
-
-          //injecting product with api services
-          ChangeNotifierProvider<VendorVM>(
-            create: (context) => VendorVM(
-              context.read<VendorService>(),
-              context.read<UserViewModel>(),
-            ),
-          ),
-
-          //injecting category with api services
-          ChangeNotifierProvider<CategoryVM>(
-            create: (context) => CategoryVM(
-              context.read<CategoryService>(),
-              context.read<UserViewModel>(),
-            ),
-          ),
-
-          //injecting shipping zones with api services
-          ChangeNotifierProvider<ShippingZoneVM>(
-            create: (context) => ShippingZoneVM(
-              context.read<ShippingZoneService>(),
-              context.read<UserViewModel>(),
-            ),
-          ),
-
-          //injecting product with api services
-          ChangeNotifierProvider<AddOrderVM>(
-            create: (context) => AddOrderVM(
-              context.read<OrdersService>(),
-              context.read<UserViewModel>(),
-            ),
-          ),
-
-          //injecting product with api services
-          ChangeNotifierProvider<UpdateOrderVM>(
-            create: (context) => UpdateOrderVM(
-              context.read<OrdersService>(),
-              context.read<UserViewModel>(),
-            ),
-          ),
-
-          //injecting product with api services
-          ChangeNotifierProvider<UpdateProductVM>(
-            create: (context) => UpdateProductVM(
-              context.read<ProductService>(),
-              context.read<UserViewModel>(),
-
-            ),
-          ),
-
-          //injecting customer with api services
-          ChangeNotifierProvider<CustomerVM>(
-            create: (context) => CustomerVM(
-              context.read<CustomerService>(),
-              context.read<UserViewModel>(),
-            ),
-          ),
-
-          ChangeNotifierProvider<HomeVM>(
-            create: (context) => HomeVM(
-              context.read<HomeService>(),
-              context.read<UserViewModel>(),
-            ),
-          ),
-
-          ChangeNotifierProvider<AccountingVM>(
-            create: (context) => AccountingVM(
-              context.read<AccountingService>(),
-              context.read<UserViewModel>(),
-            ),
-          ),
-        ],
-        child: const MyApp(),
-      ),
+  runApp(
+    MultiProvider(
+      providers: [
+        Provider<ApiClient>.value(value: apiClient),
+        ChangeNotifierProvider<UserViewModel>.value(value: userViewModel),
+      ],
+      child: const MyApp(),
+    ),
   );
+}
+
+/// Everything that holds data for the logged-in user. It is rebuilt from
+/// scratch whenever [UserViewModel.sessionEpoch] changes (login / logout), so
+/// nothing leaks from one session into the next.
+class SessionScope extends StatelessWidget {
+  const SessionScope({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final epoch = context.select<UserViewModel, int>((vm) => vm.sessionEpoch);
+    return MultiProvider(
+      key: ValueKey(epoch),
+      providers: [
+        ChangeNotifierProvider(create: (_) => DragDropController()),
+        ChangeNotifierProvider(create: (_) => UpdateDragDropController()),
+        ChangeNotifierProvider(create: (_) => ProductProvider()),
+        ChangeNotifierProvider(create: (_) => Navigation()),
+        ChangeNotifierProvider(create: (_) => CustomerProvider()),
+        ChangeNotifierProvider(create: (_) => UpdateCustomerProvider()),
+        ChangeNotifierProvider(create: (_) => UpdatePaymentDetails()),
+        ChangeNotifierProvider(create: (_) => UpdateProductProvider()),
+        ChangeNotifierProvider(create: (_) => PaymentProvider()),
+        ChangeNotifierProvider(create: (_) => GovernorateProvider()),
+        ChangeNotifierProvider(create: (_) => TransactionsProvider()),
+
+        // Services
+        Provider<ProductService>(create: (_) => ProductService()),
+        Provider<VendorService>(create: (_) => VendorService()),
+        Provider<CategoryService>(create: (_) => CategoryService()),
+        Provider<ShippingZoneService>(create: (_) => ShippingZoneService()),
+        Provider<AccountingService>(create: (_) => AccountingService()),
+        Provider<HomeService>(create: (_) => HomeService()),
+        Provider<OrdersService>(create: (_) => OrdersService()),
+        Provider<CustomerService>(create: (_) => CustomerService()),
+
+        // View models
+        ChangeNotifierProvider<OrderVM>(
+          create: (context) => OrderVM(
+            context.read<OrdersService>(),
+            context.read<UserViewModel>(),
+          )..fetchOrders(),
+        ),
+        ChangeNotifierProvider<ProductVM>(
+          create: (context) => ProductVM(
+            context.read<ProductService>(),
+            context.read<UserViewModel>(),
+          ),
+        ),
+        ChangeNotifierProvider<VendorVM>(
+          create: (context) => VendorVM(
+            context.read<VendorService>(),
+            context.read<UserViewModel>(),
+          ),
+        ),
+        ChangeNotifierProvider<CategoryVM>(
+          create: (context) => CategoryVM(
+            context.read<CategoryService>(),
+            context.read<UserViewModel>(),
+          ),
+        ),
+        ChangeNotifierProvider<ShippingZoneVM>(
+          create: (context) => ShippingZoneVM(
+            context.read<ShippingZoneService>(),
+            context.read<UserViewModel>(),
+          ),
+        ),
+        ChangeNotifierProvider<AddOrderVM>(
+          create: (context) => AddOrderVM(
+            context.read<OrdersService>(),
+            context.read<UserViewModel>(),
+          ),
+        ),
+        ChangeNotifierProvider<UpdateOrderVM>(
+          create: (context) => UpdateOrderVM(
+            context.read<OrdersService>(),
+            context.read<UserViewModel>(),
+          ),
+        ),
+        ChangeNotifierProvider<UpdateProductVM>(
+          create: (context) => UpdateProductVM(
+            context.read<ProductService>(),
+            context.read<UserViewModel>(),
+          ),
+        ),
+        ChangeNotifierProvider<CustomerVM>(
+          create: (context) => CustomerVM(
+            context.read<CustomerService>(),
+            context.read<UserViewModel>(),
+          ),
+        ),
+        ChangeNotifierProvider<HomeVM>(
+          create: (context) => HomeVM(
+            context.read<HomeService>(),
+            context.read<UserViewModel>(),
+          ),
+        ),
+        ChangeNotifierProvider<AccountingVM>(
+          create: (context) => AccountingVM(
+            context.read<AccountingService>(),
+            context.read<UserViewModel>(),
+          ),
+        ),
+      ],
+      child: child,
+    );
+  }
 }
 
 ThemeData onyxTheme = ThemeData(
@@ -300,35 +300,16 @@ ThemeData onyxTheme = ThemeData(
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'El Warsha ERP',
-      // theme: ThemeData(
-      //   fontFamily: 'cairo',
-      //   textSelectionTheme: TextSelectionThemeData(
-      //     cursorColor: Colors.blue.shade400,
-      //     selectionColor: Colors.blue.shade400.withAlpha(50),
-      //     selectionHandleColor: Colors.blue.shade400.withAlpha(50),
-      //   ),
-      //   colorScheme: ColorScheme.light(
-      //     onPrimary: Colors.white.withAlpha(200),
-      //     secondary: Colors.blue.shade400,
-      //     onSurface: Colors.grey.shade700,
-      //     onSecondary: Colors.grey.shade400,
-      //     surface: Colors.grey.shade50,
-      //     primary: Colors.grey.shade100,
-      //   ),
-      // ),
-
       theme: onyxTheme,
       navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
-      home: Login(),
-      routes: {
-        '/home': (context) => const Home(),
-      },
+      // Session providers wrap the navigator so every route can read them.
+      builder: (context, child) => SessionScope(child: child!),
+      home: const AuthGate(),
     );
   }
 }

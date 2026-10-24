@@ -1,36 +1,23 @@
-import 'dart:async';
-import 'dart:convert';
-import 'package:flutter/cupertino.dart';
-import 'package:http/http.dart' as http;
-import 'package:warsha_app/utils/const_values.dart';
-import 'base_url.dart';
+import 'package:warsha_app/core/network/api_client.dart';
+import 'package:warsha_app/core/network/api_exception.dart';
 
 class UserService {
-  Future<http.Response> login (String username, String password) async {
-    debugPrint("login using $username account");
-    http.Response response;
-    try {
-      response = await http.post(
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-          },
-          Uri.parse(
-            Baseurl.loginApi,
-          ),
-          body: jsonEncode({
-            "username": username,
-            "password": password,
-          })
-      ).timeout(const Duration(seconds: Constants.TIMEOUT));
+  UserService(this._api);
 
-    } on TimeoutException {
-      throw Exception('The request timed out. Please try again later.');
-    } catch (e) {
-      throw Exception('Failed to login with these credentials: $e');
+  final ApiClient _api;
+
+  /// Logs an ERP user in and returns the JWT.
+  ///
+  /// Throws [ApiException] (e.g. `INVALID_CREDENTIALS`, `NETWORK_ERROR`).
+  Future<String> login(String username, String password) async {
+    final body = await _api.post('auth/login', body: {
+      'username': username,
+      'password': password,
+    });
+    final token = body is Map ? body['token'] : null;
+    if (token is! String || token.isEmpty) {
+      throw ApiException.badResponse(200);
     }
-    return response;
-
-
+    return token;
   }
 }
