@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:warsha_app/models/account_balance.dart';
-import 'package:warsha_app/models/create_order_request.dart';
+import 'package:warsha_app/models/order_request.dart';
 
 // Models & Values
 import 'package:warsha_app/models/orderItemModel.dart';
@@ -669,7 +669,7 @@ class OrderSummaryCard extends StatelessWidget {
     final double downPaymentAmount =
         double.tryParse(payment.downPayment.text) ?? 0.0;
 
-    String? bankAccountIdStr;
+    int? bankAccountId;
 
     // Logic Fix: Only ask for Bank Account if there is a down payment
     if (downPaymentAmount > 0) {
@@ -687,14 +687,14 @@ class OrderSummaryCard extends StatelessWidget {
         }
         return;
       }
-      bankAccountIdStr = bankAccount.id.toString();
+      bankAccountId = bankAccount.id;
     }
 
     try {
       // Map Items
-      final List<CreateOrderItem> itemsToCreate =
+      final List<OrderLineRequest> itemsToCreate =
           addOrderVM.orderModel.orderItems.map((item) {
-        return CreateOrderItem(
+        return OrderLineRequest(
           productId: item.productId,
           quantity: item.quantityToOrder,
           unitPrice: item.unitPrice,
@@ -702,17 +702,16 @@ class OrderSummaryCard extends StatelessWidget {
       }).toList();
 
       // Build Request
-      final CreateOrderRequest request = CreateOrderRequest(
+      final OrderRequest request = OrderRequest(
         customerId: addOrderVM.orderModel.customer!.customerId,
         delivery: deliveryCost,
         discount: discountAmount,
-        downPayment: payment.downPayment
-            .text,
+        downPayment: downPaymentAmount,
         notes: payment.notes.text,
         orderSource: payment.platformSource.text,
         paymentMethod: payment.paymentMethod.text,
         items: itemsToCreate,
-        bankAccountId: bankAccountIdStr ?? "0",
+        bankAccountId: bankAccountId,
       );
 
       final bool success = await orderVM.addOrder(request);

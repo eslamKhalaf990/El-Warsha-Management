@@ -23,12 +23,7 @@ class Baseurl {
   /// ===============   Customers APIs    ============== ///
 
   /// ===============   Orders APIs    ============== ///
-  static String getAllOrderAPI = '${baseURL}orders';
-  static String addOrderAPI = '${baseURL}orders';
-  static String updateOrderAPI = '${baseURL}orders';
-  static String deleteOrderAPI = '${baseURL}orders';
-  static String cancelOrderAPI = '${baseURL}orders/cancel';
-  static String countGovernoratePerOrderAPI = '${baseURL}orders/countGovernorates';
+  // Order endpoints live in OrdersService (relative to baseURL).
   static String invoiceAPI = '${baseURL}invoice/pdf';
   /// ===============   Orders APIs    ============== ///
 

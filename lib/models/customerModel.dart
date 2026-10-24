@@ -1,3 +1,5 @@
+import 'json_read.dart';
+
 class CustomerModel {
   final int customerId;
   final String fullName;
@@ -17,16 +19,15 @@ class CustomerModel {
     required this.address,
   });
 
-  // Manual fromJson
   factory CustomerModel.fromJson(Map<String, dynamic> json) {
     return CustomerModel(
-      customerId: json['customerId'] ?? json['id'],
-      fullName: json['fullName'] as String? ?? '',
-      governorate: json['governorate'] as String? ?? '',
-      phone: json['phone'] as String? ?? '',
-      address: json['address'] as String? ?? '',
-      secondaryPhone: json['secondaryPhone'] as String? ?? '',
-      city: json['city'] as String? ?? '',
+      customerId: readInt(json['customerId'] ?? json['id']) ?? 0,
+      fullName: readString(json['fullName']),
+      governorate: readString(json['governorate']),
+      phone: readString(json['phone']),
+      address: readString(json['address']),
+      secondaryPhone: readString(json['secondaryPhone']),
+      city: readString(json['city']),
     );
   }
 }

@@ -45,7 +45,7 @@ Future<void> exportToExcel(List<OrderModel> orders) async {
     final int rowIndex = i + 2; // +1 for 1-based index, +1 to skip header
 
     sheet.getRangeByName('A$rowIndex').setValue(order.orderId ?? 'N/A');
-    sheet.getRangeByName('B$rowIndex').setText(order.status ?? 'Unknown');
+    sheet.getRangeByName('B$rowIndex').setText(order.status?.label ?? 'Unknown');
 
     sheet.getRangeByName('C$rowIndex').setText(order.customer?.fullName ?? 'N/A');
     sheet.getRangeByName('D$rowIndex').setText(order.customer?.phone ?? 'N/A');

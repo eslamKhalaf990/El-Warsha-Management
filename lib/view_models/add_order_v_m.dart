@@ -214,8 +214,6 @@
 //   }
 // }
 
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:warsha_app/models/customerModel.dart';
 import 'package:warsha_app/models/order_governorate_count.dart';
@@ -223,11 +221,10 @@ import 'package:warsha_app/models/order_governorate_count.dart';
 import 'package:warsha_app/models/orderItemModel.dart';
 import 'package:warsha_app/models/orderModel.dart';
 import 'package:warsha_app/services/orders_service.dart';
-import 'package:warsha_app/view_models/user_v_m.dart';
+import 'package:warsha_app/core/network/api_exception.dart';
 
 class AddOrderVM extends ChangeNotifier {
   final OrdersService _orderService;
-  final UserViewModel _userViewModel;
 
   // This is the "cart" or "builder" object for the new order
   OrderModel orderModel =
@@ -235,7 +232,7 @@ class AddOrderVM extends ChangeNotifier {
   Future<List<GovernorateCountPerOrder>>? allCounts;
   final TextEditingController searchController = TextEditingController();
 
-  AddOrderVM(this._orderService, this._userViewModel) {
+  AddOrderVM(this._orderService) {
     searchController.addListener(() {
       notifyListeners();
     });
@@ -247,22 +244,10 @@ class AddOrderVM extends ChangeNotifier {
     debugPrint("getGovernorateCounts called");
     List<GovernorateCountPerOrder> governorateCounts = [];
     try {
-      final response =
-          await _orderService.getGovernorateCounts(_userViewModel.token);
-
-      if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        governorateCounts = data
-            .map((item) => GovernorateCountPerOrder.fromJson(item))
-            .toList();
-      } else {
-        debugPrint(
-            "Failed to fetch governorate counts: ${response.statusCode}");
-      }
-    } catch (e) {
+      governorateCounts = await _orderService.countsByGovernorate();
+    } on ApiException catch (e) {
       debugPrint("Error fetching governorate counts: $e");
     } finally {
-      // isLoading = false;
       notifyListeners();
     }
     return governorateCounts;
@@ -314,8 +299,7 @@ class AddOrderVM extends ChangeNotifier {
   double getTotalPrice() {
     double itemsTotal = 0.0;
     itemsTotal = orderModel.orderItems.fold(0, (sum, item) {
-      final unitPrice = item.unitPrice ?? 0;
-      return sum + unitPrice * (item.quantity);
+      return sum + item.unitPrice * item.quantityToOrder;
     });
     return itemsTotal;
   }

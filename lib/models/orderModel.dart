@@ -1,37 +1,55 @@
 import 'customerModel.dart';
+import 'json_read.dart';
 import 'orderItemModel.dart';
+import 'order_status.dart';
 
+/// An order as returned by the backend's OrderResponse.
 class OrderModel {
-  final int? orderId; // CHANGED: Now nullable
-  String? status; // CHANGED: Now nullable
-  final String? customerId;
+  final int? orderId;
+  OrderStatus? status;
+
+  /// Statuses the backend allows next; empty once Completed or Cancelled.
+  final List<OrderStatus> allowedNextStatuses;
+
+  /// Total discount: product discounts + [extraDiscount].
   final double discount;
+
+  /// Discount typed by staff on top of product discounts (what edit forms show).
+  final double extraDiscount;
   final double delivery;
-  final String? notes; // CHANGED: Now nullable
-  final double? totalPrice; // CHANGED: Now nullable
-  final double? downPayment; // CHANGED: Now nullable
-  final String? orderSource; // CHANGED: Now nullable
-  final String? paymentMethod; // CHANGED: Now nullable
-  final DateTime? orderDate; // CHANGED: Now nullable
-  final CustomerModel? customer; // CHANGED: Now nullable
+  final String? notes;
+
+  /// Amount still to collect (grand total − down payment). Same as [amountDue].
+  final double? totalPrice;
+
+  /// Items total − discounts + delivery.
+  final double? grandTotal;
+  final double? downPayment;
+  final String? orderSource;
+  final String? paymentMethod;
+  final DateTime? orderDate;
+  final CustomerModel? customer;
   final List<OrderItemModel> orderItems;
 
-  // CHANGED: Constructor now uses default values and doesn't require all fields
   OrderModel({
-    this.customerId,
     this.orderId,
     this.status,
+    this.allowedNextStatuses = const [],
     this.discount = 0.0,
+    this.extraDiscount = 0.0,
     this.delivery = 0.0,
     this.notes,
     this.totalPrice,
+    this.grandTotal,
     this.downPayment,
     this.orderSource,
     this.paymentMethod,
     this.orderDate,
     this.customer,
-    required this.orderItems, // Only 'orderItems' is truly required
+    required this.orderItems,
   });
+
+  double? get amountDue => totalPrice;
 
   OrderModel copyWith({
     CustomerModel? customer,
@@ -45,73 +63,48 @@ class OrderModel {
     String? paymentMethod,
     DateTime? orderDate,
     int? orderId,
-    String? status,
+    OrderStatus? status,
   }) {
     return OrderModel(
       customer: customer ?? this.customer,
       orderItems: orderItems ?? this.orderItems,
       discount: discount ?? this.discount,
+      extraDiscount: extraDiscount,
       delivery: delivery ?? this.delivery,
       notes: notes ?? this.notes,
       totalPrice: totalPrice ?? this.totalPrice,
+      grandTotal: grandTotal,
       downPayment: downPayment ?? this.downPayment,
       orderSource: orderSource ?? this.orderSource,
       paymentMethod: paymentMethod ?? this.paymentMethod,
       orderDate: orderDate ?? this.orderDate,
       orderId: orderId ?? this.orderId,
       status: status ?? this.status,
+      allowedNextStatuses: allowedNextStatuses,
     );
   }
 
-  // Your fromJson is already excellent and safe! No changes needed.
   factory OrderModel.fromJson(Map<String, dynamic> json) {
-    var itemsList = json['orderItems'] as List? ?? [];
-    List<OrderItemModel> items =
-        itemsList.map((itemJson) => OrderItemModel.fromJson(itemJson)).toList();
-
+    final customer = readMap(json['customer']);
+    final allowed = json['allowedNextStatuses'];
     return OrderModel(
-      orderId: json['orderId'] as int?, // Now nullable
-      status: json['status'] as String?, // Now nullable
-      discount: (json['discount'] as num? ?? 0).toDouble(),
-      delivery: (json['delivery'] as num? ?? 0).toDouble(),
-      notes: json['notes'] as String?, // Now nullable
-      totalPrice: (json['totalPrice'] as num?)?.toDouble(), // Now nullable
-      downPayment: (json['downPayment'] as num?)?.toDouble(), // Now nullable
-      orderSource: json['orderSource'] as String?, // Now nullable
-      paymentMethod: json['paymentMethod'] as String?, // Now nullable
-      orderDate:
-          DateTime.tryParse(json['orderDate'] as String? ?? ''), // Now nullable
-      customer: json['customer'] == null
-          ? null // Now nullable
-          : CustomerModel.fromJson(json['customer'] as Map<String, dynamic>),
-      orderItems: items,
+      orderId: readInt(json['orderId']),
+      status: OrderStatus.tryParse(json['status']),
+      allowedNextStatuses: allowed is List
+          ? allowed.map(OrderStatus.tryParse).whereType<OrderStatus>().toList()
+          : const [],
+      discount: readDouble(json['discount']),
+      extraDiscount: readDouble(json['extraDiscount']),
+      delivery: readDouble(json['delivery']),
+      notes: readStringOrNull(json['notes']),
+      totalPrice: readDoubleOrNull(json['amountDue'] ?? json['totalPrice']),
+      grandTotal: readDoubleOrNull(json['grandTotal']),
+      downPayment: readDoubleOrNull(json['downPayment']),
+      orderSource: readStringOrNull(json['orderSource']),
+      paymentMethod: readStringOrNull(json['paymentMethod']),
+      orderDate: readDate(json['orderDate']),
+      customer: customer == null ? null : CustomerModel.fromJson(customer),
+      orderItems: readList(json['orderItems']).map(OrderItemModel.fromJson).toList(),
     );
-  }
-
-  // Your toJson is also perfect for creating a new order. No changes needed.
-  Map<String, dynamic> toJson() {
-    return {
-      'customerId': customer?.customerId, // Use safe operator
-      'downPayment': downPayment,
-      'delivery': delivery,
-      'notes': notes,
-      'orderSource': orderSource,
-      'paymentMethod': paymentMethod,
-      'discount': discount,
-      'items': orderItems.map((item) => item.toJson()).toList(),
-    };
-  }
-
-  Map<String, dynamic> toUpdateJson() {
-    return {
-      'customerId': customerId,
-      'downPayment': downPayment,
-      'notes': notes,
-      'delivery': delivery,
-      'orderSource': orderSource,
-      'paymentMethod': paymentMethod,
-      'discount': discount,
-      'items': orderItems.map((item) => item.toUpdateJson()).toList(),
-    };
   }
 }

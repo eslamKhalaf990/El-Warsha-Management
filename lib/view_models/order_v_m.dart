@@ -1,16 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:warsha_app/models/create_order_request.dart';
-import 'package:warsha_app/models/orderItemModel.dart';
+import 'package:warsha_app/core/network/api_exception.dart';
+import 'package:warsha_app/models/order_request.dart';
+import 'package:warsha_app/models/order_status.dart';
 import 'package:warsha_app/services/orders_service.dart';
 import 'package:warsha_app/utils/navigator.dart';
-import 'package:warsha_app/view_models/user_v_m.dart';
 import '../models/orderModel.dart';
 
 enum ViewState { idle, loading, error }
 
 class OrderVM extends ChangeNotifier {
   final OrdersService _orderService;
-  final UserViewModel _userViewModel;
 
   TextEditingController customer = TextEditingController();
   TextEditingController status = TextEditingController();
@@ -20,7 +19,7 @@ class OrderVM extends ChangeNotifier {
   TextEditingController source = TextEditingController();
   TextEditingController paymentMethod = TextEditingController();
 
-  OrderVM(this._orderService, this._userViewModel);
+  OrderVM(this._orderService);
 
   // State
   ViewState _state = ViewState.idle;
@@ -66,217 +65,145 @@ class OrderVM extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _orders = await _orderService.fetchOrders(_userViewModel.token, startDate: DateTime.now().subtract(const Duration(days: 45)), endDate: DateTime.now());
+      final now = DateTime.now();
+      _orders = await _orderService.list(
+        from: now.subtract(const Duration(days: 45)),
+        to: now,
+      );
       _filteredOrders = List.from(_orders);
+      _errorMessage = '';
       _state = ViewState.idle;
-    } catch (e) {
-      _errorMessage = e.toString();
+    } on ApiException catch (e) {
+      _errorMessage = e.message;
       _state = ViewState.error;
     }
 
     notifyListeners();
   }
+
   // ────────────────────────────
   // ADD ORDER
   // ────────────────────────────
-  Future<bool> addOrder(CreateOrderRequest orderRequest) async {
+  Future<bool> addOrder(OrderRequest request) async {
     _isSaving = true;
     _errorMessage = '';
     _state = ViewState.idle;
     notifyListeners();
 
     try {
-      await _orderService.addOrder(orderRequest, _userViewModel.token);
-      await fetchOrders();
-      _isSaving = false;
-      ScaffoldMessenger.of(navigatorKey.currentContext!).showSnackBar(
-        const SnackBar(
-          content: Text("Order added successfully"),
-          backgroundColor: Colors.grey,
-          duration: Duration(seconds: 2),
-        ),
-      );
+      final created = await _orderService.create(request);
+      _orders.insert(0, created);
+      _filterOrders();
+      _showSnackBar("Order #${created.orderId} added successfully");
       return true;
-    } catch (e) {
-      ScaffoldMessenger.of(navigatorKey.currentContext!).showSnackBar(
-        const SnackBar(
-          content: Text("Couldn't add order successfully"),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 2),
-        ),
-      );
+    } on ApiException catch (e) {
+      _errorMessage = e.message;
+      _showSnackBar(e.message, isError: true);
+      return false;
+    } finally {
       _isSaving = false;
       notifyListeners();
-      return false;
     }
   }
 
   // ────────────────────────────
   // UPDATE ORDER
   // ────────────────────────────
-  Future<String> updateOrder({
-    required String customerID,
-    required String orderID,
-    required String delivery,
-    required String notes,
-    required String discount,
-    required String orderSource,
-    required String paymentMethod,
-    required String downPayment,
-    required List<OrderItemModel> orderItems,
-  }) async {
-    String status = "";
+  Future<bool> updateOrder(int orderId, OrderRequest request) async {
     _isSaving = true;
+    _errorMessage = '';
     notifyListeners();
 
     try {
-      final orderModel = OrderModel(
-        orderId: int.parse(orderID),
-        customerId: customerID,
-        orderItems: orderItems,
-        orderSource: orderSource,
-        downPayment: double.parse(downPayment),
-        paymentMethod: paymentMethod,
-        delivery: double.parse(delivery),
-        discount: double.parse(discount),
-        notes: notes,
-      );
-
-      final state =
-      await _orderService.updateOrder(orderModel, _userViewModel.token);
-
-      if (state.statusCode == 200) {
-        await fetchOrders();
-        status = "order_updated";
-        ScaffoldMessenger.of(navigatorKey.currentContext!).showSnackBar(
-          SnackBar(
-            content: Text("Order #$orderID updated successfully"),
-            backgroundColor: Colors.grey,
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      } else {
-        status = "order_not_updated";
-        ScaffoldMessenger.of(navigatorKey.currentContext!).showSnackBar(
-          SnackBar(
-            content: Text("Couldn't update order #$orderID"),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      }
-    } catch (e) {
-      debugPrint("Update order error: $e");
-      status = "order_not_updated";
+      _replaceOrder(await _orderService.update(orderId, request));
+      _showSnackBar("Order #$orderId updated successfully");
+      return true;
+    } on ApiException catch (e) {
+      _errorMessage = e.message;
+      _showSnackBar(e.message, isError: true);
+      return false;
     } finally {
       _isSaving = false;
       notifyListeners();
     }
-
-    return status;
   }
 
   // ────────────────────────────
   // UPDATE STATUS
   // ────────────────────────────
-  Future<String> updateOrderStatus({
-    required String orderID,
-    required String statusValue,
-    required String bankAccountId,
+  /// Cancelling goes through the cancel endpoint, which also refunds the
+  /// down payment. Completing needs the [bankAccountId] that gets paid.
+  Future<bool> updateOrderStatus({
+    required int orderId,
+    required OrderStatus status,
+    int? bankAccountId,
   }) async {
-    String status = "";
+    _isSaving = true;
+    _errorMessage = '';
+    notifyListeners();
+
     try {
-      _isSaving = true;
-      notifyListeners();
-
-      if (statusValue == "Cancelled") {
-        final response = await _orderService.cancelOrder(
-            orderID, _userViewModel.token);
-
-        if (response.statusCode == 204) {
-
-          status = "order_cancelled";
-
-          ScaffoldMessenger.of(navigatorKey.currentContext!).showSnackBar(
-            SnackBar(
-              content: Text("Order #$orderID cancelled successfully"),
-              backgroundColor: Colors.red,
-              duration: const Duration(seconds: 2),
-            ),
-          );
-          debugPrint("Order cancelled: ${response.body}");
-        } else {
-
-          status = "status_not_canceled";
-          debugPrint("Already canceled: ${response.statusCode}");
-        }
-
-      } else {
-        final response = await _orderService.updateOrderStatus(
-            orderID, statusValue, _userViewModel.token, bankAccountId);
-
-        if (response.statusCode == 200 || response.statusCode == 201) {
-          status = "status_updated";
-          debugPrint("Order status updated");
-        } else {
-          status = "status_not_updated";
-          debugPrint("Update failed: ${response.statusCode} - ${response.body}");
-        }
+      final updated = status == OrderStatus.cancelled
+          ? await _orderService.cancel(orderId)
+          : await _orderService.changeStatus(orderId, status, bankAccountId: bankAccountId);
+      _replaceOrder(updated);
+      if (status == OrderStatus.cancelled) {
+        _showSnackBar("Order #$orderId cancelled successfully", isError: true);
       }
-
-    } catch (e) {
-      status = "status_not_updated";
-      debugPrint("Error updating order status: $e");
+      return true;
+    } on ApiException catch (e) {
+      _errorMessage = e.message;
+      _showSnackBar(e.message, isError: true);
+      return false;
     } finally {
       _isSaving = false;
       notifyListeners();
     }
-
-    return status;
   }
 
   // ────────────────────────────
   // DELETE ORDER
   // ────────────────────────────
-  Future<String> deleteOrder(int id) async {
-    String state = "";
+  Future<bool> deleteOrder(int id) async {
     _isSaving = true;
     _errorMessage = '';
     notifyListeners();
-    try {
-      final response = await _orderService.deleteOrder(id, _userViewModel.token);
-      if (response.statusCode == 204) {
-        state = "deleted";
-        _orders.removeWhere((order) => order.orderId == id);
-        _filteredOrders.removeWhere((order) => order.orderId == id);
 
-        ScaffoldMessenger.of(navigatorKey.currentContext!).showSnackBar(
-          SnackBar(
-            content: Text("Order #$id deleted successfully"),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      } else {
-        state = "not_deleted";
-        debugPrint("Failed to delete order: ${response.statusCode}");
-      }
-    } catch (e) {
-      _errorMessage = e.toString();
-      ScaffoldMessenger.of(navigatorKey.currentContext!).showSnackBar(
-        SnackBar(
-          content: Text("Order #$id couldn't be deleted. ${e.toString()}"),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 2),
-        ),
-      );
-      _state = ViewState.error;
+    try {
+      await _orderService.delete(id);
+      _orders.removeWhere((order) => order.orderId == id);
+      _filteredOrders.removeWhere((order) => order.orderId == id);
+      _showSnackBar("Order #$id deleted successfully", isError: true);
+      return true;
+    } on ApiException catch (e) {
+      _errorMessage = e.message;
+      _showSnackBar(e.message, isError: true);
+      return false;
     } finally {
       _isSaving = false;
       notifyListeners();
     }
+  }
 
-    return state;
+  void _replaceOrder(OrderModel updated) {
+    int indexIn(List<OrderModel> list) => list.indexWhere((o) => o.orderId == updated.orderId);
+    final i = indexIn(_orders);
+    if (i >= 0) _orders[i] = updated;
+    final j = indexIn(_filteredOrders);
+    if (j >= 0) _filteredOrders[j] = updated;
+  }
+
+  // Moves to the views in step 6.
+  void _showSnackBar(String message, {bool isError = false}) {
+    final context = navigatorKey.currentContext;
+    if (context == null) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? Colors.red : Colors.grey,
+        duration: const Duration(seconds: 2),
+      ),
+    );
   }
 
   // ────────────────────────────
@@ -348,7 +275,7 @@ class OrderVM extends ChangeNotifier {
           String target = '';
           switch (key) {
             case 'status':
-              target = order.status?.toLowerCase() ?? '';
+              target = order.status?.label.toLowerCase() ?? '';
               break;
             case 'customer':
               target = order.customer?.fullName.toLowerCase() ?? '';

@@ -91,15 +91,14 @@ class SessionScope extends StatelessWidget {
         Provider<ShippingZoneService>(create: (_) => ShippingZoneService()),
         Provider<AccountingService>(create: (_) => AccountingService()),
         Provider<HomeService>(create: (_) => HomeService()),
-        Provider<OrdersService>(create: (_) => OrdersService()),
+        Provider<OrdersService>(
+          create: (context) => OrdersService(context.read<ApiClient>()),
+        ),
         Provider<CustomerService>(create: (_) => CustomerService()),
 
         // View models
         ChangeNotifierProvider<OrderVM>(
-          create: (context) => OrderVM(
-            context.read<OrdersService>(),
-            context.read<UserViewModel>(),
-          )..fetchOrders(),
+          create: (context) => OrderVM(context.read<OrdersService>())..fetchOrders(),
         ),
         ChangeNotifierProvider<ProductVM>(
           create: (context) => ProductVM(
@@ -126,16 +125,10 @@ class SessionScope extends StatelessWidget {
           ),
         ),
         ChangeNotifierProvider<AddOrderVM>(
-          create: (context) => AddOrderVM(
-            context.read<OrdersService>(),
-            context.read<UserViewModel>(),
-          ),
+          create: (context) => AddOrderVM(context.read<OrdersService>()),
         ),
         ChangeNotifierProvider<UpdateOrderVM>(
-          create: (context) => UpdateOrderVM(
-            context.read<OrdersService>(),
-            context.read<UserViewModel>(),
-          ),
+          create: (_) => UpdateOrderVM(),
         ),
         ChangeNotifierProvider<UpdateProductVM>(
           create: (context) => UpdateProductVM(

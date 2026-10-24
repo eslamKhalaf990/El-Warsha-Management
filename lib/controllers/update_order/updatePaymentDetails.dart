@@ -29,9 +29,11 @@ class UpdatePaymentDetails extends ChangeNotifier {
 
 
   void loadPayment(OrderModel existingOrder) {
-    downPayment.text = existingOrder.downPayment.toString();
+    downPayment.text = (existingOrder.downPayment ?? 0).toString();
     paymentMethod.text = existingOrder.paymentMethod ?? "-";
-    discount.text = existingOrder.discount.toString();
+    // Only the extra discount is editable; product discounts are re-applied
+    // by the backend, so showing the total here would apply them twice.
+    discount.text = existingOrder.extraDiscount.toString();
     platformSource.text = existingOrder.orderSource ?? "-";
     delivery.text = existingOrder.delivery.toString();
     notes.text = existingOrder.notes ?? "-";

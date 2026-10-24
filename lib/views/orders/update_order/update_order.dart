@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:warsha_app/controllers/add_order/add_customer.dart';
 import 'package:warsha_app/controllers/update_order/updatePaymentDetails.dart';
 import 'package:warsha_app/models/orderModel.dart';
+import 'package:warsha_app/models/order_request.dart';
 import 'package:warsha_app/view_models/order_v_m.dart';
 import 'package:warsha_app/utils/const_values.dart';
 import 'package:warsha_app/utils/deafualt_form_field.dart';
@@ -66,19 +67,31 @@ class UpdateOrder extends StatelessWidget {
                                         ? null
                                         : () async {
                                             final customer = orderVM.orderModel.customer;
-                                            if (customer == null) return;
+                                            final orderId = orderVM.orderModel.orderId;
+                                            if (customer == null || orderId == null) return;
 
-                                            await Provider.of<OrderVM>(context, listen: false).updateOrder(
-                                              orderID: orderVM.orderModel.orderId.toString(),
-                                              customerID: customer.customerId.toString(),
-                                              orderItems: orderVM.orderModel.orderItems,
-                                              delivery: payment.delivery.text,
-                                              downPayment: payment.downPayment.text,
-                                              discount: payment.discount.text,
+                                            // No bankAccountId: the backend keeps the
+                                            // down payment in its original account.
+                                            final request = OrderRequest(
+                                              customerId: customer.customerId,
+                                              items: orderVM.orderModel.orderItems
+                                                  .map((item) => OrderLineRequest(
+                                                        productId: item.productId,
+                                                        quantity: item.orderedQuantity,
+                                                        unitPrice: item.unitPrice,
+                                                      ))
+                                                  .toList(),
+                                              delivery: double.tryParse(payment.delivery.text) ?? 0,
+                                              downPayment: double.tryParse(payment.downPayment.text) ?? 0,
+                                              discount: double.tryParse(payment.discount.text) ?? 0,
                                               notes: payment.notes.text,
                                               paymentMethod: payment.paymentMethod.text,
                                               orderSource: payment.platformSource.text,
                                             );
+
+                                            final updated = await Provider.of<OrderVM>(context, listen: false)
+                                                .updateOrder(orderId, request);
+                                            if (!updated || !context.mounted) return;
 
                                             Navigator.pop(context);
                                             payment.clearPaymentDetails();

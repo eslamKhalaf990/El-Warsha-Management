@@ -1,19 +1,15 @@
 import 'package:flutter/cupertino.dart';
 import 'package:warsha_app/models/orderItemModel.dart';
 import 'package:warsha_app/models/orderModel.dart';
-import 'package:warsha_app/services/orders_service.dart';
-import 'package:warsha_app/view_models/user_v_m.dart';
 
 import '../models/customerModel.dart' show CustomerModel;
 
 class UpdateOrderVM extends ChangeNotifier {
-  final OrdersService _orderService;
-  final UserViewModel _userViewModel;
   OrderModel orderModel = OrderModel(orderItems: []);
 
   bool isLoading = false;
 
-  UpdateOrderVM(this._orderService, this._userViewModel);
+  UpdateOrderVM();
   
   void loadOrder(OrderModel existingOrder) {
 
@@ -27,6 +23,9 @@ class UpdateOrderVM extends ChangeNotifier {
       customer: existingOrder.customer,
       orderId: existingOrder.orderId,
       discount: existingOrder.discount,
+      extraDiscount: existingOrder.extraDiscount,
+      grandTotal: existingOrder.grandTotal,
+      allowedNextStatuses: existingOrder.allowedNextStatuses,
       totalPrice: existingOrder.totalPrice,
       orderDate: existingOrder.orderDate,
       status: existingOrder.status,

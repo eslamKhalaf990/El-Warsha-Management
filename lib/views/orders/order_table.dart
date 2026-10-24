@@ -4,6 +4,7 @@ import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:warsha_app/models/account_balance.dart';
 import 'package:warsha_app/models/orderModel.dart';
+import 'package:warsha_app/models/order_status.dart';
 import 'package:warsha_app/view_models/accountings_v_m.dart';
 import 'package:warsha_app/view_models/add_product_v_m.dart';
 import 'package:warsha_app/view_models/order_v_m.dart';
@@ -204,7 +205,7 @@ class OrderList extends StatelessWidget {
             ),
             onSort: (columnIndex, ascending) {
               orderVM.sort<String>(
-                (order) => order.status ?? '',
+                (order) => order.status?.label ?? '',
                 columnIndex,
                 ascending,
               );
@@ -351,7 +352,7 @@ class OrderList extends StatelessWidget {
             width: 130,
             height: 25,
             child: OrderStatusDropdown(
-              currentStatus: order.status.toString(),
+              currentStatus: order.status?.label,
               onStatusChanged: (state) {
                 order.status = state;
               },
@@ -601,9 +602,9 @@ class OrderList extends StatelessWidget {
 }
 
 class OrderStatusDropdown extends StatelessWidget {
-  final String currentStatus;
+  final String? currentStatus;
   final OrderModel order;
-  final Function(String) onStatusChanged;
+  final Function(OrderStatus) onStatusChanged;
 
   const OrderStatusDropdown({
     super.key,
@@ -612,13 +613,7 @@ class OrderStatusDropdown extends StatelessWidget {
     required this.order,
   });
 
-  final List<String> statuses = const [
-    "Pending",
-    "Completed",
-    "Processing",
-    "Shipped",
-    "Cancelled",
-  ];
+  static final List<String> statuses = OrderStatus.values.map((s) => s.label).toList();
 
   @override
   Widget build(BuildContext context) {
@@ -668,13 +663,14 @@ class OrderStatusDropdown extends StatelessWidget {
           onChanged: (value) async {
             // --- 1. Guard Clauses ---
             // Always check for null or no-op conditions first.
-            if (value == null) return;
-            if (order.status == "Cancelled" || order.status == "Completed") {
+            final newStatus = OrderStatus.tryParse(value);
+            if (newStatus == null) return;
+            if (order.status?.isFinal ?? false) {
               // Don't allow changes on an already-cancelled or completed orders
               return;
             }
 
-            if (order.status == value) {
+            if (order.status == newStatus) {
               // Optional: Don't do anything if the status isn't actually changing
               return;
             }
@@ -688,19 +684,18 @@ class OrderStatusDropdown extends StatelessWidget {
                 Provider.of<AccountingVM>(context, listen: false);
             final productVM = Provider.of<ProductVM>(context, listen: false);
 
-            String bankAccountId = "0"; // Default bank account ID
-            String? state;
+            int? bankAccountId;
 
             // --- 3. Handle Status-Specific Logic ---
 
-            if (value == "Completed") {
+            if (newStatus == OrderStatus.completed) {
               final bankAccount =
                   await showTransferDialog(context, order.totalPrice ?? 0);
               // User cancelled the dialog
               if (bankAccount == null) return;
 
-              bankAccountId = bankAccount.id.toString();
-            } else if (value == "Cancelled") {
+              bankAccountId = bankAccount.id;
+            } else if (newStatus == OrderStatus.cancelled) {
               final confirm = await showCancelDialog(context);
               // User cancelled the confirmation
               if (confirm == false) return;
@@ -709,16 +704,16 @@ class OrderStatusDropdown extends StatelessWidget {
             // --- 4. Call the API ---
             // This block now runs for "Completed", "Cancelled", or any other status
             // because the specific logic (dialogs) has already been handled.
-            state = await orderVM.updateOrderStatus(
-              orderID: order.orderId.toString(),
-              statusValue: value,
-              bankAccountId: bankAccountId, // Will be "0" or the selected ID
+            final updated = await orderVM.updateOrderStatus(
+              orderId: order.orderId!,
+              status: newStatus,
+              bankAccountId: bankAccountId, // Only set when completing
             );
 
             // --- 5. Handle Success ---
             // Check for the possible success states from your VM
-            if (state == "status_updated" || state == "order_cancelled") {
-              onStatusChanged(value);
+            if (updated) {
+              onStatusChanged(newStatus);
               accountingVM.initAccounting();
               productVM.initAllProducts();
             }
