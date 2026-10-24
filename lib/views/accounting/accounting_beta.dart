@@ -17,26 +17,17 @@ class Accounting extends StatelessWidget {
     return Consumer<AccountingVM>(
       builder: (context, value, child) {
         final accountBalance = value.accountsBalance;
-        return Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.onPrimary,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withAlpha(10),
-                blurRadius: 8,
-                offset: const Offset(0, 4),
+        return Card(
+          margin: const EdgeInsets.all(16),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: accountBalance == null
+                ? Center(
+              child: SpinKitChasingDots(
+                color: Theme.of(context).colorScheme.tertiary,
               ),
-            ],
-          ),
-          child: accountBalance == null
-              ? Center(
-            child: SpinKitChasingDots(
-              color: Theme.of(context).colorScheme.tertiary,
-            ),
-          )
-              : CustomScrollView( // Changed from Column to CustomScrollView
+            )
+                : CustomScrollView( // Changed from Column to CustomScrollView
             slivers: [
               // TOP SECTION (Title, Reset, Cards)
               SliverToBoxAdapter(
@@ -58,7 +49,7 @@ class Accounting extends StatelessWidget {
                           child: Container(
                             decoration: BoxDecoration(
                               color: Colors.red.withAlpha(20),
-                              borderRadius: BorderRadius.circular(25),
+                              borderRadius: BorderRadius.circular(15),
                             ),
                             child: const Padding(
                               padding: EdgeInsets.symmetric(horizontal: 15.0, vertical: 5),
@@ -116,7 +107,7 @@ class Accounting extends StatelessWidget {
                                       style: ElevatedButton.styleFrom(
                                         // backgroundColor: Theme.of(context).colorScheme.tertiary,
                                         shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(25),
+                                          borderRadius: BorderRadius.circular(15),
                                         ),
                                       ),
                                       onPressed: () {
@@ -144,7 +135,7 @@ class Accounting extends StatelessWidget {
                           child: Container(
                             decoration: BoxDecoration(
                               color: Theme.of(context).colorScheme.tertiary.withAlpha(20),
-                              borderRadius: BorderRadius.circular(25),
+                              borderRadius: BorderRadius.circular(15),
                             ),
                             child: Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 15.0, vertical: 5),
@@ -330,10 +321,11 @@ class Accounting extends StatelessWidget {
               ),
             ],
           ),
-        );
-      },
-    );
-  }
+        ),
+      );
+    },
+  );
+}
 
   // ... (Keep _showResetDialog, _showTransactionDialog, and _buildCashCard exactly as they were in the previous corrected version) ...
   // [Paste the helper methods from the previous response here if you haven't already]
@@ -344,7 +336,7 @@ class Accounting extends StatelessWidget {
       builder: (context) {
         return AlertDialog(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(15),
           ),
           content: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 400),
@@ -365,7 +357,7 @@ class Accounting extends StatelessWidget {
                         backgroundColor: Colors.red,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(15),
                         ),
                       ),
                       onPressed: () => Navigator.pop(context),
@@ -376,7 +368,7 @@ class Accounting extends StatelessWidget {
                         backgroundColor: Colors.green,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(15),
                         ),
                       ),
                       onPressed: () async {
@@ -434,7 +426,7 @@ class Accounting extends StatelessWidget {
         return AlertDialog(
           scrollable: true,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(15),
           ),
           title: Center(
             child: Wrap(
@@ -530,7 +522,7 @@ class Accounting extends StatelessWidget {
                 backgroundColor: color,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(15),
                 ),
               ),
               onPressed: () async {
@@ -589,80 +581,84 @@ class Accounting extends StatelessWidget {
         VoidCallback? onDeposit,
         VoidCallback? onWithdraw,
       }) {
-    return Container(
-      width: width,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: color.withAlpha(20),
-        borderRadius: BorderRadius.circular(20),
+    return Card(
+      elevation: 0,
+      color: color.withAlpha(20),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(15),
+        side: BorderSide(color: color.withAlpha(40)),
       ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, color: color, size: 35),
-          const SizedBox(height: 15),
-          DefaultText(
-            txt: title,
-            color: Colors.black54,
-            size: 16,
-          ),
-          const SizedBox(height: 8),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+      child: Container(
+        width: width,
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: color, size: 35),
+            const SizedBox(height: 15),
+            DefaultText(
+              txt: title,
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+              size: 16,
+            ),
+            const SizedBox(height: 8),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  DefaultText(
+                    txt: value,
+                    color: color,
+                    size: 20,
+                    bold: true,
+                  ),
+                  const SizedBox(width: 5),
+                  DefaultText(
+                    txt: "EGP",
+                    color: color,
+                    size: 20,
+                    bold: true,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 15),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              alignment: WrapAlignment.center,
               children: [
-                DefaultText(
-                  txt: value,
-                  color: color,
-                  size: 20,
-                  bold: true,
+                OutlinedButton.icon(
+                  onPressed: onDeposit,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.green.shade500,
+                    side: BorderSide(color: Colors.green.shade500),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                  ),
+                  icon: Icon(Iconsax.add_copy, size: 16, color: Colors.green.shade500),
+                  label: Text("Deposit", style: TextStyle(color: Colors.green.shade500)),
                 ),
-                const SizedBox(width: 5),
-                DefaultText(
-                  txt: "EGP",
-                  color: color,
-                  size: 20,
-                  bold: true,
+                OutlinedButton.icon(
+                  onPressed: onWithdraw,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.red.shade500,
+                    side: BorderSide(color: Colors.red.shade500),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                  ),
+                  icon: Icon(Iconsax.minus_copy, size: 16, color: Colors.red.shade500),
+                  label: Text("Withdraw", style: TextStyle(color: Colors.red.shade500)),
                 ),
               ],
             ),
-          ),
-          const SizedBox(height: 15),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            alignment: WrapAlignment.center,
-            children: [
-              OutlinedButton.icon(
-                onPressed: onDeposit,
-                style: ElevatedButton.styleFrom(
-                  foregroundColor: Colors.green.shade500,
-                  side: BorderSide(color: Colors.green.shade500),
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(25),
-                  ),
-                ),
-                icon: Icon(Iconsax.add_copy, size: 16, color: Colors.green.shade500),
-                label: Text("Deposit", style: TextStyle(color: Colors.green.shade500)),
-              ),
-              OutlinedButton.icon(
-                onPressed: onWithdraw,
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.red.shade500,
-                  side: BorderSide(color: Colors.red.shade500),
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(25),
-                  ),
-                ),
-                icon: Icon(Iconsax.minus_copy, size: 16, color: Colors.red.shade500),
-                label: Text("Withdraw", style: TextStyle(color: Colors.red.shade500)),
-              ),
-            ],
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

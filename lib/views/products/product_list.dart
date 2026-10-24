@@ -25,12 +25,12 @@ class ProductList extends StatelessWidget {
         } else if (snapshot.hasError) {
           return Center(child: Text('Error: ${snapshot.error}'));
         } else if (snapshot.data!.isNotEmpty) {
+          final query = Provider.of<ProductVM>(context).searchController.text.toLowerCase();
           final filteredProducts = snapshot.data!.where((product) {
             final name = product.name.toLowerCase();
             final sku = product.sku?.toLowerCase() ?? "";
-            final query = Provider.of<ProductVM>(context).searchController.text.toLowerCase();
             return name.contains(query) || sku.contains(query);
-          }).toList();
+          }).take(30).toList();
           return Expanded(
             child: ListView.builder(
               itemCount: filteredProducts.length,

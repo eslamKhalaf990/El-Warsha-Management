@@ -15,38 +15,36 @@ class CustomerDetails extends StatelessWidget {
       child: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 5.0, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 5.0, vertical: 8),
             child: Row(
               children: [
                 Icon(
                   Iconsax.profile_circle_copy,
-                  color: Theme.of(context).colorScheme.tertiary,
-                  size: 22,
+                  color: Theme.of(context).colorScheme.primary,
+                  size: 18,
                 ),
-                const SizedBox(width: 5),
-                const DefaultText(
-                  txt: "Customer Name",
-                  size: 13,
+                const SizedBox(width: 8),
+                Text(
+                  "Customer Name",
+                  style: Theme.of(context).textTheme.labelLarge,
                 ),
               ],
             ),
           ),
           Container(
+            width: double.infinity,
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.tertiary.withAlpha(20),
-              borderRadius: Constants.BORDER_RADIUS_15,
+              color: Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(15),
+              border: Border.all(color: Colors.grey.shade200),
             ),
-            padding: const EdgeInsets.symmetric(horizontal: 15.0, vertical: 10),
-            child: Row(
-              children: [
-                DefaultText(
-                  txt: Provider.of<UpdateOrderVM>(context)
-                          .orderModel
-                          .customer
-                          ?.fullName ?? "-",
-                  size: 14,
-                ),
-              ],
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Text(
+              Provider.of<UpdateOrderVM>(context)
+                      .orderModel
+                      .customer
+                      ?.fullName ?? "-",
+              style: const TextStyle(fontWeight: FontWeight.w600),
             ),
           ),
         ],

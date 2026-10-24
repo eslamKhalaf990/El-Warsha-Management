@@ -35,88 +35,93 @@ class UpdateOrder extends StatelessWidget {
         extendBodyBehindAppBar: true,
         appBar: AppBar(
           backgroundColor: Colors.transparent,
-          title: const DefaultText(
-            txt: "Update Order",
+          elevation: 0,
+          title: const Text(
+            "Update Order",
+            style: TextStyle(fontWeight: FontWeight.bold),
           ),
         ),
-        body: Container(
+        body: Padding(
+          padding: const EdgeInsets.only(top: kToolbarHeight + 20),
           child: Row(
             children: [
               // Order details panel
               Expanded(
                 flex: 3,
                 child: Padding(
-                  padding: const EdgeInsets.only(top: 60, bottom: 15, left: 15),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.onPrimary,
-                      borderRadius: Constants.BORDER_RADIUS_15,
-                    ),
+                  padding: const EdgeInsets.fromLTRB(16, 0, 8, 16),
+                  child: Card(
                     child: Stack(
                       children: [
                         const UpdateOrderDetails(),
                         Align(
                           alignment: Alignment.bottomCenter,
                           child: Padding(
-                            padding: const EdgeInsets.all(20.0),
+                            padding: const EdgeInsets.all(16.0),
                             child: Row(
                               children: [
                                 Expanded(
-                                  child: DefaultButton(
-                                    onTap: () async {
-                                      final customer =
-                                          orderVM.orderModel.customer;
-                                      if (customer == null) return;
+                                  child: ElevatedButton(
+                                    onPressed: Provider.of<OrderVM>(context).isSaving
+                                        ? null
+                                        : () async {
+                                            final customer = orderVM.orderModel.customer;
+                                            if (customer == null) return;
 
-                                      await Provider.of<OrderVM>(context, listen: false).updateOrder(
-                                        orderID: orderVM.orderModel.orderId.toString(),
-                                        customerID: customer.customerId.toString(),
-                                        orderItems:
-                                        orderVM.orderModel.orderItems,
-                                        delivery: payment.delivery.text,
-                                        downPayment: payment.downPayment.text,
-                                        discount: payment.discount.text,
-                                        notes: payment.notes.text,
-                                        paymentMethod:
-                                        payment.paymentMethod.text,
-                                        orderSource:
-                                        payment.platformSource.text,
-                                      );
+                                            await Provider.of<OrderVM>(context, listen: false).updateOrder(
+                                              orderID: orderVM.orderModel.orderId.toString(),
+                                              customerID: customer.customerId.toString(),
+                                              orderItems: orderVM.orderModel.orderItems,
+                                              delivery: payment.delivery.text,
+                                              downPayment: payment.downPayment.text,
+                                              discount: payment.discount.text,
+                                              notes: payment.notes.text,
+                                              paymentMethod: payment.paymentMethod.text,
+                                              orderSource: payment.platformSource.text,
+                                            );
 
-                                      Navigator.pop(context);
-                                      payment.clearPaymentDetails();
-                                      value.clearCustomer();
-                                      Provider.of<ProductVM>(context, listen: false).initAllProducts();
-                                    },
-                                    isValid: !Provider.of<OrderVM>(context).isSaving,
-                                    isLoading: Provider.of<OrderVM>(context).isSaving,
-                                    title: "Update Order",
-                                    margin: EdgeInsets.zero,
+                                            Navigator.pop(context);
+                                            payment.clearPaymentDetails();
+                                            value.clearCustomer();
+                                            Provider.of<ProductVM>(context, listen: false).initAllProducts();
+                                          },
+                                    child: Provider.of<OrderVM>(context).isSaving
+                                        ? const SizedBox(
+                                            height: 20,
+                                            width: 20,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              color: Colors.white,
+                                            ),
+                                          )
+                                        : const Text("Update Order"),
                                   ),
                                 ),
-                                const SizedBox(width: 10),
+                                const SizedBox(width: 12),
                                 Container(
                                   padding: const EdgeInsets.symmetric(
-                                      vertical: 5.0, horizontal: 30),
+                                      vertical: 8.0, horizontal: 20),
                                   decoration: BoxDecoration(
-                                    borderRadius: Constants.BORDER_RADIUS_15,
-                                    color:
-                                        Theme.of(context).colorScheme.tertiary,
+                                    borderRadius: BorderRadius.circular(15),
+                                    color: Theme.of(context).colorScheme.primary,
                                   ),
                                   child: Column(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      const DefaultText(
-                                        txt: "Total Price",
-                                        color: Colors.white,
-                                        size: 12,
+                                      const Text(
+                                        "Total Price",
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 10,
+                                        ),
                                       ),
-                                      DefaultText(
-                                        txt:
+                                      Text(
                                         "${(Provider.of<UpdatePaymentDetails>(context).totalPrice + Provider.of<UpdateOrderVM>(context).getTotalPrice())} EGP",
-                                        color: Colors.white,
-                                        bold: true,
-                                        size: 16,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                        ),
                                       ),
                                     ],
                                   ),
@@ -135,33 +140,34 @@ class UpdateOrder extends StatelessWidget {
               Expanded(
                 flex: 3,
                 child: Padding(
-                  padding: const EdgeInsets.only(
-                      top: 60, bottom: 15, right: 7, left: 15),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.onPrimary,
-                      borderRadius: Constants.BORDER_RADIUS_15,
-                    ),
+                  padding: const EdgeInsets.fromLTRB(8, 0, 8, 16),
+                  child: Card(
                     child: Padding(
-                      padding: const EdgeInsets.all(15.0),
+                      padding: const EdgeInsets.all(16.0),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.start,
                         children: [
-                          const Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 15.0),
-                            child: Row(
-                              children: [DefaultText(txt: "Products")],
+                          Row(
+                            children: [
+                              Text(
+                                "Products",
+                                style: Theme.of(context).textTheme.titleMedium,
+                              )
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          TextField(
+                            controller: context.read<ProductVM>().searchController,
+                            decoration: const InputDecoration(
+                              hintText: 'Search For Products',
+                              prefixIcon: Icon(Icons.search, size: 20),
                             ),
+                            onChanged: (val) {
+                               // Add search logic if needed or it might be handled in VM
+                            },
                           ),
-                          const SizedBox(height: 20),
-                          DefaultForm(
-                            title: 'Search For Products',
-                            controller:
-                                context.read<ProductVM>().searchController,
-                            numberOfLines: 1,
-                          ),
-                          const SizedBox(height: 20),
-                          const ProductToUpdate(),
+                          const SizedBox(height: 16),
+                          const Expanded(child: ProductToUpdate()),
                         ],
                       ),
                     ),
@@ -173,33 +179,31 @@ class UpdateOrder extends StatelessWidget {
               Expanded(
                 flex: 3,
                 child: Padding(
-                  padding: const EdgeInsets.only(
-                      top: 60, bottom: 15, right: 15, left: 7),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.onPrimary,
-                      borderRadius: Constants.BORDER_RADIUS_15,
-                    ),
+                  padding: const EdgeInsets.fromLTRB(8, 0, 16, 16),
+                  child: Card(
                     child: Padding(
-                      padding: const EdgeInsets.all(15.0),
+                      padding: const EdgeInsets.all(16.0),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.start,
                         children: [
-                          const Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 15.0),
-                            child: Row(
-                              children: [DefaultText(txt: "Customers")],
+                          Row(
+                            children: [
+                              Text(
+                                "Customers",
+                                style: Theme.of(context).textTheme.titleMedium,
+                              )
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          TextField(
+                            controller: context.read<CustomerVM>().searchController,
+                            decoration: const InputDecoration(
+                              hintText: 'Search For Customer',
+                              prefixIcon: Icon(Icons.search, size: 20),
                             ),
                           ),
-                          const SizedBox(height: 20),
-                          DefaultForm(
-                            title: 'Search For Customer',
-                            controller:
-                                context.read<CustomerVM>().searchController,
-                            numberOfLines: 1,
-                          ),
-                          const SizedBox(height: 20),
-                          const CustomerToUpdate(),
+                          const SizedBox(height: 16),
+                          const Expanded(child: CustomerToUpdate()),
                         ],
                       ),
                     ),
@@ -209,6 +213,7 @@ class UpdateOrder extends StatelessWidget {
             ],
           ),
         ),
+
       ),
     );
   }

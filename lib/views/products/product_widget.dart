@@ -22,31 +22,26 @@ class ProductWidget extends StatelessWidget {
     final bool isOutOfStock = int.tryParse(product.quantity) != null &&
         int.parse(product.quantity) < 1;
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // Breakpoint for Mobile vs Desktop
-        bool isDesktop = constraints.maxWidth > 700;
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200, width: 1),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            // Breakpoint for Mobile vs Desktop
+            bool isDesktop = constraints.maxWidth > 600;
 
-        return Container(
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(20),
-            child: Material(
-              color: Colors.transparent,
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: isDesktop
-                    ? _buildDesktopLayout(context, isOutOfStock)
-                    : _buildMobileLayout(context, isOutOfStock),
-              ),
-            ),
-          ),
-        );
-      },
+            return isDesktop
+                ? _buildDesktopLayout(context, isOutOfStock)
+                : _buildMobileLayout(context, isOutOfStock);
+          },
+        ),
+      ),
     );
   }
 
@@ -253,7 +248,7 @@ class ProductWidget extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(15),
         child: Image.network(
-          "${Baseurl.baseURLImages}${product.image}",
+          product.image,
           width: size,
           height: size,
           fit: BoxFit.cover,

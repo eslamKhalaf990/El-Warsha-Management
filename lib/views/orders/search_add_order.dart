@@ -14,14 +14,9 @@ class CRUDOrder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 2.0),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.onPrimary.withAlpha(100),
-        borderRadius: BorderRadius.circular(20),
-      ),
+    return Card(
       child: Padding(
-        padding: const EdgeInsets.all(15.0),
+        padding: const EdgeInsets.all(12.0),
         child: LayoutBuilder(
           builder: (context, constraints) {
             // Check available width
@@ -31,16 +26,17 @@ class CRUDOrder extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // Search Bar takes full width
-                  DefaultForm(
-                    title: 'Search By Order Id or customer name',
+                  TextField(
                     controller: Provider.of<AddOrderVM>(context).searchController,
-                    onChanged: (v) {},
-                    numberOfLines: 1,
+                    decoration: const InputDecoration(
+                      hintText: 'Search By Order Id or customer name',
+                      prefixIcon: Icon(Icons.search, size: 20),
+                    ),
                   ),
-                  const SizedBox(height: 15),
+                  const SizedBox(height: 12),
                   // Buttons wrap to next line if needed
                   Wrap(
-                    alignment: WrapAlignment.spaceEvenly,
+                    alignment: WrapAlignment.start,
                     spacing: 10,
                     runSpacing: 10,
                     children: _buildActionButtons(context),
@@ -52,12 +48,12 @@ class CRUDOrder extends StatelessWidget {
               return Row(
                 children: [
                   Expanded(
-                    child: DefaultForm(
-                      title: 'Search By Order Id or customer name or phone',
-                      controller:
-                      Provider.of<AddOrderVM>(context).searchController,
-                      onChanged: (v) {},
-                      numberOfLines: 1,
+                    child: TextField(
+                      controller: Provider.of<AddOrderVM>(context).searchController,
+                      decoration: const InputDecoration(
+                        hintText: 'Search By Order Id or customer name or phone',
+                        prefixIcon: Icon(Icons.search, size: 20),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 15),
@@ -75,11 +71,8 @@ class CRUDOrder extends StatelessWidget {
   // Helper method to create the list of buttons
   List<Widget> _buildActionButtons(BuildContext context) {
     return [
-      _buildCustomButton(
-        context,
-        label: "Add Order",
-        icon: Iconsax.receipt_item,
-        onTap: () {
+      ElevatedButton.icon(
+        onPressed: () {
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -87,63 +80,17 @@ class CRUDOrder extends StatelessWidget {
             ),
           );
         },
+        icon: const Icon(Iconsax.receipt_item, size: 18),
+        label: const Text("Add Order"),
       ),
-
-      _buildCustomButton(
-        context,
-        label: "Export",
-        icon: Iconsax.document_download_copy,
-        iconColor: Colors.green,
-        onTap: () {
+      const SizedBox(width: 4),
+      OutlinedButton.icon(
+        onPressed: () {
           exportToExcel(Provider.of<OrderVM>(context, listen: false).orders);
         },
+        icon: const Icon(Iconsax.document_download_copy, size: 18, color: Colors.green),
+        label: const Text("Export"),
       ),
     ];
-  }
-
-  Widget _buildCustomButton(
-      BuildContext context, {
-        required String label,
-        required IconData icon,
-        required VoidCallback onTap,
-        Color? iconColor,
-      }) {
-    // Determine if we are on a small screen for button sizing
-    final isSmallScreen = MediaQuery.of(context).size.width < 600;
-
-    return InkWell(
-      onTap: onTap,
-      borderRadius: Constants.BORDER_RADIUS_50,
-      child: Container(
-        // Dynamic padding: smaller on mobile, larger on desktop
-        padding: EdgeInsets.symmetric(
-          vertical: 12,
-          horizontal: isSmallScreen ? 20 : 30,
-        ),
-        margin: const EdgeInsets.symmetric(horizontal: 4), // Margin for Row spacing
-        decoration: BoxDecoration(
-          borderRadius: Constants.BORDER_RADIUS_50,
-          border: Border.all(
-            color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min, // Hug content
-          children: [
-            Icon(
-              icon,
-              color: iconColor ?? Theme.of(context).colorScheme.secondary,
-              size: 20,
-            ),
-            const SizedBox(width: 8),
-            DefaultText(
-              txt: label,
-              bold: true,
-              size: 14,
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }

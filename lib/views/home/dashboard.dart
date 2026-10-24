@@ -93,7 +93,7 @@ class _SectionLabel extends StatelessWidget {
           width: 3,
           height: 14,
           decoration: BoxDecoration(
-            color: cs.tertiary,
+            color: cs.primary,
             borderRadius: BorderRadius.circular(2),
           ),
         ),
@@ -101,7 +101,7 @@ class _SectionLabel extends StatelessWidget {
         Text(
           text.toUpperCase(),
           style: TextStyle(
-            color: cs.onSurfaceVariant,
+            color: cs.onSurface,
             fontSize: 12,
             fontWeight: FontWeight.bold,
             letterSpacing: 1.1,
@@ -170,32 +170,36 @@ class _KpiCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return Container(
-      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: cs.onPrimary,
-        borderRadius: BorderRadius.circular(25),
-        border: Border.all(color: cs.outlineVariant.withAlpha(50)),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade100),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: cs.tertiary, size: 20),
-          const SizedBox(height: 10),
-          Text(
-            value,
-            style: Theme.of(context)
-                .textTheme
-                .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w700),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
-          ),
-        ],
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, color: cs.primary, size: 20),
+            const SizedBox(height: 10),
+            Text(
+              value,
+              style: Theme.of(context)
+                  .textTheme
+                  .titleMedium
+                  ?.copyWith(fontWeight: FontWeight.w700, color: cs.onSurface),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: cs.onSurfaceVariant,
+                  ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -210,92 +214,96 @@ class _RevenueChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     final reports = (vm.dailyRevenueReport ?? []);
 
     return Container(
-      height: 220,
-      padding: const EdgeInsets.fromLTRB(8, 16, 16, 8),
       decoration: BoxDecoration(
-        color: cs.surface,
-        borderRadius: BorderRadius.circular(25),
-        border: Border.all(color: cs.outlineVariant.withAlpha(25)),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade100),
       ),
-      child: reports.isEmpty
-          ? Center(
-              child:
-                  Text('No data', style: TextStyle(color: cs.onSurfaceVariant)))
-          : SfCartesianChart(
-              backgroundColor: Colors.transparent,
-              plotAreaBorderWidth: 0,
-              margin: EdgeInsets.zero,
-              primaryXAxis: DateTimeAxis(
-                labelStyle: TextStyle(color: cs.onSurfaceVariant, fontSize: 10),
-                axisLine: const AxisLine(width: 0),
-                majorGridLines: const MajorGridLines(width: 0),
-                majorTickLines: const MajorTickLines(size: 0),
-                intervalType: DateTimeIntervalType.days,
-                interval: 7,
-              ),
-              primaryYAxis: NumericAxis(
-                labelStyle: TextStyle(color: cs.onSurfaceVariant, fontSize: 10),
-                axisLine: const AxisLine(width: 0),
-                majorGridLines: MajorGridLines(
-                  width: 0.5,
-                  color: cs.outlineVariant.withAlpha(25),
-                  dashArray: const <double>[4, 4],
-                ),
-                majorTickLines: const MajorTickLines(size: 0),
-              ),
-              tooltipBehavior: TooltipBehavior(
-                enable: true,
-                format: 'point.x : EGP point.y',
-              ),
-              series: <CartesianSeries>[
-                AreaSeries<dynamic, DateTime>(
-                  dataSource: reports,
-                  xValueMapper: (r, _) => r.salesDate as DateTime,
-                  yValueMapper: (r, _) => r.netRevenue,
-                  color: cs.tertiary.withOpacity(0.1),
-                  borderColor: Colors.transparent,
-                  animationDuration: 800,
-                ),
-                SplineSeries<dynamic, DateTime>(
-                  dataSource: reports,
-                  xValueMapper: (r, _) => r.salesDate as DateTime,
-                  yValueMapper: (r, _) => r.netRevenue,
-                  color: cs.tertiary,
-                  width: 2.5,
-                  markerSettings: MarkerSettings(
-                    isVisible: true,
-                    height: 5,
-                    width: 5,
-                    color: cs.tertiary,
-                    borderColor: cs.surface,
-                    borderWidth: 2,
-                  ),
-                  animationDuration: 800,
-                  name: 'Net Revenue',
-                ),
-                SplineSeries<dynamic, DateTime>(
-                  dataSource: reports,
-                  xValueMapper: (r, _) => r.salesDate as DateTime,
-                  yValueMapper: (r, _) => r.totalDiscountsGiven,
-                  color: cs.error.withOpacity(0.6),
-                  width: 1.5,
-                  dashArray: const <double>[5, 4],
-                  markerSettings: const MarkerSettings(isVisible: false),
-                  animationDuration: 800,
-                  name: 'Discounts',
-                ),
-              ],
-              legend: Legend(
-                isVisible: true,
-                position: LegendPosition.top,
-                textStyle: TextStyle(color: cs.onSurfaceVariant, fontSize: 10),
+      child: Container(
+        height: 220,
+        padding: const EdgeInsets.fromLTRB(8, 16, 16, 8),
+        child: reports.isEmpty
+            ? Center(
+                child: Text('No data',
+                    style: Theme.of(context).textTheme.bodySmall))
+            : SfCartesianChart(
                 backgroundColor: Colors.transparent,
+                plotAreaBorderWidth: 0,
+                margin: EdgeInsets.zero,
+                primaryXAxis: DateTimeAxis(
+                  labelStyle:
+                      TextStyle(color: Colors.grey.shade600, fontSize: 10),
+                  axisLine: const AxisLine(width: 0),
+                  majorGridLines: const MajorGridLines(width: 0),
+                  majorTickLines: const MajorTickLines(size: 0),
+                  intervalType: DateTimeIntervalType.days,
+                  interval: 7,
+                ),
+                primaryYAxis: NumericAxis(
+                  labelStyle:
+                      TextStyle(color: Colors.grey.shade600, fontSize: 10),
+                  axisLine: const AxisLine(width: 0),
+                  majorGridLines: MajorGridLines(
+                    width: 0.5,
+                    color: Colors.grey.shade200,
+                    dashArray: const <double>[4, 4],
+                  ),
+                  majorTickLines: const MajorTickLines(size: 0),
+                ),
+                tooltipBehavior: TooltipBehavior(
+                  enable: true,
+                  format: 'point.x : EGP point.y',
+                ),
+                series: <CartesianSeries>[
+                  AreaSeries<dynamic, DateTime>(
+                    dataSource: reports,
+                    xValueMapper: (r, _) => r.salesDate as DateTime,
+                    yValueMapper: (r, _) => r.netRevenue,
+                    color: Theme.of(context).colorScheme.primary.withOpacity(0.05),
+                    borderColor: Colors.transparent,
+                    animationDuration: 800,
+                  ),
+                  SplineSeries<dynamic, DateTime>(
+                    dataSource: reports,
+                    xValueMapper: (r, _) => r.salesDate as DateTime,
+                    yValueMapper: (r, _) => r.netRevenue,
+                    color: Theme.of(context).colorScheme.primary,
+                    width: 2.5,
+                    markerSettings: MarkerSettings(
+                      isVisible: true,
+                      height: 5,
+                      width: 5,
+                      color: Theme.of(context).colorScheme.primary,
+                      borderColor: Colors.white,
+                      borderWidth: 2,
+                    ),
+                    animationDuration: 800,
+                    name: 'Net Revenue',
+                  ),
+                  SplineSeries<dynamic, DateTime>(
+                    dataSource: reports,
+                    xValueMapper: (r, _) => r.salesDate as DateTime,
+                    yValueMapper: (r, _) => r.totalDiscountsGiven,
+                    color: Theme.of(context).colorScheme.error.withOpacity(0.6),
+                    width: 1.5,
+                    dashArray: const <double>[5, 4],
+                    markerSettings: const MarkerSettings(isVisible: false),
+                    animationDuration: 800,
+                    name: 'Discounts',
+                  ),
+                ],
+                legend: Legend(
+                  isVisible: true,
+                  position: LegendPosition.top,
+                  textStyle:
+                      TextStyle(color: Colors.grey.shade600, fontSize: 10),
+                  backgroundColor: Colors.transparent,
+                ),
               ),
-            ),
+      ),
     );
   }
 }
@@ -309,7 +317,6 @@ class _RevenueBySourceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     final sources = vm.revenueBySource ?? [];
     if (sources.isEmpty) return const _EmptyState(message: 'No source data');
 
@@ -317,9 +324,9 @@ class _RevenueBySourceCard extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: cs.surface,
-        borderRadius: BorderRadius.circular(25),
-        border: Border.all(color: cs.outlineVariant.withAlpha(25)),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade100),
       ),
       child: Column(
         children: sources.asMap().entries.map((entry) {
@@ -336,7 +343,9 @@ class _RevenueBySourceCard extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        Icon(Iconsax.shop, color: cs.tertiary, size: 15),
+                        Icon(Iconsax.shop,
+                            color: Theme.of(context).colorScheme.primary,
+                            size: 15),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
@@ -358,7 +367,7 @@ class _RevenueBySourceCard extends StatelessWidget {
                         Text(
                           '${(pct * 100).toStringAsFixed(0)}%',
                           style: TextStyle(
-                            color: cs.tertiary,
+                            color: Theme.of(context).colorScheme.primary,
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                           ),
@@ -371,21 +380,23 @@ class _RevenueBySourceCard extends StatelessWidget {
                       child: LinearProgressIndicator(
                         value: pct,
                         minHeight: 4,
-                        backgroundColor: cs.surfaceVariant,
-                        color: cs.tertiary,
+                        backgroundColor: Colors.grey.shade100,
+                        color: Theme.of(context).colorScheme.primary,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       '${s.totalOrders} orders · avg ${_formatEGP(s.averageOrderValue)}',
-                      style:
-                          TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurfaceVariant),
                     ),
                   ],
                 ),
               ),
               if (i < sources.length - 1)
-                Divider(height: 1, color: cs.outlineVariant.withAlpha(25)),
+                Divider(height: 1, color: Colors.grey.shade100),
             ],
           );
         }).toList(),
@@ -495,29 +506,24 @@ class _SegmentPanelState extends State<_SegmentPanel> {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
     return Container(
       decoration: BoxDecoration(
-        color: cs.surface,
-        borderRadius: BorderRadius.circular(25),
-        border: Border.all(
-          color: _expanded
-              ? cs.tertiary.withAlpha(30)
-              : cs.outlineVariant.withAlpha(25),
-        ),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade100),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           InkWell(
-            borderRadius: BorderRadius.circular(25),
+            borderRadius: BorderRadius.circular(12),
             onTap: () => setState(() => _expanded = !_expanded),
             child: Padding(
               padding: const EdgeInsets.all(14),
               child: Row(
                 children: [
-                  Icon(widget.icon, color: cs.tertiary, size: 18),
+                  Icon(widget.icon,
+                      color: Theme.of(context).colorScheme.primary, size: 18),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Column(
@@ -532,8 +538,13 @@ class _SegmentPanelState extends State<_SegmentPanel> {
                         ),
                         Text(
                           '${widget.count} customers',
-                          style: TextStyle(
-                              color: cs.onSurfaceVariant, fontSize: 12),
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodySmall
+                              ?.copyWith(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant),
                         ),
                       ],
                     ),
@@ -543,14 +554,14 @@ class _SegmentPanelState extends State<_SegmentPanel> {
                         ? Iconsax.arrow_up_2_copy
                         : Iconsax.arrow_down_1_copy,
                     size: 14,
-                    color: cs.onSurfaceVariant,
+                    color: Colors.grey,
                   ),
                 ],
               ),
             ),
           ),
           if (_expanded && widget.children.isNotEmpty) ...[
-            Divider(height: 1, color: cs.outlineVariant.withAlpha(25)),
+            Divider(height: 1, color: Colors.grey.shade100),
             ...widget.children.take(5),
             if (widget.children.length > 5)
               Padding(
@@ -558,7 +569,7 @@ class _SegmentPanelState extends State<_SegmentPanel> {
                 child: Center(
                   child: Text(
                     '+${widget.children.length - 5} more',
-                    style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
+                    style: TextStyle(color: Colors.grey, fontSize: 12),
                   ),
                 ),
               ),
@@ -651,71 +662,73 @@ class _RegionChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-
     return Container(
       margin: const EdgeInsets.only(right: 10),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: cs.onPrimary,
-        borderRadius: BorderRadius.circular(25),
-        border: Border.all(color: cs.outlineVariant.withAlpha(25)),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade100),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Governorate name
-          Text(
-            gov.governorate,
-            style: TextStyle(
-              color: cs.onSurface,
-              fontWeight: FontWeight.w700,
-              fontSize: 14,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Governorate name
+            Text(
+              gov.governorate,
+              style: TextStyle(
+                color: cs.onSurface,
+                fontWeight: FontWeight.w700,
+                fontSize: 14,
+              ),
             ),
-          ),
-          const SizedBox(height: 6),
+            const SizedBox(height: 6),
 
-          // Orders
-          Row(
-            children: [
-              Icon(Iconsax.receipt, size: 11, color: cs.onSurfaceVariant),
-              const SizedBox(width: 4),
-              Text(
-                '${gov.totalOrders} orders',
-                style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-
-          // Revenue
-          Row(
-            children: [
-              Icon(Iconsax.money_recive, size: 11, color: cs.tertiary),
-              const SizedBox(width: 4),
-              Text(
-                '${PriceHelper.formatNumber(gov.totalRevenue)} EGP',
-                style: TextStyle(
-                  color: cs.tertiary,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
+            // Orders
+            Row(
+              children: [
+                Icon(Iconsax.receipt, size: 11, color: cs.onSurfaceVariant),
+                const SizedBox(width: 4),
+                Text(
+                  '${gov.totalOrders} orders',
+                  style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
+              ],
+            ),
+            const SizedBox(height: 4),
 
-          // Avg delivery
-          Row(
-            children: [
-              Icon(Iconsax.truck, size: 11, color: cs.onSurfaceVariant),
-              const SizedBox(width: 4),
-              Text(
-                'Avg delivery: ${PriceHelper.formatNumber(gov.averageDelivery)} EGP',
-                style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
-              ),
-            ],
-          ),
-        ],
+            // Revenue
+            Row(
+              children: [
+                Icon(Iconsax.money_recive,
+                    size: 11, color: cs.primary),
+                const SizedBox(width: 4),
+                Text(
+                  '${PriceHelper.formatNumber(gov.totalRevenue)} EGP',
+                  style: TextStyle(
+                    color: cs.primary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+
+            // Avg delivery
+            Row(
+              children: [
+                Icon(Iconsax.truck, size: 11, color: cs.onSurfaceVariant),
+                const SizedBox(width: 4),
+                Text(
+                  'Avg delivery: ${PriceHelper.formatNumber(gov.averageDelivery)} EGP',
+                  style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -729,15 +742,14 @@ class _DailyRevenueTable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     final reports = _last30Days(vm.dailyRevenueReport ?? []);
     if (reports.isEmpty) return const _EmptyState(message: 'No revenue data');
 
     return Container(
       decoration: BoxDecoration(
-        color: cs.surface,
-        borderRadius: BorderRadius.circular(25),
-        border: Border.all(color: cs.outlineVariant.withAlpha(25)),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade100),
       ),
       child: Column(
         children: [
@@ -750,7 +762,7 @@ class _DailyRevenueTable extends StatelessWidget {
                   flex: 3,
                   child: Text('Date',
                       style: TextStyle(
-                          color: cs.onSurfaceVariant,
+                          color: Colors.grey.shade700,
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                           letterSpacing: 0.5)),
@@ -760,7 +772,7 @@ class _DailyRevenueTable extends StatelessWidget {
                   child: Text('Orders',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                          color: cs.onSurfaceVariant,
+                          color: Colors.grey.shade700,
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                           letterSpacing: 0.5)),
@@ -770,7 +782,7 @@ class _DailyRevenueTable extends StatelessWidget {
                   child: Text('Discounts',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                          color: cs.onSurfaceVariant,
+                          color: Colors.grey.shade700,
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                           letterSpacing: 0.5)),
@@ -780,7 +792,7 @@ class _DailyRevenueTable extends StatelessWidget {
                   child: Text('Net Revenue',
                       textAlign: TextAlign.end,
                       style: TextStyle(
-                          color: cs.onSurfaceVariant,
+                          color: Colors.grey.shade700,
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                           letterSpacing: 0.5)),
@@ -788,7 +800,7 @@ class _DailyRevenueTable extends StatelessWidget {
               ],
             ),
           ),
-          Divider(height: 1, color: cs.outlineVariant.withAlpha(25)),
+          Divider(height: 1, color: Colors.grey.shade100),
           ...reports.asMap().entries.map((entry) {
             final i = entry.key;
             final r = entry.value;
@@ -814,7 +826,7 @@ class _DailyRevenueTable extends StatelessWidget {
                           r.numberOfOrders.toString(),
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                              color: cs.onSurfaceVariant, fontSize: 12),
+                              color: Colors.grey.shade600, fontSize: 12),
                         ),
                       ),
                       Expanded(
@@ -822,7 +834,9 @@ class _DailyRevenueTable extends StatelessWidget {
                         child: Text(
                           _formatEGP(r.totalDiscountsGiven),
                           textAlign: TextAlign.center,
-                          style: TextStyle(color: cs.error, fontSize: 12),
+                          style: TextStyle(
+                              color: Theme.of(context).colorScheme.error,
+                              fontSize: 12),
                         ),
                       ),
                       Expanded(
@@ -831,7 +845,7 @@ class _DailyRevenueTable extends StatelessWidget {
                           _formatEGP(r.netRevenue),
                           textAlign: TextAlign.end,
                           style: TextStyle(
-                            color: cs.tertiary,
+                            color: Theme.of(context).colorScheme.primary,
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
                           ),
@@ -841,7 +855,7 @@ class _DailyRevenueTable extends StatelessWidget {
                   ),
                 ),
                 if (i < reports.length - 1)
-                  Divider(height: 1, color: cs.outlineVariant.withAlpha(25)),
+                  Divider(height: 1, color: Colors.grey.shade100),
               ],
             );
           }).toList(),
@@ -860,17 +874,18 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     return Container(
-      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: cs.surface,
-        borderRadius: BorderRadius.circular(25),
-        border: Border.all(color: cs.outlineVariant.withAlpha(25)),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade100),
       ),
-      child: Center(
-        child: Text(message,
-            style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12)),
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        child: Center(
+          child: Text(message,
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+        ),
       ),
     );
   }

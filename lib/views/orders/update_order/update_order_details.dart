@@ -96,60 +96,36 @@ class UpdateOrderDetails extends StatelessWidget {
             child: Column(
               children: [
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 25.0),
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
                   child: Row(
                     children: [
                       Icon(
                         Iconsax.call_incoming_copy,
-                        color: Theme.of(context).colorScheme.tertiary,
+                        color: Theme.of(context).colorScheme.primary,
+                        size: 18,
                       ),
-                      const SizedBox(
-                        width: 15,
-                      ),
-                      const DefaultText(txt: "Order Platform Source"),
+                      const SizedBox(width: 12),
+                      Text("Order Platform Source", style: Theme.of(context).textTheme.titleSmall),
                     ],
                   ),
                 ),
-                const SizedBox(
-                  height: 15,
-                ),
+                const SizedBox(height: 12),
                 Padding(
-                  padding: const EdgeInsets.only(right: 20.0, left: 20),
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: DropdownButtonFormField<String>(
-                    borderRadius: Constants.BORDER_RADIUS_20,
-                    decoration: InputDecoration(
-                      filled: true,
-                      fillColor:
-                          Theme.of(context).colorScheme.tertiary.withAlpha(30),
+                    decoration: const InputDecoration(
                       labelText: "Which platform did you get the order from?",
-                      labelStyle:
-                          const TextStyle(color: Colors.grey, fontSize: 14),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                          borderSide: const BorderSide(
-                            color: Colors.transparent,
-                          ),
-                          borderRadius: Constants.BORDER_RADIUS_15),
-                      prefixIcon: Icon(
-                        Iconsax.message,
-                        color: Theme.of(context).colorScheme.tertiary,
-                      ),
+                      prefixIcon: Icon(Iconsax.message, size: 20),
                     ),
                     initialValue: payment.platformSource.text.isNotEmpty
                         ? payment.platformSource.text.toLowerCase()
-                        : null, // bind to controller if already set
+                        : null,
                     items: const [
-                      DropdownMenuItem(
-                          value: "facebook", child: Text("Facebook")),
+                      DropdownMenuItem(value: "facebook", child: Text("Facebook")),
                       DropdownMenuItem(value: "tiktok", child: Text("TikTok")),
-                      DropdownMenuItem(
-                          value: "instagram", child: Text("Instagram")),
-                      DropdownMenuItem(
-                          value: "ecommerce", child: Text("E-commerce")),
-                      DropdownMenuItem(
-                          value: "e-commerce", child: Text("E-commerce")),
+                      DropdownMenuItem(value: "instagram", child: Text("Instagram")),
+                      DropdownMenuItem(value: "ecommerce", child: Text("E-commerce")),
+                      DropdownMenuItem(value: "e-commerce", child: Text("E-commerce")),
                     ],
                     onChanged: (selected) {
                       if (selected != null) {
@@ -164,151 +140,105 @@ class UpdateOrderDetails extends StatelessWidget {
 
           const SliverToBoxAdapter(child: SizedBox(height: 15)),
 
-          //payment details
           SliverToBoxAdapter(
             child: Column(
               children: [
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 25.0),
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
                   child: Row(
                     children: [
                       Icon(
                         Iconsax.wallet_1_copy,
-                        color: Theme.of(context).colorScheme.tertiary,
+                        color: Theme.of(context).colorScheme.primary,
+                        size: 18,
                       ),
-                      const SizedBox(
-                        width: 15,
-                      ),
-                      const DefaultText(txt: "Payment Details"),
+                      const SizedBox(width: 12),
+                      Text("Payment Details", style: Theme.of(context).textTheme.titleSmall),
                     ],
                   ),
                 ),
-                const SizedBox(
-                  height: 10,
-                ),
+                const SizedBox(height: 12),
                 Row(
                   children: [
                     Expanded(
                       child: Padding(
                         padding: const EdgeInsets.only(left: 20.0),
-                        child: DefaultProductForm(
-                          currency: true,
-                          fillColor: Theme.of(context)
-                              .colorScheme
-                              .tertiary
-                              .withAlpha(30),
-                          title: "Down Payment",
+                        child: TextField(
                           controller: payment.downPayment,
-                          onChange: (value) {},
-                          icon: Iconsax.wallet_1,
+                          decoration: const InputDecoration(
+                            labelText: "Down Payment",
+                            prefixIcon: Icon(Iconsax.wallet_1, size: 20),
+                            suffixText: "EGP",
+                          ),
+                          keyboardType: TextInputType.number,
                         ),
                       ),
                     ),
-                    const SizedBox(
-                      width: 5,
-                    ),
+                    const SizedBox(width: 8),
                     Expanded(
                       child: Padding(
                         padding: const EdgeInsets.only(right: 20.0),
-                        child: DefaultProductForm(
-                          currency: true,
-                          fillColor: Theme.of(context)
-                              .colorScheme
-                              .tertiary
-                              .withAlpha(30),
-                          title: "Delivery Charge",
+                        child: TextField(
                           controller: payment.delivery,
-                          onChange: (value) {},
-                          icon: Iconsax.truck,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(
-                  height: 10,
-                ),
-                Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(right: 20.0, left: 20),
-                      child: DefaultProductForm(
-                        currency: true,
-                        fillColor: Theme.of(context)
-                            .colorScheme
-                            .tertiary
-                            .withAlpha(30),
-                        title: "Discount",
-                        controller: payment.discount,
-                        onChange: (value) {},
-                        icon: Iconsax.discount_shape,
-                      ),
-                    ),
-                    const SizedBox(
-                      height: 10,
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.only(right: 20.0, left: 20),
-                      child: DropdownButtonFormField<String>(
-                        decoration: InputDecoration(
-                          filled: true,
-                          fillColor: Theme.of(context)
-                              .colorScheme
-                              .tertiary
-                              .withAlpha(30),
-                          labelText: "Payment Method",
-                          labelStyle:
-                              const TextStyle(color: Colors.grey, fontSize: 14),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
+                          decoration: const InputDecoration(
+                            labelText: "Delivery Charge",
+                            prefixIcon: Icon(Iconsax.truck, size: 20),
+                            suffixText: "EGP",
                           ),
-                          enabledBorder: OutlineInputBorder(
-                              borderSide: const BorderSide(
-                                color: Colors.transparent,
-                              ),
-                              borderRadius: Constants.BORDER_RADIUS_15),
-                          prefixIcon: Icon(Iconsax.wallet_1,
-                              color: Theme.of(context).colorScheme.tertiary),
+                          keyboardType: TextInputType.number,
                         ),
-                        initialValue: payment.paymentMethod.text.isNotEmpty
-                            ? payment.paymentMethod.text.toLowerCase()
-                            : null,
-                        items: const [
-                          DropdownMenuItem(
-                              value: "vodafone cash",
-                              child: Text("Vodafone Cash")),
-                          DropdownMenuItem(
-                              value: "instapay", child: Text("Instapay")),
-                          DropdownMenuItem(value: "cash", child: Text("Cash")),
-                          DropdownMenuItem(value: "-", child: Text("Other")),
-                        ],
-                        onChanged: (selected) {
-                          if (selected != null) {
-                            payment.paymentMethod.text =
-                                selected; // sync with controller
-                          }
-                        },
-                      ),
-                    ),
-
-                    const SizedBox(
-                      height: 10,
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.only(right: 20.0, left: 20),
-                      child: DefaultProductForm(
-                        fillColor: Theme.of(context)
-                            .colorScheme
-                            .tertiary
-                            .withAlpha(30),
-                        title: "Additional notes",
-                        controller: payment.notes,
-                        onChange: (value) {},
-                        icon: Iconsax.note,
-                        maxLines: 3,
                       ),
                     ),
                   ],
+                ),
+                const SizedBox(height: 12),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: TextField(
+                    controller: payment.discount,
+                    decoration: const InputDecoration(
+                      labelText: "Discount",
+                      prefixIcon: Icon(Iconsax.discount_shape, size: 20),
+                      suffixText: "EGP",
+                    ),
+                    keyboardType: TextInputType.number,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: DropdownButtonFormField<String>(
+                    decoration: const InputDecoration(
+                      labelText: "Payment Method",
+                      prefixIcon: Icon(Iconsax.wallet_1, size: 20),
+                    ),
+                    initialValue: payment.paymentMethod.text.isNotEmpty
+                        ? payment.paymentMethod.text.toLowerCase()
+                        : null,
+                    items: const [
+                      DropdownMenuItem(value: "vodafone cash", child: Text("Vodafone Cash")),
+                      DropdownMenuItem(value: "instapay", child: Text("Instapay")),
+                      DropdownMenuItem(value: "cash", child: Text("Cash")),
+                      DropdownMenuItem(value: "-", child: Text("Other")),
+                    ],
+                    onChanged: (selected) {
+                      if (selected != null) {
+                        payment.paymentMethod.text = selected;
+                      }
+                    },
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: TextField(
+                    controller: payment.notes,
+                    decoration: const InputDecoration(
+                      labelText: "Additional notes",
+                      prefixIcon: Icon(Iconsax.note, size: 20),
+                    ),
+                    maxLines: 3,
+                  ),
                 ),
               ],
             ),

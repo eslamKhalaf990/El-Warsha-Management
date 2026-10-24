@@ -1,10 +1,10 @@
 class Baseurl {
-  // static String baseURL = "http://localhost:8080/";
-  static String baseURL = "https://gloves-checks-census-ascii.trycloudflare.com/"; // PROD
+  static String baseURL = "http://localhost:8080/";
+  // static String baseURL = "https://research-mlb-potentially-frequently.trycloudflare.com/"; // PROD
   // static String baseURLImages = "${baseURL}api/files/"; // PROD
   //
   // static String baseURL = "https://mice-arrested-certificates-vocabulary.trycloudflare.com/"; // DEV
-  static String baseURLImages = "https://eminem-weights-mit-trademarks.trycloudflare.com"; // DEV
+  // static String baseURLImages = "https://eminem-weights-mit-trademarks.trycloudflare.com"; // DEV
 
   /// =============== Authentication APIs ============== ///
   static String loginApi = '${baseURL}auth/login';

@@ -88,19 +88,23 @@ class AddOrderBeta extends StatelessWidget {
 InputDecoration _inputDecoration(String label, IconData icon) {
   return InputDecoration(
     labelText: label,
-    prefixIcon: Icon(icon, size: 20),
+    prefixIcon: Icon(icon, size: 18, color: Colors.grey),
     filled: true,
-    fillColor: Colors.white,
-    hintStyle: const TextStyle(color: Colors.grey),
-    labelStyle: const TextStyle(color: Colors.grey),
-    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+    fillColor: Colors.grey.shade50,
+    hintStyle: const TextStyle(color: Colors.grey, fontSize: 14),
+    labelStyle: const TextStyle(color: Colors.grey, fontSize: 14),
+    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
     border: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(25),
-      borderSide: BorderSide(color: Colors.grey.shade300),
+      borderRadius: BorderRadius.circular(12),
+      borderSide: BorderSide(color: Colors.grey.shade200),
     ),
     enabledBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(25),
-      borderSide: BorderSide(color: Colors.grey.shade300),
+      borderRadius: BorderRadius.circular(12),
+      borderSide: BorderSide(color: Colors.grey.shade200),
+    ),
+    focusedBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: const BorderSide(color: Colors.blueAccent, width: 1),
     ),
   );
 }
@@ -113,23 +117,21 @@ class CustomerSelectionSection extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(25),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.grey.shade100, blurRadius: 10, spreadRadius: 1)
-        ],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
       ),
-      padding: const EdgeInsets.all(25.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Iconsax.user_tag, color: Theme.of(context).colorScheme.tertiary),
-              const SizedBox(width: 10),
-              const DefaultText(txt: "Customer Info", bold: true, size: 18),
-            ],
-          ),
+      child: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Iconsax.user_tag, color: Theme.of(context).colorScheme.tertiary, size: 22),
+                const SizedBox(width: 10),
+                const DefaultText(txt: "Customer Info", bold: true, size: 16),
+              ],
+            ),
           const SizedBox(height: 20),
 
           Consumer<CustomerVM>(
@@ -150,7 +152,7 @@ class CustomerSelectionSection extends StatelessWidget {
                         elevation: const WidgetStatePropertyAll<double>(0.0),
                         shape: WidgetStatePropertyAll<RoundedRectangleBorder>(
                             RoundedRectangleBorder(
-                                borderRadius: const BorderRadius.all(Radius.circular(25)),
+                                borderRadius: const BorderRadius.all(Radius.circular(15)),
                                 side: BorderSide(color: Theme.of(context).colorScheme.tertiary, width: 1)
 
                             ),
@@ -170,7 +172,9 @@ class CustomerSelectionSection extends StatelessWidget {
                       // snapshot.data is your List<CustomerModel>
                       return snapshot.data!
                           .where((customer) =>
-                          customer.fullName.toLowerCase().contains(input))
+                          customer.fullName.toLowerCase().contains(input) ||
+                          customer.phone.contains(input))
+                          .take(15) // Performance: Limit suggestions
                           .map((customer) => ListTile(
                         title: Text(customer.fullName),
                         subtitle: Text(customer.phone),
@@ -199,7 +203,7 @@ class CustomerSelectionSection extends StatelessWidget {
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.tertiary.withAlpha(20),
-                  borderRadius: BorderRadius.circular(25),
+                  borderRadius: BorderRadius.circular(15),
                   border: Border.all(color: Theme.of(context).colorScheme.tertiary),
                 ),
                 child: Row(
@@ -231,7 +235,7 @@ class CustomerSelectionSection extends StatelessWidget {
           ),
         ],
       ),
-    );
+    ));
   }
 }
 
@@ -251,23 +255,21 @@ class _OrderLineItemsSectionState extends State<OrderLineItemsSection> {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(25),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.grey.shade100, blurRadius: 10, spreadRadius: 1)
-        ],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
       ),
-      padding: const EdgeInsets.all(25),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Iconsax.box, color: Theme.of(context).colorScheme.tertiary),
-              const SizedBox(width: 10),
-              const DefaultText(txt: "Order Items", bold: true, size: 18),
-            ],
-          ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Iconsax.box, color: Theme.of(context).colorScheme.tertiary, size: 22),
+                const SizedBox(width: 10),
+                const DefaultText(txt: "Order Items", bold: true, size: 16),
+              ],
+            ),
           const SizedBox(height: 20),
 
           // --- ADD ITEM ROW ---
@@ -286,7 +288,7 @@ class _OrderLineItemsSectionState extends State<OrderLineItemsSection> {
                         viewHintText: "Type product name...",
                         viewShape: RoundedRectangleBorder(
                           side: BorderSide(color: Colors.grey.shade300),
-                          borderRadius: BorderRadius.circular(25),
+                          borderRadius: BorderRadius.circular(15),
                         ),
                         builder: (BuildContext context, SearchController controller) {
                           // Set initial text if a product is already selected
@@ -300,7 +302,7 @@ class _OrderLineItemsSectionState extends State<OrderLineItemsSection> {
                             backgroundColor: WidgetStatePropertyAll(Colors.grey.shade50),
                             shape: WidgetStatePropertyAll<RoundedRectangleBorder>(
                               RoundedRectangleBorder(
-                                  borderRadius: const BorderRadius.all(Radius.circular(25)),
+                                  borderRadius: const BorderRadius.all(Radius.circular(15)),
                                   side: BorderSide(color: Theme.of(context).colorScheme.tertiary, width: 1)
 
                               ),
@@ -318,6 +320,7 @@ class _OrderLineItemsSectionState extends State<OrderLineItemsSection> {
 
                           return snapshot.data!
                               .where((prod) => prod.name.toLowerCase().contains(input))
+                              .take(15) // Performance: Limit suggestions
                               .map((prod) => ListTile(
                             title: Text(prod.name),
                             onTap: () {
@@ -352,7 +355,7 @@ class _OrderLineItemsSectionState extends State<OrderLineItemsSection> {
                       child: ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(
                           shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(25)),
+                              borderRadius: BorderRadius.circular(15)),
                           backgroundColor:
                               Theme.of(context).colorScheme.tertiary,
                           foregroundColor: Colors.white,
@@ -412,62 +415,60 @@ class _OrderLineItemsSectionState extends State<OrderLineItemsSection> {
                 );
               }
 
-              return ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: vm.orderModel.orderItems.length,
-                separatorBuilder: (_, __) => Divider(
-                  color: Theme.of(context).colorScheme.tertiary.withAlpha(50),
-                ),
-                itemBuilder: (context, index) {
-                  final item = vm.orderModel.orderItems[index];
+              return Column(
+                children: vm.orderModel.orderItems.map((item) {
                   return Container(
-                    padding: const EdgeInsets.all(8),
+                    margin: const EdgeInsets.only(bottom: 10),
+                    padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                         color: Colors.grey.shade50,
-                        borderRadius: BorderRadius.circular(25)),
-                    child: ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(25)),
-                        child: const Icon(Iconsax.box, size: 20),
-                      ),
-                      title: Text(item.productName,
-                          style: const TextStyle(fontWeight: FontWeight.bold)),
-                      subtitle: Text(
-                          "${item.unitPrice} EGP | ${item.quantityToOrder} pieces"),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            "${item.unitPrice * item.quantityToOrder} EGP",
-                            style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                                color: Colors.green),
+                        border: Border.all(color: Colors.grey.shade100),
+                        borderRadius: BorderRadius.circular(12)),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(8)),
+                          child: const Icon(Iconsax.box, size: 18),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(item.productName,
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                              Text(
+                                  "${item.unitPrice} EGP × ${item.quantityToOrder}",
+                                  style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                            ],
                           ),
-                          const SizedBox(width: 5),
-                          IconButton(
-                            icon: const Icon(Iconsax.trash,
-                                color: Colors.redAccent),
-                            onPressed: () {
-                              vm.removeFromOrderItems = item.productId;
-                            },
-                          ),
-                        ],
-                      ),
+                        ),
+                        Text(
+                          "${item.unitPrice * item.quantityToOrder} EGP",
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                              color: Colors.green),
+                        ),
+                        IconButton(
+                          icon: const Icon(Iconsax.trash, size: 18, color: Colors.redAccent),
+                          onPressed: () {
+                            vm.removeFromOrderItems = item.productId;
+                          },
+                        ),
+                      ],
                     ),
                   );
-                },
+                }).toList(),
               );
             },
           )
         ],
       ),
-    );
+    ));
   }
 }
 
@@ -480,25 +481,23 @@ class OrderSummaryCard extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(25),
-          boxShadow: [
-            BoxShadow(
-                color: Colors.grey.shade100, blurRadius: 10, spreadRadius: 1)
-          ],
-          border: Border.all(color: Colors.grey.shade100)),
-      padding: const EdgeInsets.all(25.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-           Row(
-            children: [
-              Icon(Iconsax.wallet_2, color: Theme.of(context).colorScheme.tertiary),
-              const SizedBox(width: 10),
-              const DefaultText(txt: "Payment", bold: true, size: 18),
-            ],
-          ),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+             Row(
+              children: [
+                Icon(Iconsax.wallet_2, color: Theme.of(context).colorScheme.tertiary, size: 22),
+                const SizedBox(width: 10),
+                const DefaultText(txt: "Payment", bold: true, size: 16),
+              ],
+            ),
           const SizedBox(height: 20),
 
           // 1. Platform Source
@@ -593,7 +592,7 @@ class OrderSummaryCard extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 20),
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.tertiary.withAlpha(25),
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(15),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -627,12 +626,12 @@ class OrderSummaryCard extends StatelessWidget {
               margin: EdgeInsets.zero,
               isValid: !Provider.of<OrderVM>(context).isSaving,
               isLoading: Provider.of<OrderVM>(context).isSaving,
-              border: 25,
+              border: 15,
             ),
           )
         ],
       ),
-    );
+    ));
   }
 
   Future<void> _submitOrder(BuildContext context) async {

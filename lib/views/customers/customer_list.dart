@@ -36,7 +36,7 @@ class CustomerList extends StatelessWidget {
             final name = customer.fullName.toLowerCase();
             final phone = customer.phone.toLowerCase();
             return name.contains(query) || phone.contains(query);
-          }).toList();
+          }).take(30).toList();
 
           return Expanded(
             child: SingleChildScrollView(

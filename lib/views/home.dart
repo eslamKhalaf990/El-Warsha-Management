@@ -119,73 +119,76 @@ class _SideNavRail extends StatelessWidget {
     final navNotifier = context.read<Navigation>();
 
     return Container(
-      width: 200,
-      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
+      width: 220,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 20),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.onPrimary, // e.g., white
-        borderRadius: BorderRadius.circular(20),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: Colors.grey.shade200, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // 1. Logo
           const _Logo(),
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
 
           // 2. Navigation Items
-          // Using a Column instead of MainAxisAlignment.spaceEvenly
-          // for a cleaner, top-aligned look.
-          Column(
-            children: [
-              _NavigationItem(
-                title: 'Home',
-                icon: Iconsax.home,
-                isSelected: nav.page == 0,
-                onTap: () => navNotifier.updatePage(0),
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  _NavigationItem(
+                    title: 'Home',
+                    icon: Iconsax.home,
+                    isSelected: nav.page == 0,
+                    onTap: () => navNotifier.updatePage(0),
+                  ),
+                  _NavigationItem(
+                    title: 'Products',
+                    icon: Iconsax.box_1,
+                    isSelected: nav.page == 1,
+                    onTap: () => navNotifier.updatePage(1),
+                  ),
+                  _NavigationItem(
+                    title: 'Orders',
+                    icon: Iconsax.receipt_item,
+                    isSelected: nav.page == 2,
+                    onTap: () => navNotifier.updatePage(2),
+                  ),
+                  _NavigationItem(
+                    title: 'Customers',
+                    icon: Iconsax.profile_2user,
+                    isSelected: nav.page == 3,
+                    onTap: () => navNotifier.updatePage(3),
+                  ),
+                  _NavigationItem(
+                    title: 'Categories',
+                    icon: Iconsax.category,
+                    isSelected: nav.page == 4,
+                    onTap: () => navNotifier.updatePage(4),
+                  ),
+                  _NavigationItem(
+                    title: 'Vendors',
+                    icon: Iconsax.people,
+                    isSelected: nav.page == 5,
+                    onTap: () => navNotifier.updatePage(5),
+                  ),
+                  _NavigationItem(
+                    title: 'Shipping Zones',
+                    icon: Iconsax.truck,
+                    isSelected: nav.page == 6,
+                    onTap: () => navNotifier.updatePage(6),
+                  ),
+                  _NavigationItem(
+                    title: 'Accounting',
+                    icon: Iconsax.empty_wallet,
+                    isSelected: nav.page == 7,
+                    onTap: () => navNotifier.updatePage(7),
+                  ),
+                ],
               ),
-              _NavigationItem(
-                title: 'Products',
-                icon: Iconsax.box_1,
-                isSelected: nav.page == 1,
-                onTap: () => navNotifier.updatePage(1),
-              ),
-              _NavigationItem(
-                title: 'Orders',
-                icon: Iconsax.receipt_item,
-                isSelected: nav.page == 2,
-                onTap: () => navNotifier.updatePage(2),
-              ),
-              _NavigationItem(
-                title: 'Customers',
-                icon: Iconsax.profile_2user,
-                isSelected: nav.page == 3,
-                onTap: () => navNotifier.updatePage(3),
-              ),
-              _NavigationItem(
-                title: 'Categories',
-                icon: Iconsax.category,
-                isSelected: nav.page == 4,
-                onTap: () => navNotifier.updatePage(4),
-              ),
-              _NavigationItem(
-                title: 'Vendors',
-                icon: Iconsax.people,
-                isSelected: nav.page ==5,
-                onTap: () => navNotifier.updatePage(5),
-              ),
-              _NavigationItem(
-                title: 'Shipping Zones',
-                icon: Iconsax.truck,
-                isSelected: nav.page == 6,
-                onTap: () => navNotifier.updatePage(6),
-              ),
-              _NavigationItem(
-                title: 'Accounting',
-                icon: Iconsax.empty_wallet,
-                isSelected: nav.page == 7,
-                onTap: () => navNotifier.updatePage(7),
-              ),
-            ],
+            ),
           ),
         ],
       ),

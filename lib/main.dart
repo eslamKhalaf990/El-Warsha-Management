@@ -180,9 +180,12 @@ ThemeData onyxTheme = ThemeData(
     secondary: Colors.grey.shade800, // Secondary actions
     onSecondary: Colors.white,
 
+    tertiary: Colors.black,      // Added tertiary for consistency with some widgets
+    onTertiary: Colors.white,
+
     // Backgrounds: Using a very subtle off-white for depth
     surface: Colors.white,
-    onSurface: Colors.black87,
+    onSurface: const Color(0xFF333333), // Light black for text
 
     surfaceContainerHighest: Colors.grey.shade100, // For input fills or table headers
     outline: Colors.grey.shade300, // Subtle borders
@@ -191,64 +194,95 @@ ThemeData onyxTheme = ThemeData(
   ),
 
   // 2. Background Color (The Canvas)
-  scaffoldBackgroundColor: const Color(0xFFFAFAFA), // Slightly off-white
+  scaffoldBackgroundColor: const Color(0xFFF8F9FA), // Slightly off-white/grey for ERP feel
 
   // 3. Selection Theme (Matches the Black aesthetic)
   textSelectionTheme: TextSelectionThemeData(
     cursorColor: Colors.black,
-    selectionColor: Colors.black.withAlpha(10), // Subtle grey highlight
+    selectionColor: Colors.black.withAlpha(20), // Subtle grey highlight
     selectionHandleColor: Colors.black,
   ),
 
-  // 4. Input Fields (Clean, Sharp, Professional)
+  // 4. Card Theme (Consistent 15 radius as requested)
+  cardTheme: CardThemeData(
+    elevation: 0,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(15),
+      side: BorderSide(color: Colors.grey.shade200, width: 1),
+    ),
+    color: Colors.white,
+    margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 0),
+  ),
+
+  // 5. Input Fields (Clean, Sharp, Professional)
   inputDecorationTheme: InputDecorationTheme(
-    // filled: true,
+    filled: true,
     fillColor: Colors.white,
     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
 
     // Default Border
     border: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(50),
+      borderRadius: BorderRadius.circular(15),
+      borderSide: BorderSide(color: Colors.grey.shade300),
+    ),
+
+    enabledBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(15),
       borderSide: BorderSide(color: Colors.grey.shade300),
     ),
 
     // Active Border (Black)
     focusedBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(50),
+      borderRadius: BorderRadius.circular(15),
       borderSide: const BorderSide(color: Colors.black, width: 1.5),
     ),
 
     // Label Text Style
-    labelStyle: TextStyle(color: Colors.grey.shade600),
-    floatingLabelStyle: const TextStyle(color: Colors.black),
+    labelStyle: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+    floatingLabelStyle: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+    hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
   ),
 
-  // 5. Buttons (High Contrast)
+  // 6. Buttons (High Contrast, 15 radius)
   elevatedButtonTheme: ElevatedButtonThemeData(
     style: ElevatedButton.styleFrom(
       backgroundColor: Colors.black,
       foregroundColor: Colors.white,
-      elevation: 0, // Flat design is more modern for ERPs
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      elevation: 0, 
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
     ),
   ),
 
   outlinedButtonTheme: OutlinedButtonThemeData(
     style: OutlinedButton.styleFrom(
       foregroundColor: Colors.black,
-      side: const BorderSide(color: Colors.black),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      side: const BorderSide(color: Colors.black, width: 1.2),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
     ),
   ),
 
-  // 6. Data Tables (The heart of an ERP)
+  // 7. Text Theme (Light Black Color)
+  textTheme: const TextTheme(
+    displayLarge: TextStyle(color: Color(0xFF333333), fontWeight: FontWeight.bold),
+    displayMedium: TextStyle(color: Color(0xFF333333), fontWeight: FontWeight.bold),
+    displaySmall: TextStyle(color: Color(0xFF333333), fontWeight: FontWeight.bold),
+    headlineMedium: TextStyle(color: Color(0xFF333333), fontWeight: FontWeight.w600),
+    titleLarge: TextStyle(color: Color(0xFF333333), fontWeight: FontWeight.w600),
+    bodyLarge: TextStyle(color: Color(0xFF333333)),
+    bodyMedium: TextStyle(color: Color(0xFF333333)),
+    labelLarge: TextStyle(color: Color(0xFF333333), fontWeight: FontWeight.w500),
+  ),
+
+  // 8. Data Tables (The heart of an ERP)
   dataTableTheme: DataTableThemeData(
     headingRowColor: WidgetStateProperty.all(Colors.grey.shade50),
     headingTextStyle: const TextStyle(
-      fontWeight: FontWeight.w600,
-      color: Colors.black,
+      fontWeight: FontWeight.w700,
+      color: Color(0xFF333333),
       letterSpacing: 0.5,
     ),
     dataRowColor: WidgetStateProperty.resolveWith((states) {
@@ -257,7 +291,9 @@ ThemeData onyxTheme = ThemeData(
       }
       return Colors.white;
     }),
-    dividerThickness: 1, // Crisp lines
+    dividerThickness: 1, 
+    horizontalMargin: 12,
+    columnSpacing: 24,
   ),
 );
 

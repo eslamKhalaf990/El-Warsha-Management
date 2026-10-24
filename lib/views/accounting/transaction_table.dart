@@ -52,9 +52,12 @@ class TransactionsTable extends StatelessWidget {
             child: DataTable(
               sortColumnIndex: provider.sortColumnIndex,
               sortAscending: provider.sortAscending,
-              dividerThickness: 0.05,
-              columnSpacing: 40,
-              headingRowHeight: 40,
+              dividerThickness: 1,
+              horizontalMargin: 12,
+              columnSpacing: 24,
+              headingRowHeight: 45,
+              dataRowMaxHeight: 55,
+              headingRowColor: WidgetStateProperty.all(Colors.grey.shade50),
               columns: [
                 // Date
                 DataColumn(

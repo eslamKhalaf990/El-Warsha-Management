@@ -18,35 +18,57 @@ class UpdateOrderItem extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.tertiary.withAlpha(20),
-        borderRadius: Constants.BORDER_RADIUS_15,
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade100),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 15.0),
-      margin: const EdgeInsets.all(5),
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      margin: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          DefaultText(txt: order.productName, center: true),
+          Expanded(
+            child: Text(
+              order.productName,
+              style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
           
           Row(
             children: [
-              InkWell(
-                  onTap: (){
-                    Provider.of<UpdateOrderVM>(context,listen: false).incrementItemQuantity = index;
-                  },
-                  child: const Icon(Iconsax.add_square_copy)),
+              IconButton(
+                onPressed: (){
+                  Provider.of<UpdateOrderVM>(context,listen: false).incrementItemQuantity = index;
+                },
+                icon: const Icon(Iconsax.add_square, size: 20),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                child: DefaultText(txt: (order.orderedQuantity.toString())),
+                child: Text(
+                  order.orderedQuantity.toString(),
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
               ),
-              InkWell(
-                  onTap: (){
-                    Provider.of<UpdateOrderVM>(context,listen: false).decrementItemQuantity = index;
-                  },
-                  child: const Icon(Iconsax.minus_square_copy),
+              IconButton(
+                onPressed: (){
+                  Provider.of<UpdateOrderVM>(context,listen: false).decrementItemQuantity = index;
+                },
+                icon: const Icon(Iconsax.minus_square, size: 20),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
               ),
-              const SizedBox(width: 15,),
-              DefaultText(txt: "${order.unitPrice * (order.orderedQuantity)} EGP", center: true),
+              const SizedBox(width: 16,),
+              Text(
+                "${order.unitPrice * (order.orderedQuantity)} EGP",
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.primary,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                ),
+              ),
             ],
           ),
 
