@@ -1,5 +1,9 @@
 class Baseurl {
-  static String baseURL = "http://localhost:8080/";
+  /// Override per build: flutter run --dart-define=API_BASE_URL=https://api.example.com/
+  static const String baseURL = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: 'http://localhost:8080/',
+  );
   // static String baseURL = "https://research-mlb-potentially-frequently.trycloudflare.com/"; // PROD
   // static String baseURLImages = "${baseURL}api/files/"; // PROD
   //
