@@ -1,113 +1,34 @@
-import 'dart:async';
-import 'dart:convert';
-import 'package:flutter/cupertino.dart';
-import 'package:http/http.dart' as http;
-import 'package:warsha_app/utils/const_values.dart';
+import 'package:warsha_app/core/network/api_client.dart';
+import 'package:warsha_app/core/network/api_exception.dart';
+import 'package:warsha_app/models/customerModel.dart';
 
-import 'base_url.dart';
-
+/// Customers API (backend: CustomerController under `/customers`).
+/// Every failure surfaces as an [ApiException] from [ApiClient].
 class CustomerService {
-  // This class will handle the logic for attendance management.
-  Future<http.Response> getAllCustomers(String token) async {
-    debugPrint("getAllCustomers called");
-    http.Response response;
-    try {
-      response = await http.get(
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          "Authorization": 'Bearer $token',
-        },
-        Uri.parse(
-          Baseurl.getAllCustomersAPI,
-        ),
-      ).timeout(const Duration(seconds: Constants.TIMEOUT));
-    } on TimeoutException {
-      throw Exception('The request timed out. Please try again later.');
-    } catch (e) {
-      throw Exception('Failed to get your requests: $e');
-    }
-    return response;
+  CustomerService(this._api);
+
+  final ApiClient _api;
+
+  /// Every customer, newest first.
+  Future<List<CustomerModel>> list() async {
+    final body = await _api.get('customers');
+    if (body is! List) throw ApiException.badResponse(200);
+    return body.whereType<Map<String, dynamic>>().map(CustomerModel.fromJson).toList();
   }
 
-  Future<http.Response> getGovernorateCounts(String token) async {
-    debugPrint("getGovernorateCounts called");
-    http.Response response;
-    try {
-      response = await http.get(
-        Uri.parse(
-          Baseurl.countGovernoratePerCustomerAPI,
-        ),
-        headers: {
-          'Content-Type': 'application/json',
-          "Authorization": 'Bearer $token',
-        },
-      ).timeout(const Duration(seconds: Constants.TIMEOUT));
+  Future<CustomerModel> create(CustomerRequest request) async =>
+      _customer(await _api.post('customers', body: request.toJson()));
 
-    } on TimeoutException {
-      throw Exception('The request timed out. Please check your internet connection and try again.');
-    } catch (e) {
-      throw Exception('Failed to get governorate counts: $e');
-    }
-    return response;
+  Future<CustomerModel> update(int id, CustomerRequest request) async =>
+      _customer(await _api.put('customers/$id', body: request.toJson()));
+
+  /// Refused (409) while the customer has orders or other history.
+  Future<void> delete(int id) async {
+    await _api.delete('customers/$id');
   }
 
-  Future<http.Response> addCustomer(String name, String governorate,
-      String phone, String address, String secondaryPhone, String city,String token) async {
-    debugPrint("addCustomer called $name");
-    http.Response response;
-    try {
-      response = await http.post(
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            "Authorization": 'Bearer $token',
-          },
-          Uri.parse(
-            Baseurl.addCustomerAPI,
-          ),
-          body: jsonEncode({
-            "fullName": name,
-            "phone": phone,
-            "governorate": governorate,
-            "address": address,
-            "secondaryPhone": secondaryPhone,
-            "city": city,
-          })
-      ).timeout(const Duration(seconds: Constants.TIMEOUT));
-
-    } on TimeoutException {
-      throw Exception('The request timed out. Please try again later.');
-    } catch (e) {
-      throw Exception('Failed to add your new customer: $e');
-    }
-    return response;
-  }
-
-  Future<http.Response> updateCustomer(String id, String name, String governorate,
-      String phone, String address, String token) async {
-    debugPrint("updateCustomer with id: $id");
-    http.Response response;
-    try {
-      response = await http.put(
-        Uri.parse('${Baseurl.updateCustomerAPI}/$id'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          "Authorization": 'Bearer $token',
-        },
-        body: jsonEncode({
-          "fullName": name,
-          "phone": phone,
-          "governorate": governorate,
-          "address": address,
-        }),
-      ).timeout(const Duration(seconds: Constants.TIMEOUT));
-
-    } on TimeoutException {
-      throw Exception('The request timed out. Please try again later.');
-    } catch (e) {
-      throw Exception('Failed to update the customer: $e');
-    }
-    return response;
+  static CustomerModel _customer(Object? body) {
+    if (body is! Map<String, dynamic>) throw ApiException.badResponse(200);
+    return CustomerModel.fromJson(body);
   }
 }

@@ -7,8 +7,28 @@ import 'package:warsha_app/utils/default_text.dart';
 import 'package:warsha_app/view_models/customers_v_m.dart';
 import 'package:warsha_app/views/customers/add_customer.dart';
 
-class CRUDCustomer extends StatelessWidget {
+class CRUDCustomer extends StatefulWidget {
   const CRUDCustomer({super.key});
+
+  @override
+  State<CRUDCustomer> createState() => _CRUDCustomerState();
+}
+
+class _CRUDCustomerState extends State<CRUDCustomer> {
+  late final _searchController = TextEditingController(text: context.read<CustomerVM>().query);
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Widget _buildSearchField(BuildContext context) => DefaultForm(
+        title: 'Search by name, phone or customer number',
+        controller: _searchController,
+        numberOfLines: 1,
+        onChanged: context.read<CustomerVM>().setQuery,
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -28,12 +48,7 @@ class CRUDCustomer extends StatelessWidget {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  DefaultForm(
-                    title: 'Search For Customer By Name or ID',
-                    controller:
-                    Provider.of<CustomerVM>(context).searchController,
-                    numberOfLines: 1,
-                  ),
+                  _buildSearchField(context),
                   const SizedBox(height: 15),
                   // Button stretches to full width
                   _buildAddButton(context, isFullWidth: true),
@@ -44,12 +59,7 @@ class CRUDCustomer extends StatelessWidget {
               return Row(
                 children: [
                   Expanded(
-                    child: DefaultForm(
-                      title: 'Search For Customer By Name or ID',
-                      controller:
-                      Provider.of<CustomerVM>(context).searchController,
-                      numberOfLines: 1,
-                    ),
+                    child: _buildSearchField(context),
                   ),
                   const SizedBox(width: 15),
                   // Button sized to content

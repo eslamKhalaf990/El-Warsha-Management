@@ -2,60 +2,43 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 
-// Your existing imports
 import 'package:warsha_app/view_models/customers_v_m.dart';
 import 'package:warsha_app/view_models/update_order_v_m.dart';
 import 'package:warsha_app/utils/const_values.dart';
 import 'package:warsha_app/utils/default_text.dart';
 import '../../../models/customerModel.dart';
 
+/// Customer picker on the edit-order screen, filtered by [query].
 class CustomerToUpdate extends StatelessWidget {
-  const CustomerToUpdate({super.key});
+  const CustomerToUpdate({super.key, this.query = ''});
+
+  final String query;
 
   @override
   Widget build(BuildContext context) {
-    final customerVM = Provider.of<CustomerVM>(context);
-    final orderVM = Provider.of<UpdateOrderVM>(context);
+    final customerVM = context.watch<CustomerVM>();
+    final orderVM = context.watch<UpdateOrderVM>();
 
-    return FutureBuilder<List<CustomerModel>>(
-      future: customerVM.allCustomers,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        } else if (snapshot.hasError) {
-          return Center(child: Text('Error: ${snapshot.error}'));
-        } else if (snapshot.hasData && snapshot.data!.isNotEmpty) {
-          final query = customerVM.searchController.text.toLowerCase();
-          final filteredCustomers = snapshot.data!.where((customer) {
-            final name = customer.fullName.toLowerCase();
-            final phone = customer.phone.toLowerCase();
-            return name.contains(query) || phone.contains(query);
-          }).toList();
-
-          return Expanded(
-            child: ListView.builder(
-              itemCount: filteredCustomers.length,
-              padding: const EdgeInsets.only(top: 10),
-              itemBuilder: (context, index) {
-                final customer = filteredCustomers[index];
-                // Check selection logic
-                final bool isSelected = orderVM.orderModel.customer?.customerId == customer.customerId;
-
-                return GestureDetector(
-                  onTap: () {
-                    orderVM.addCustomer = customer;
-                  },
-                  child: CustomerWidget(
-                    customer: customer,
-                    isSelected: isSelected,
-                  ),
-                );
-              },
-            ),
-          );
-        } else {
-          return const Center(child: Text("No customers yet!"));
-        }
+    if (customerVM.loadFailed) {
+      return Center(child: Text(customerVM.errorMessage!, textAlign: TextAlign.center));
+    }
+    if (!customerVM.hasLoaded) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    final customers = customerVM.search(query, limit: 50);
+    if (customers.isEmpty) {
+      return Center(child: Text(query.trim().isEmpty ? "No customers yet." : 'No customer matches "${query.trim()}".'));
+    }
+    return ListView.builder(
+      itemCount: customers.length,
+      padding: const EdgeInsets.only(top: 10),
+      itemBuilder: (context, index) {
+        final customer = customers[index];
+        final isSelected = orderVM.orderModel.customer?.customerId == customer.customerId;
+        return GestureDetector(
+          onTap: () => orderVM.addCustomer = customer,
+          child: CustomerWidget(customer: customer, isSelected: isSelected),
+        );
       },
     );
   }
