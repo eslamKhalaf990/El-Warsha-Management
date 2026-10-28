@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:warsha_app/models/shipping_zone.dart';
-import 'package:warsha_app/utils/default_button.dart';
+import 'package:warsha_app/core/ui/feedback.dart';
 import 'package:warsha_app/utils/default_text.dart';
 import 'package:warsha_app/view_models/shipping_zone_v_m.dart';
+import 'package:warsha_app/views/shipping_zones/add_shipping_zone.dart';
 
 class ShippingZoneWidget extends StatelessWidget {
   final ShippingZone zone;
@@ -60,7 +61,7 @@ class ShippingZoneWidget extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               DefaultText(
-                txt: "Price: ${zone.shippingPrice} EGP",
+                txt: zone.isActive ? "Price: ${zone.priceLabel}" : "Price: ${zone.priceLabel} · not delivering",
                 size: 14,
                 color: Colors.grey,
                 center: false,
@@ -70,6 +71,7 @@ class ShippingZoneWidget extends StatelessWidget {
         ),
         Row(
           children: [
+            _buildActiveSwitch(context),
             _buildEditButton(context),
             _buildDeleteButton(context),
           ],
@@ -89,7 +91,7 @@ class ShippingZoneWidget extends StatelessWidget {
         ),
         Expanded(
           child: DefaultText(
-            txt: "${zone.shippingPrice} EGP",
+            txt: zone.priceLabel,
             size: 16,
             bold: true,
             color: Theme.of(context).colorScheme.primary,
@@ -97,6 +99,7 @@ class ShippingZoneWidget extends StatelessWidget {
         ),
         Row(
           children: [
+            _buildActiveSwitch(context),
             _buildEditButton(context),
             const SizedBox(width: 8),
             _buildDeleteButton(context),
@@ -123,90 +126,53 @@ class ShippingZoneWidget extends StatelessWidget {
     );
   }
 
+  Widget _buildActiveSwitch(BuildContext context) {
+    final zoneVM = context.read<ShippingZoneVM>();
+    return Tooltip(
+      message: zone.isActive ? "Delivering here (tap to stop)" : "Not delivering here (tap to start)",
+      child: Switch(
+        value: zone.isActive,
+        onChanged: (active) async {
+          final ok = await zoneVM.setActive(zone, active);
+          if (!context.mounted) return;
+          reportResult(
+            context,
+            ok: ok,
+            errorMessage: zoneVM.errorMessage,
+            success: active ? "${zone.cityName} is open for delivery." : "${zone.cityName} is hidden from the store.",
+          );
+        },
+      ),
+    );
+  }
+
   Widget _buildEditButton(BuildContext context) {
     return IconButton(
-      onPressed: () => _showUpdateDialog(context),
+      tooltip: "Edit",
+      onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AddShippingZone(zone: zone))),
       icon: Icon(Iconsax.edit, color: Theme.of(context).colorScheme.primary, size: 24),
     );
   }
 
   Widget _buildDeleteButton(BuildContext context) {
-    final zoneVM = Provider.of<ShippingZoneVM>(context, listen: false);
+    final zoneVM = context.read<ShippingZoneVM>();
 
     return IconButton(
+      tooltip: "Delete",
       onPressed: () async {
-        final confirm = await _showDeleteDialog(context);
-        if (confirm == true && zone.id != null) {
-          await zoneVM.deleteShippingZone(zone.id!);
-        }
+        final confirm = await confirmAction(
+          context,
+          title: "Delete Shipping Zone",
+          message: "Delete the zone for ${zone.cityName}? Customers there won't be able to check out. "
+              "To stop delivering for a while, turn the switch off instead.",
+          confirmLabel: "Delete",
+        );
+        if (!confirm || !context.mounted) return;
+        final ok = await zoneVM.delete(zone);
+        if (!context.mounted) return;
+        reportResult(context, ok: ok, errorMessage: zoneVM.errorMessage, success: "${zone.cityName} deleted.");
       },
       icon: const Icon(Iconsax.trash, color: Colors.red, size: 24),
-    );
-  }
-
-  void _showUpdateDialog(BuildContext context) {
-    final TextEditingController priceController = TextEditingController(text: zone.shippingPrice.toString());
-    final zoneVM = Provider.of<ShippingZoneVM>(context, listen: false);
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text("Update Price for ${zone.cityName}"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextFormField(
-              controller: priceController,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                labelText: "Shipping Price",
-                prefixIcon: const Icon(Iconsax.money_send_copy),
-                enabledBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.grey.shade200),
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: Theme.of(context).colorScheme.primary),
-                  borderRadius: BorderRadius.circular(15),
-                ),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (priceController.text.isNotEmpty && zone.id != null) {
-                Map<String, dynamic> zoneData = {
-                  "id": zone.id,
-                  "shippingFee": double.tryParse(priceController.text) ?? zone.shippingPrice,
-                };
-                await zoneVM.updateShippingZone(zone.id!, double.tryParse(priceController.text) ?? zone.shippingPrice);
-                if (context.mounted) Navigator.pop(context);
-              }
-            },
-            child: const Text("Update"),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<bool?> _showDeleteDialog(BuildContext context) {
-    return showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Delete Shipping Zone"),
-        content: Text("Are you sure you want to delete the zone for ${zone.cityName}?"),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Cancel")),
-          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text("Delete", style: TextStyle(color: Colors.red))),
-        ],
-      ),
     );
   }
 }

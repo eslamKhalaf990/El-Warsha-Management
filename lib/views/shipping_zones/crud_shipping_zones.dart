@@ -1,12 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
+import 'package:provider/provider.dart';
+import 'package:warsha_app/view_models/shipping_zone_v_m.dart';
 import 'package:warsha_app/utils/const_values.dart';
 import 'package:warsha_app/utils/deafualt_form_field.dart';
 import 'package:warsha_app/utils/default_text.dart';
 import 'package:warsha_app/views/shipping_zones/add_shipping_zone.dart';
 
-class CRUDShippingZone extends StatelessWidget {
+class CRUDShippingZone extends StatefulWidget {
   const CRUDShippingZone({super.key});
+
+  @override
+  State<CRUDShippingZone> createState() => _CRUDShippingZoneState();
+}
+
+class _CRUDShippingZoneState extends State<CRUDShippingZone> {
+  late final _searchController = TextEditingController(text: context.read<ShippingZoneVM>().query);
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -48,11 +63,10 @@ class CRUDShippingZone extends StatelessWidget {
 
   Widget _buildSearchField(BuildContext context) {
     return DefaultForm(
-      title: 'Search Shipping Zone by City',
-      controller: TextEditingController(),
+      title: 'Search governorate',
+      controller: _searchController,
       numberOfLines: 1,
-      onChanged: (val) {
-      },
+      onChanged: context.read<ShippingZoneVM>().search,
     );
   }
 

@@ -1,18 +1,35 @@
-import 'dart:convert';
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
+import 'package:warsha_app/core/network/api_exception.dart';
+import 'package:warsha_app/core/state/async_view_model.dart';
+import 'package:warsha_app/core/validation/validators.dart';
 import 'package:warsha_app/models/shipping_zone.dart';
 import 'package:warsha_app/services/shipping_zone_service.dart';
-import 'package:warsha_app/view_models/user_v_m.dart';
 
-class ShippingZoneVM extends ChangeNotifier {
-  final ShippingZoneService _shippingZoneService;
-  final UserViewModel _userViewModel;
+/// Shipping zones screen, plus delivery prices for the order and customer forms.
+class ShippingZoneVM extends ChangeNotifier with AsyncViewModel {
+  ShippingZoneVM(this._service);
 
-  List<ShippingZone>? allZones;
-  bool isLoading = false;
+  final ShippingZoneService _service;
+
+  static const nameMaxLength = 100;
+
+  List<ShippingZone> _all = [];
+  String _query = '';
+
+  List<ShippingZone> get allZones => List.unmodifiable(_all);
 
   /// Zones customers can be delivered to, in the order the ERP lists them.
-  List<ShippingZone> get activeZones => (allZones ?? []).where((z) => z.isActive).toList();
+  List<ShippingZone> get activeZones => _all.where((z) => z.isActive).toList();
+
+  /// Zones matching the search box; spelling variants match too.
+  List<ShippingZone> get zones {
+    final q = _query.trim();
+    if (q.isEmpty) return allZones;
+    final key = governorateKey(q);
+    return _all.where((z) => governorateKey(z.cityName).contains(key)).toList();
+  }
+
+  String get query => _query;
 
   /// Delivery price for [governorate], or null when it has no active zone.
   double? priceFor(String? governorate) {
@@ -24,116 +41,68 @@ class ShippingZoneVM extends ChangeNotifier {
     return null;
   }
 
-  ShippingZoneVM(this._shippingZoneService, this._userViewModel) {
-    initZones();
+  Future<bool> fetch() => load(() async => _all = await _service.list());
+
+  void search(String query) {
+    if (query == _query) return;
+    _query = query;
+    notify();
   }
 
-  void initZones() async {
-    await getAllShippingZones();
-  }
+  // ── Validation ──────────────────────────────────────────
 
-  Future<String> getAllShippingZones() async {
-    String status = "";
-    isLoading = true;
-    notifyListeners();
+  /// Parses the price box: null when empty or not a number.
+  static double? parsePrice(String text) => double.tryParse(text.trim().replaceAll(',', '.'));
 
-    try {
-      final response = await _shippingZoneService.getAllShippingZones(_userViewModel.token);
-
-      if (response.statusCode == 200) {
-        status = "zones_fetched";
-        final data = jsonDecode(response.body) as List;
-        allZones = data.map((item) => ShippingZone.fromJson(item)).toList();
-        debugPrint("Shipping zones fetched successfully");
-      } else {
-        status = "zones_not_fetched";
-        debugPrint("Failed to fetch shipping zones: ${response.statusCode}");
-      }
-    } catch (e) {
-      status = "zones_not_fetched";
-      debugPrint("Error fetching shipping zones: $e");
-    } finally {
-      isLoading = false;
-      notifyListeners();
+  Map<String, String> validate(ShippingZoneRequest r, {required String priceText, int? editingId}) {
+    final errors = Validators.collect({
+      'cityName': () => Validators.firstOf([
+            () => Validators.required(r.cityName, 'Enter the governorate name.'),
+            () => Validators.maxLength(r.cityName, nameMaxLength, 'Governorate name'),
+          ]),
+      'shippingFee': () => Validators.firstOf([
+            () => Validators.nonNegativeNumber(priceText, 'Delivery price', required: true),
+            () => RegExp(r'^\d+([.,]\d{1,2})?$').hasMatch(priceText.trim())
+                ? null
+                : 'Delivery price can have at most 2 decimal places.',
+          ]),
+    });
+    if (!errors.containsKey('cityName')) {
+      final key = governorateKey(r.cityName);
+      final clash = _all.where((z) => z.id != editingId && governorateKey(z.cityName) == key);
+      if (clash.isNotEmpty) errors['cityName'] = "'${clash.first.cityName}' already has a delivery price.";
     }
-    return status;
+    return errors;
   }
 
-  Future<String> addShippingZone(Map<String, dynamic> zoneData) async {
-    String status = "";
-    try {
-      isLoading = true;
-      notifyListeners();
+  // ── CRUD ────────────────────────────────────────────────
 
-      final response = await _shippingZoneService.addShippingZone(_userViewModel.token, zoneData);
-
-      if (response.statusCode == 201 || response.statusCode == 200) {
-        debugPrint("Shipping zone added successfully");
-        await getAllShippingZones();
-        status = "zone_added";
+  /// Adds a zone, or updates [editingId]. [priceText] is the raw price box.
+  Future<bool> save({required String cityName, required String priceText, required bool isActive, int? editingId}) async {
+    final request = ShippingZoneRequest(cityName: cityName, shippingFee: parsePrice(priceText), isActive: isActive);
+    final errors = validate(request, priceText: priceText, editingId: editingId);
+    if (errors.isNotEmpty) return fail(ApiException.validation(errors));
+    return run(() async {
+      if (editingId == null) {
+        _all = [..._all, await _service.create(request)];
       } else {
-        debugPrint("Failed to add shipping zone: ${response.statusCode}");
-        status = "zone_not_added";
+        final updated = await _service.update(editingId, request);
+        _all = [for (final z in _all) z.id == editingId ? updated : z];
       }
-    } catch (e) {
-      debugPrint("Error adding shipping zone: $e");
-      status = "zone_not_added";
-    } finally {
-      isLoading = false;
-      notifyListeners();
-    }
-    return status;
+    });
   }
 
-  Future<String> updateShippingZone(int id, double shippingPrice) async {
-    String status = "";
-    try {
-      isLoading = true;
-      notifyListeners();
+  /// Turns a zone on or off for the store without deleting its price.
+  Future<bool> setActive(ShippingZone zone, bool active) => run(() async {
+        final updated = await _service.update(
+          zone.id!,
+          ShippingZoneRequest(cityName: zone.cityName, shippingFee: zone.shippingPrice, isActive: active),
+        );
+        _all = [for (final z in _all) z.id == zone.id ? updated : z];
+      });
 
-      final response = await _shippingZoneService.updateShippingZone(_userViewModel.token, id, shippingPrice);
-
-      if (response.statusCode == 200) {
-        debugPrint("Shipping zone updated successfully");
-        await getAllShippingZones();
-        status = "zone_updated";
-      } else {
-        debugPrint("Failed to update shipping zone: ${response.statusCode}");
-        status = "zone_not_updated";
-      }
-    } catch (e) {
-      debugPrint("Error updating shipping zone: $e");
-      status = "zone_not_updated";
-    } finally {
-      isLoading = false;
-      notifyListeners();
-    }
-    return status;
-  }
-
-  Future<String> deleteShippingZone(int id) async {
-    String status = "";
-    try {
-      isLoading = true;
-      notifyListeners();
-
-      final response = await _shippingZoneService.deleteShippingZone(_userViewModel.token, id);
-
-      if (response.statusCode == 200 || response.statusCode == 204) {
-        status = "zone_deleted";
-        debugPrint("Shipping zone deleted successfully");
-        await getAllShippingZones();
-      } else {
-        debugPrint("Failed to delete shipping zone: ${response.statusCode}");
-        status = "zone_not_deleted";
-      }
-    } catch (e) {
-      debugPrint("Error deleting shipping zone: $e");
-      status = "zone_not_deleted";
-    } finally {
-      isLoading = false;
-      notifyListeners();
-    }
-    return status;
-  }
+  Future<bool> delete(ShippingZone zone) => run(() async {
+        await _service.delete(zone.id!);
+        _all = _all.where((z) => z.id != zone.id).toList();
+      });
 }

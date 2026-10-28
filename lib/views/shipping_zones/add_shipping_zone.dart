@@ -1,20 +1,39 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:provider/provider.dart';
-import 'package:warsha_app/utils/default_button.dart';
+import 'package:warsha_app/core/ui/app_text_field.dart';
+import 'package:warsha_app/core/ui/feedback.dart';
+import 'package:warsha_app/models/shipping_zone.dart';
 import 'package:warsha_app/utils/default_text.dart';
 import 'package:warsha_app/view_models/shipping_zone_v_m.dart';
 
+/// Add a shipping zone, or edit [zone] when given.
 class AddShippingZone extends StatefulWidget {
-  const AddShippingZone({super.key});
+  const AddShippingZone({super.key, this.zone});
+
+  final ShippingZone? zone;
 
   @override
   State<AddShippingZone> createState() => _AddShippingZoneState();
 }
 
 class _AddShippingZoneState extends State<AddShippingZone> {
-  final TextEditingController _cityController = TextEditingController();
-  final TextEditingController _priceController = TextEditingController();
+  late final _cityController = TextEditingController(text: widget.zone?.cityName);
+  late final _priceController = TextEditingController(
+    text: widget.zone == null ? '' : widget.zone!.priceLabel.replaceAll(' EGP', ''),
+  );
+  late bool _isActive = widget.zone?.isActive ?? true;
+
+  bool get _isEdit => widget.zone != null;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) context.read<ShippingZoneVM>().clearError();
+    });
+  }
 
   @override
   void dispose() {
@@ -23,13 +42,33 @@ class _AddShippingZoneState extends State<AddShippingZone> {
     super.dispose();
   }
 
+  Future<void> _save() async {
+    final vm = context.read<ShippingZoneVM>();
+    final ok = await vm.save(
+      cityName: _cityController.text,
+      priceText: _priceController.text,
+      isActive: _isActive,
+      editingId: widget.zone?.id,
+    );
+    if (!mounted) return;
+    reportResult(
+      context,
+      ok: ok,
+      errorMessage: vm.errorMessage,
+      success: _isEdit ? 'Shipping zone updated.' : 'Shipping zone added.',
+      fieldError: vm.fieldError,
+      fields: const ['cityName', 'shippingFee'],
+      pop: true,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final zoneVM = Provider.of<ShippingZoneVM>(context);
+    final zoneVM = context.watch<ShippingZoneVM>();
 
     return Scaffold(
       appBar: AppBar(
-        title: const DefaultText(txt: "Add New Shipping Zone", bold: true, size: 20),
+        title: DefaultText(txt: _isEdit ? "Edit Shipping Zone" : "Add New Shipping Zone", bold: true, size: 20),
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
@@ -44,13 +83,7 @@ class _AddShippingZoneState extends State<AddShippingZone> {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.03),
-                blurRadius: 10,
-                offset: const Offset(0, 5),
-              )
-            ],
+            boxShadow: [BoxShadow(color: Colors.black.withAlpha(8), blurRadius: 10, offset: const Offset(0, 5))],
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -58,108 +91,38 @@ class _AddShippingZoneState extends State<AddShippingZone> {
             children: [
               const Text("Zone Details", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey)),
               const SizedBox(height: 25),
-              DefaultZoneForm(
-                title: "City Name",
+              AppTextField(
+                label: "Governorate *",
                 controller: _cityController,
                 icon: Iconsax.location_copy,
+                textDirection: TextDirection.rtl,
+                maxLength: ShippingZoneVM.nameMaxLength,
+                errorText: zoneVM.fieldError('cityName'),
+                onChanged: (_) => zoneVM.clearError(),
               ),
               const SizedBox(height: 20),
-              DefaultZoneForm(
-                title: "Shipping Price",
+              AppTextField(
+                label: "Delivery price (EGP) *",
                 controller: _priceController,
                 icon: Iconsax.money_send_copy,
-                keyboardType: TextInputType.number,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]'))],
+                errorText: zoneVM.fieldError('shippingFee'),
+                onChanged: (_) => zoneVM.clearError(),
+                onSubmitted: (_) => _save(),
               ),
-              const SizedBox(height: 40),
-              Row(
-                children: [
-                  Expanded(
-                    child: SizedBox(
-                      height: 55,
-                      child: OutlinedButton(
-                        onPressed: () => Navigator.pop(context),
-                        style: OutlinedButton.styleFrom(
-                          side: BorderSide(color: Colors.grey.shade300),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
-                        ),
-                        child: const Text("Cancel", style: TextStyle(color: Colors.grey)),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 15),
-                  Expanded(
-                    flex: 2,
-                    child: DefaultButton(
-                      onTap: () async {
-                        if (_cityController.text.isEmpty || _priceController.text.isEmpty) return;
-                        
-                        Map<String, dynamic> zoneData = {
-                          "cityName": _cityController.text,
-                          "shippingFee": double.tryParse(_priceController.text) ?? 0.0,
-                        };
-
-                        String status = await zoneVM.addShippingZone(zoneData);
-
-                        if (status == "zone_added") {
-                          if (mounted) {
-                            Navigator.pop(context);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text("Shipping zone added successfully")),
-                            );
-                          }
-                        }
-                      },
-                      isValid: !zoneVM.isLoading,
-                      isLoading: zoneVM.isLoading,
-                      title: "Save Zone",
-                      margin: EdgeInsets.zero,
-                    ),
-                  ),
-                ],
-              )
+              const SizedBox(height: 10),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                value: _isActive,
+                onChanged: (v) => setState(() => _isActive = v),
+                title: const Text("Delivering here"),
+                subtitle: const Text("When off, the store hides this governorate and customers there can't check out."),
+              ),
+              const SizedBox(height: 30),
+              FormActions(onSave: _save, saving: zoneVM.isSaving, saveLabel: _isEdit ? "Save Changes" : "Save Zone"),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class DefaultZoneForm extends StatelessWidget {
-  final String title;
-  final TextEditingController controller;
-  final IconData icon;
-  final TextInputType keyboardType;
-
-  const DefaultZoneForm({
-    super.key,
-    required this.title,
-    required this.controller,
-    required this.icon,
-    this.keyboardType = TextInputType.text,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return TextFormField(
-      controller: controller,
-      keyboardType: keyboardType,
-      decoration: InputDecoration(
-        filled: true,
-        fillColor: Colors.white,
-        labelText: title,
-        labelStyle: TextStyle(fontSize: 14, color: Colors.grey.shade600),
-        enabledBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: Colors.grey.shade200),
-          borderRadius: BorderRadius.circular(25),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: Theme.of(context).colorScheme.tertiary, width: 1.5),
-          borderRadius: BorderRadius.circular(25),
-        ),
-        prefixIcon: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 15),
-          child: Icon(icon, color: Theme.of(context).colorScheme.tertiary),
         ),
       ),
     );
