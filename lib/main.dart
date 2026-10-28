@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:warsha_app/core/network/api_client.dart';
-import 'package:warsha_app/controllers/add_order/add_customer.dart';
 import 'package:warsha_app/controllers/add_order/add_product.dart';
 import 'package:warsha_app/controllers/drag_drop_controller.dart';
 import 'package:warsha_app/controllers/navigation.dart';
 import 'package:warsha_app/controllers/update_drag_drop.dart';
 import 'package:warsha_app/controllers/update_order/updatePaymentDetails.dart';
-import 'package:warsha_app/controllers/update_order/update_customer.dart';
 import 'package:warsha_app/services/accounting_service.dart';
 import 'package:warsha_app/services/category_service.dart';
 import 'package:warsha_app/services/customers_services.dart';
@@ -28,7 +26,6 @@ import 'package:warsha_app/view_models/add_product_v_m.dart';
 import 'package:warsha_app/view_models/home_v_m.dart';
 import 'package:warsha_app/view_models/shipping_zone_v_m.dart';
 import 'package:warsha_app/view_models/update_order_v_m.dart';
-import 'package:warsha_app/view_models/update_product_v_m.dart';
 import 'package:warsha_app/view_models/user_v_m.dart';
 import 'package:warsha_app/view_models/vendors_v_m.dart';
 import 'package:warsha_app/views/auth/auth_gate.dart';
@@ -78,8 +75,6 @@ class SessionScope extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => UpdateDragDropController()),
         ChangeNotifierProvider(create: (_) => ProductProvider()),
         ChangeNotifierProvider(create: (_) => Navigation()),
-        ChangeNotifierProvider(create: (_) => CustomerProvider()),
-        ChangeNotifierProvider(create: (_) => UpdateCustomerProvider()),
         ChangeNotifierProvider(create: (_) => UpdatePaymentDetails()),
         ChangeNotifierProvider(create: (_) => UpdateProductProvider()),
         ChangeNotifierProvider(create: (_) => PaymentProvider()),
@@ -87,16 +82,30 @@ class SessionScope extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => TransactionsProvider()),
 
         // Services
-        Provider<ProductService>(create: (_) => ProductService()),
-        Provider<VendorService>(create: (_) => VendorService()),
-        Provider<CategoryService>(create: (_) => CategoryService()),
-        Provider<ShippingZoneService>(create: (_) => ShippingZoneService()),
-        Provider<AccountingService>(create: (_) => AccountingService()),
-        Provider<HomeService>(create: (_) => HomeService()),
+        Provider<ProductService>(
+          create: (context) => ProductService(context.read<ApiClient>()),
+        ),
+        Provider<VendorService>(
+          create: (context) => VendorService(context.read<ApiClient>()),
+        ),
+        Provider<CategoryService>(
+          create: (context) => CategoryService(context.read<ApiClient>()),
+        ),
+        Provider<ShippingZoneService>(
+          create: (context) => ShippingZoneService(context.read<ApiClient>()),
+        ),
+        Provider<AccountingService>(
+          create: (context) => AccountingService(context.read<ApiClient>()),
+        ),
+        Provider<HomeService>(
+          create: (context) => HomeService(context.read<ApiClient>()),
+        ),
         Provider<OrdersService>(
           create: (context) => OrdersService(context.read<ApiClient>()),
         ),
-        Provider<CustomerService>(create: (_) => CustomerService()),
+        Provider<CustomerService>(
+          create: (context) => CustomerService(context.read<ApiClient>()),
+        ),
         Provider<ProductVariantsService>(
           create: (context) => ProductVariantsService(context.read<ApiClient>()),
         ),
@@ -109,58 +118,32 @@ class SessionScope extends StatelessWidget {
           create: (context) => OrderVM(context.read<OrdersService>())..fetchOrders(),
         ),
         ChangeNotifierProvider<ProductVM>(
-          create: (context) => ProductVM(
-            context.read<ProductService>(),
-            context.read<UserViewModel>(),
-          ),
+          create: (context) =>
+              ProductVM(context.read<ProductService>(), context.read<ProductVariantsService>())..fetch(),
         ),
         ChangeNotifierProvider<VendorVM>(
-          create: (context) => VendorVM(
-            context.read<VendorService>(),
-            context.read<UserViewModel>(),
-          ),
+          create: (context) => VendorVM(context.read<VendorService>())..fetch(),
         ),
         ChangeNotifierProvider<CategoryVM>(
-          create: (context) => CategoryVM(
-            context.read<CategoryService>(),
-            context.read<UserViewModel>(),
-          ),
+          create: (context) => CategoryVM(context.read<CategoryService>())..fetch(),
         ),
         ChangeNotifierProvider<ShippingZoneVM>(
-          create: (context) => ShippingZoneVM(
-            context.read<ShippingZoneService>(),
-            context.read<UserViewModel>(),
-          ),
+          create: (context) => ShippingZoneVM(context.read<ShippingZoneService>())..fetch(),
         ),
         ChangeNotifierProvider<AddOrderVM>(
-          create: (context) => AddOrderVM(context.read<OrdersService>()),
+          create: (context) => AddOrderVM(context.read<OrdersService>())..fetchGovernorateCounts(),
         ),
         ChangeNotifierProvider<UpdateOrderVM>(
           create: (_) => UpdateOrderVM(),
         ),
-        ChangeNotifierProvider<UpdateProductVM>(
-          create: (context) => UpdateProductVM(
-            context.read<ProductService>(),
-            context.read<UserViewModel>(),
-          ),
-        ),
         ChangeNotifierProvider<CustomerVM>(
-          create: (context) => CustomerVM(
-            context.read<CustomerService>(),
-            context.read<UserViewModel>(),
-          ),
+          create: (context) => CustomerVM(context.read<CustomerService>())..fetch(),
         ),
         ChangeNotifierProvider<HomeVM>(
-          create: (context) => HomeVM(
-            context.read<HomeService>(),
-            context.read<UserViewModel>(),
-          ),
+          create: (context) => HomeVM(context.read<HomeService>())..fetch(),
         ),
         ChangeNotifierProvider<AccountingVM>(
-          create: (context) => AccountingVM(
-            context.read<AccountingService>(),
-            context.read<UserViewModel>(),
-          ),
+          create: (context) => AccountingVM(context.read<AccountingService>())..fetch(),
         ),
       ],
       child: child,
