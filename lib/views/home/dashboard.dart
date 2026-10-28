@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:warsha_app/core/ui/feedback.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 import 'package:warsha_app/models/analysis_models/analysis.dart';
-import 'package:warsha_app/utils/default_text.dart';
 import 'package:warsha_app/utils/price_helper.dart';
 import 'package:warsha_app/view_models/home_v_m.dart';
 
@@ -20,7 +20,10 @@ class Dashboard extends StatelessWidget {
     return Scaffold(
       body: Consumer<HomeVM>(
         builder: (context, vm, child) {
-          if (vm.averageBasketSize == null && vm.revenueSummary == null) {
+          if (vm.loadFailed) {
+            return LoadErrorView(message: vm.errorMessage!, onRetry: vm.fetch);
+          }
+          if (!vm.hasLoaded) {
             return Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -44,6 +47,10 @@ class Dashboard extends StatelessWidget {
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
                   sliver: SliverList(
                     delegate: SliverChildListDelegate([
+                      if (vm.failedSections.isNotEmpty) ...[
+                        _PartialDataBanner(sections: vm.failedSections, onRetry: vm.fetch),
+                        const SizedBox(height: 16),
+                      ],
                       const _SectionLabel('Market Overview'),
                       const SizedBox(height: 12),
                       _KpiRow(vm: vm),
@@ -905,4 +912,38 @@ String _formatEGP(double amount) {
   if (amount >= 1000000) return 'EGP ${(amount / 1000000).toStringAsFixed(1)}M';
   if (amount >= 1000) return 'EGP ${(amount / 1000).toStringAsFixed(1)}K';
   return 'EGP ${amount.toStringAsFixed(0)}';
+}
+
+
+/// Says which dashboard sections couldn't be loaded, with a retry.
+class _PartialDataBanner extends StatelessWidget {
+  const _PartialDataBanner({required this.sections, required this.onRetry});
+
+  final Set<String> sections;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.orange.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.orange.shade200),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.info_outline, color: Colors.orange.shade800, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              "Some figures couldn't be loaded: ${sections.join(', ')}.",
+              style: TextStyle(color: Colors.orange.shade900, fontSize: 13),
+            ),
+          ),
+          TextButton(onPressed: onRetry, child: const Text('Try again')),
+        ],
+      ),
+    );
+  }
 }

@@ -1,256 +1,78 @@
-import 'dart:convert';
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
+import 'package:warsha_app/core/network/api_exception.dart';
+import 'package:warsha_app/core/state/async_view_model.dart';
 import 'package:warsha_app/models/analysis_models/analysis.dart';
-
-// Existing Models
 import 'package:warsha_app/models/daily_cash.dart';
 import 'package:warsha_app/models/revenue_summary.dart';
 import 'package:warsha_app/models/top_products.dart';
-
 import 'package:warsha_app/services/home_service.dart';
-import 'package:warsha_app/view_models/user_v_m.dart';
 
-class HomeVM extends ChangeNotifier {
-  final HomeService _homeService;
-  final UserViewModel _userViewModel;
+/// Dashboard figures. Each section loads on its own: one failing endpoint
+/// leaves its section empty instead of blanking the whole dashboard, and
+/// [failedSections] says which ones to retry.
+class HomeVM extends ChangeNotifier with AsyncViewModel {
+  HomeVM(this._service);
 
-  // --- CORE PROPERTIES ---
+  final HomeService _service;
+
+  // --- CORE ---
   RevenueSummary? revenueSummary;
   List<DailyCashFlowModel>? dailyCashFlow;
   List<TopProduct>? topProducts;
 
-  // --- CUSTOMER INSIGHTS PROPERTIES ---
+  // --- CUSTOMER INSIGHTS ---
   List<CustomerAnalysis>? loyalCustomers;
   List<CustomerAnalytics>? vipCustomers;
   List<CustomerRetention>? atRiskCustomers;
   List<CustomerDiscount>? discountSeekers;
 
-  // --- SALES & MARKET PERFORMANCE PROPERTIES ---
+  // --- SALES & MARKET PERFORMANCE ---
   double? averageBasketSize;
   List<OrderSourceAnalytics>? revenueBySource;
   List<CustomerAnalytics>? topPerformers;
   List<GovernorateAnalytics>? governoratePerformance;
   List<DailySales>? dailyRevenueReport;
 
-  HomeVM(this._homeService, this._userViewModel) {
-    initHome();
-  }
+  final Set<String> _failed = {};
 
-  /// Initializes all dashboard data concurrently
-  Future<void> initHome() async {
-    await Future.wait([
-      getRevenueSummary(),
-      getDailyCashFlow(),
-      getTotalSoldProducts(),
-      getLoyalCustomers(),
-      getVipCustomers(),
-      getAtRiskCustomers(),
-      getDiscountSeekers(),
-      getAverageBasketSize(),
-      getRevenueBySource(),
-      getTopPerformers(),
-      getGovernoratePerformance(),
-      getDailyRevenueReport(),
-    ]);
-  }
+  /// Sections whose figures could not be loaded, e.g. `Revenue summary`.
+  Set<String> get failedSections => Set.unmodifiable(_failed);
 
-  // ==========================================
-  //         EXISTING CORE ENDPOINTS
-  // ==========================================
-
-  Future<String> getRevenueSummary() async {
-    String status = "";
-    try {
-      final response = await _homeService.getRevenueSummary(_userViewModel.token);
-      if (response.statusCode == 200) {
-        status = "summary_fetched";
-        final data = jsonDecode(response.body);
-        revenueSummary = RevenueSummary.fromJson(data);
-      } else {
-        status = "summary_not_fetched";
-      }
-    } catch (e) {
-      status = "summary_not_fetched";
-      debugPrint("Error fetching summary: $e");
-    } finally {
-      notifyListeners();
-    }
-    return status;
-  }
-
-  Future<String> getTotalSoldProducts() async {
-    String status = "";
-    try {
-      final response = await _homeService.getTotalSoldProducts(_userViewModel.token);
-      if (response.statusCode == 200) {
-        status = "top_products_fetched";
-        final List<dynamic> data = jsonDecode(response.body);
-        topProducts = data.map((item) => TopProduct.fromJson(item)).toList();
-      } else {
-        status = "top_products_not_fetched";
-      }
-    } catch (e) {
-      status = "top_products_not_fetched";
-      debugPrint("Error fetching top products: $e");
-    } finally {
-      notifyListeners();
-    }
-    return status;
-  }
-
-  Future<List<DailyCashFlowModel>?> getDailyCashFlow() async {
-    try {
-      final response = await _homeService.getDailyCashFlow(_userViewModel.token);
-      if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        dailyCashFlow = data.map((item) => DailyCashFlowModel.fromJson(item)).toList();
-      }
-    } catch (e) {
-      debugPrint("Error fetching cashFlow: $e");
-    } finally {
-      notifyListeners();
-    }
-    return dailyCashFlow;
-  }
-
-  // ==========================================
-  //         CUSTOMER ANALYSIS MAPPING
-  // ==========================================
-
-  Future<void> getLoyalCustomers() async {
-    try {
-      final response = await _homeService.getLoyalCustomers(_userViewModel.token);
-      if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        loyalCustomers = data.map((json) => CustomerAnalysis.fromJson(json)).toList();
-      }
-    } catch (e) {
-      debugPrint("Error fetching loyal customers: $e");
-    } finally {
-      notifyListeners();
-    }
-  }
-
-  Future<void> getVipCustomers() async {
-    try {
-      final response = await _homeService.getVipCustomers(_userViewModel.token);
-      if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        vipCustomers = data.map((json) => CustomerAnalytics.fromJson(json)).toList();
-      }
-    } catch (e) {
-      debugPrint("Error fetching VIP customers: $e");
-    } finally {
-      notifyListeners();
-    }
-  }
-
-  Future<void> getAtRiskCustomers() async {
-    try {
-      final response = await _homeService.getAtRiskCustomers(_userViewModel.token);
-      if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        atRiskCustomers = data.map((json) => CustomerRetention.fromJson(json)).toList();
-      }
-    } catch (e) {
-      debugPrint("Error fetching at-risk customers: $e");
-    } finally {
-      notifyListeners();
-    }
-  }
-
-  Future<void> getDiscountSeekers() async {
-    try {
-      final response = await _homeService.getDiscountSeekers(_userViewModel.token);
-      if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        discountSeekers = data.map((json) => CustomerDiscount.fromJson(json)).toList();
-      }
-    } catch (e) {
-      debugPrint("Error fetching discount seekers: $e");
-    } finally {
-      notifyListeners();
-    }
-  }
-
-  // ==========================================
-  //     SALES & MARKET PERFORMANCE MAPPING
-  // ==========================================
-// --- Updated Model Property in HomeVM ---
-
-// --- Updated Mapping Method ---
-  Future<void> getGovernoratePerformance() async {
-    try {
-      final response = await _homeService.getGovernoratePerformance(_userViewModel.token);
-      if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        // Mapping to the specific GovernorateAnalytics model
-        governoratePerformance = data.map((json) => GovernorateAnalytics.fromJson(json)).toList();
-      }
-    } catch (e) {
-      debugPrint("Error fetching governorate performance: $e");
-    } finally {
-      notifyListeners();
-    }
-  }
-
-  Future<void> getAverageBasketSize() async {
-    try {
-      final response = await _homeService.getAverageBasketSize(_userViewModel.token);
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (data is num) {
-          averageBasketSize = data.toDouble();
-        } else if (data is Map && data.containsKey('average')) {
-          averageBasketSize = (data['average'] as num).toDouble();
+  /// Loads every section; fails (with the first reason) only when all failed.
+  Future<bool> fetch() => load(() async {
+        _failed.clear();
+        ApiException? firstError;
+        Future<void> section<T>(String name, Future<T> Function() fetch, void Function(T value) apply) async {
+          try {
+            apply(await fetch());
+          } on ApiException catch (e) {
+            _failed.add(name);
+            firstError ??= e;
+          } catch (e) {
+            // Unreadable figures: drop this section only
+            debugPrint('Dashboard section "$name": $e');
+            _failed.add(name);
+            firstError ??= ApiException.unexpected();
+          }
         }
-      }
-    } catch (e) {
-      debugPrint("Error fetching average basket size: $e");
-    } finally {
-      notifyListeners();
-    }
-  }
 
-  Future<void> getRevenueBySource() async {
-    try {
-      final response = await _homeService.getRevenueBySource(_userViewModel.token);
-      if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        revenueBySource = data.map((json) => OrderSourceAnalytics.fromJson(json)).toList();
-      }
-    } catch (e) {
-      debugPrint("Error fetching revenue by source: $e");
-    } finally {
-      notifyListeners();
-    }
-  }
+        await Future.wait([
+          section('Revenue summary', _service.revenueSummary, (v) => revenueSummary = v),
+          section('Daily cash flow', _service.dailyCashFlow, (v) => dailyCashFlow = v),
+          section('Top products', _service.topSoldProducts, (v) => topProducts = v),
+          section('Loyal customers', _service.loyalCustomers, (v) => loyalCustomers = v),
+          section('VIP customers', _service.vipCustomers, (v) => vipCustomers = v),
+          section('At-risk customers', _service.atRiskCustomers, (v) => atRiskCustomers = v),
+          section('Discount seekers', _service.discountSeekers, (v) => discountSeekers = v),
+          section('Average basket', _service.averageBasketSize, (v) => averageBasketSize = v),
+          section('Revenue by source', _service.revenueBySource, (v) => revenueBySource = v),
+          section('Top performers', _service.topPerformers, (v) => topPerformers = v),
+          section('Regions', _service.governoratePerformance, (v) => governoratePerformance = v),
+          section('Daily revenue', _service.dailyRevenueReport, (v) => dailyRevenueReport = v),
+        ]);
+        if (_failed.length == 12) throw firstError!;
+      });
 
-  Future<void> getTopPerformers() async {
-    try {
-      final response = await _homeService.getTopPerformers(_userViewModel.token);
-      if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        topPerformers = data.map((json) => CustomerAnalytics.fromJson(json)).toList();
-      }
-    } catch (e) {
-      debugPrint("Error fetching top performers: $e");
-    } finally {
-      notifyListeners();
-    }
-  }
-
-  Future<void> getDailyRevenueReport() async {
-    try {
-      final response = await _homeService.getDailyRevenueReport(_userViewModel.token);
-      if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        dailyRevenueReport = data.map((json) => DailySales.fromJson(json)).toList();
-      }
-    } catch (e) {
-      debugPrint("Error fetching daily revenue report: $e");
-    } finally {
-      notifyListeners();
-    }
-  }
+  /// Older name used by the dashboard's pull-to-refresh.
+  Future<bool> initHome() => fetch();
 }
