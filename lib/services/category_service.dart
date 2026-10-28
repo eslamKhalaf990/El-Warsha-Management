@@ -1,92 +1,32 @@
-import 'dart:async';
-import 'dart:convert';
-import 'package:flutter/cupertino.dart';
-import 'package:http/http.dart' as http;
-import 'package:warsha_app/utils/const_values.dart';
-import 'base_url.dart';
+import 'package:warsha_app/core/network/api_client.dart';
+import 'package:warsha_app/core/network/api_exception.dart';
+import 'package:warsha_app/models/category_model.dart';
 
+/// Product categories API (backend: CategoryController under `/category`).
+/// Every failure surfaces as an [ApiException] from [ApiClient].
 class CategoryService {
+  CategoryService(this._api);
 
-  // Fetch all categories
-  Future<http.Response> getAllCategories(String token) async {
-    debugPrint("getAllCategories called");
-    try {
-      final response = await http.get(
-        headers: {
-          'Content-Type': 'application/json',
-          "Authorization": 'Bearer $token',
-        },
-        Uri.parse(Baseurl.getAllCategoriesAPI),
-      ).timeout(const Duration(seconds: Constants.TIMEOUT));
+  final ApiClient _api;
 
-      debugPrint("Response: ${response.body}");
-      return response;
-    } on TimeoutException {
-      throw Exception('The request timed out. Please try again later.');
-    } catch (e) {
-      throw Exception('Failed to get categories: $e');
-    }
+  Future<List<CategoryModel>> list() async {
+    final body = await _api.get('category');
+    if (body is! List) throw ApiException.badResponse(200);
+    return body.whereType<Map<String, dynamic>>().map(CategoryModel.fromJson).toList();
   }
 
-  // Create a new category
-  Future<http.Response> addCategory(String token, Map<String, dynamic> categoryData) async {
-    debugPrint("addCategory called");
-    try {
-      final response = await http.post(
-        Uri.parse(Baseurl.addCategoryAPI),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-        body: jsonEncode(categoryData),
-      ).timeout(const Duration(seconds: Constants.TIMEOUT));
+  Future<CategoryModel> create(CategoryRequest request) async =>
+      _category(await _api.post('category', body: request.toJson()));
 
-      return response;
-    } on TimeoutException {
-      throw Exception('The request timed out. Please try again later.');
-    } catch (e) {
-      throw Exception('Failed to add category: $e');
-    }
+  Future<CategoryModel> update(int id, CategoryRequest request) async =>
+      _category(await _api.put('category/$id', body: request.toJson()));
+
+  Future<void> delete(int id) async {
+    await _api.delete('category/$id');
   }
 
-  // Update existing category
-  Future<http.Response> updateCategory(String token, int id, Map<String, dynamic> categoryData) async {
-    debugPrint("updateCategory called for ID: $id");
-    try {
-      final response = await http.put(
-        Uri.parse("${Baseurl.addCategoryAPI}/$id"),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-        body: jsonEncode(categoryData),
-      ).timeout(const Duration(seconds: Constants.TIMEOUT));
-
-      return response;
-    } on TimeoutException {
-      throw Exception('The request timed out. Please try again later.');
-    } catch (e) {
-      throw Exception('Failed to update category: $e');
-    }
-  }
-
-  // Delete Category
-  Future<http.Response> deleteCategory(String token, int id) async {
-    debugPrint("deleteCategory called for ID: $id");
-    try {
-      final response = await http.delete(
-        headers: {
-          'Content-Type': 'application/json',
-          "Authorization": 'Bearer $token',
-        },
-        Uri.parse("${Baseurl.addCategoryAPI}/$id"),
-      ).timeout(const Duration(seconds: Constants.TIMEOUT));
-
-      return response;
-    } on TimeoutException {
-      throw Exception('The request timed out. Please try again later.');
-    } catch (e) {
-      throw Exception('Failed to delete category: $e');
-    }
+  static CategoryModel _category(Object? body) {
+    if (body is! Map<String, dynamic>) throw ApiException.badResponse(200);
+    return CategoryModel.fromJson(body);
   }
 }

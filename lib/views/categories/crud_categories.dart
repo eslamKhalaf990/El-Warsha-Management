@@ -1,12 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
+import 'package:provider/provider.dart';
 import 'package:warsha_app/utils/const_values.dart';
 import 'package:warsha_app/utils/deafualt_form_field.dart';
 import 'package:warsha_app/utils/default_text.dart';
+import 'package:warsha_app/view_models/category_v_m.dart';
 import 'package:warsha_app/views/categories/add_category.dart';
 
-class CRUDCategory extends StatelessWidget {
+class CRUDCategory extends StatefulWidget {
   const CRUDCategory({super.key});
+
+  @override
+  State<CRUDCategory> createState() => _CRUDCategoryState();
+}
+
+class _CRUDCategoryState extends State<CRUDCategory> {
+  late final _searchController = TextEditingController(text: context.read<CategoryVM>().query);
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -49,11 +64,9 @@ class CRUDCategory extends StatelessWidget {
   Widget _buildSearchField(BuildContext context) {
     return DefaultForm(
       title: 'Search Category by Name',
-      controller: TextEditingController(),
+      controller: _searchController,
       numberOfLines: 1,
-      onChanged: (val) {
-        // Implement search logic if needed
-      },
+      onChanged: context.read<CategoryVM>().search,
     );
   }
 

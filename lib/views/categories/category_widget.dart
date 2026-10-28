@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:provider/provider.dart';
+import 'package:warsha_app/core/ui/feedback.dart';
 import 'package:warsha_app/models/category_model.dart';
 import 'package:warsha_app/utils/default_text.dart';
 import 'package:warsha_app/view_models/category_v_m.dart';
+import 'package:warsha_app/views/categories/add_category.dart';
 
 class CategoryWidget extends StatelessWidget {
   final CategoryModel category;
@@ -28,9 +30,7 @@ class CategoryWidget extends StatelessWidget {
           builder: (context, constraints) {
             bool isDesktop = constraints.maxWidth > 600;
 
-            return isDesktop
-                ? _buildDesktopLayout(context)
-                : _buildMobileLayout(context);
+            return isDesktop ? _buildDesktopLayout(context) : _buildMobileLayout(context);
           },
         ),
       ),
@@ -42,14 +42,8 @@ class CategoryWidget extends StatelessWidget {
       children: [
         _buildCategoryIcon(context),
         const SizedBox(width: 16),
-        Expanded(
-          child: DefaultText(
-            txt: category.name,
-            size: 16,
-            bold: true,
-            center: false,
-          ),
-        ),
+        Expanded(child: _buildTitle(16)),
+        _buildEditButton(context),
         _buildDeleteButton(context),
       ],
     );
@@ -60,12 +54,41 @@ class CategoryWidget extends StatelessWidget {
       children: [
         _buildCategoryIcon(context),
         const SizedBox(width: 20),
-        Expanded(
-          child: DefaultText(txt: category.name, size: 18, bold: true,             center: false,
-          ),
-        ),
+        Expanded(child: _buildTitle(18)),
+        _buildEditButton(context),
         _buildDeleteButton(context),
       ],
+    );
+  }
+
+  Widget _buildTitle(double size) {
+    final count = category.productCount;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        DefaultText(txt: category.name, size: size, bold: true, center: false),
+        const SizedBox(height: 2),
+        Text(
+          count == 0
+              ? "No products"
+              : count == 1
+                  ? "1 product"
+                  : "$count products",
+          style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEditButton(BuildContext context) {
+    return IconButton(
+      tooltip: "Edit",
+      onPressed: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => AddCategory(category: category)),
+      ),
+      icon: Icon(Iconsax.edit, color: Theme.of(context).colorScheme.tertiary, size: 22),
     );
   }
 
@@ -87,13 +110,19 @@ class CategoryWidget extends StatelessWidget {
   }
 
   Widget _buildDeleteButton(BuildContext context) {
-    final categoryVM = Provider.of<CategoryVM>(context, listen: false);
+    final categoryVM = context.read<CategoryVM>();
 
     return IconButton(
+      tooltip: "Delete",
       onPressed: () async {
         final confirm = await _showDeleteDialog(context);
-        if (confirm == true) {
-          await categoryVM.deleteCategory(category.categoryId);
+        if (confirm != true || !context.mounted) return;
+        final ok = await categoryVM.delete(category);
+        if (!context.mounted) return;
+        if (ok) {
+          showSuccess(context, '"${category.name}" deleted.');
+        } else {
+          showError(context, categoryVM.errorMessage!);
         }
       },
       icon: const Icon(Iconsax.trash, color: Colors.red, size: 24),
@@ -108,7 +137,9 @@ class CategoryWidget extends StatelessWidget {
         content: Text("Are you sure you want to delete ${category.name}?"),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Cancel")),
-          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text("Delete", style: TextStyle(color: Colors.red))),
+          TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text("Delete", style: TextStyle(color: Colors.red))),
         ],
       ),
     );

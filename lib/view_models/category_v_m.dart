@@ -1,116 +1,88 @@
-import 'dart:convert';
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
+import 'package:warsha_app/core/network/api_exception.dart';
+import 'package:warsha_app/core/state/async_view_model.dart';
+import 'package:warsha_app/core/validation/validators.dart';
 import 'package:warsha_app/models/category_model.dart';
 import 'package:warsha_app/services/category_service.dart';
-import 'package:warsha_app/view_models/user_v_m.dart';
 
-class CategoryVM extends ChangeNotifier {
-  final CategoryService _categoryService;
-  final UserViewModel _userViewModel;
+/// Categories screen: list, search, add, edit and delete.
+class CategoryVM extends ChangeNotifier with AsyncViewModel {
+  CategoryVM(this._service);
 
-  List<CategoryModel>? allCategories;
-  bool isLoading = false;
+  final CategoryService _service;
 
-  CategoryVM(this._categoryService, this._userViewModel) {
-    initCategories();
+  static const nameMaxLength = 100;
+  static const descriptionMaxLength = 255;
+
+  List<CategoryModel> _all = [];
+  String _query = '';
+
+  /// Every category, in creation order.
+  List<CategoryModel> get allCategories => List.unmodifiable(_all);
+
+  /// The categories matching the search box.
+  List<CategoryModel> get categories {
+    final q = _query.trim().toLowerCase();
+    if (q.isEmpty) return allCategories;
+    return _all.where((c) => c.name.toLowerCase().contains(q)).toList();
   }
 
-  void initCategories() async {
-    await getAllCategories();
+  String get query => _query;
+
+  Future<bool> fetch() => load(() async => _all = await _service.list());
+
+  void search(String query) {
+    if (query == _query) return;
+    _query = query;
+    notify();
   }
 
-  Future<String> getAllCategories() async {
-    String status = "";
-    isLoading = true;
-    notifyListeners();
+  // ── Validation ──────────────────────────────────────────
 
-    try {
-      final response = await _categoryService.getAllCategories(_userViewModel.token);
+  static String? validateName(String? value) => Validators.firstOf([
+        () => Validators.required(value, 'Enter the category name.'),
+        () => Validators.maxLength(value, nameMaxLength, 'Category name'),
+      ]);
 
-      if (response.statusCode == 200) {
-        status = "categories_fetched";
-        final data = jsonDecode(response.body) as List;
-        allCategories = data.map((item) => CategoryModel.fromJson(item)).toList();
-        debugPrint("Categories fetched successfully");
-      } else {
-        status = "categories_not_fetched";
-        debugPrint("Failed to fetch categories: ${response.statusCode}");
-      }
-    } catch (e) {
-      status = "categories_not_fetched";
-      debugPrint("Error fetching categories: $e");
-    } finally {
-      isLoading = false;
-      notifyListeners();
+  static String? validateDescription(String? value) => Validators.maxLength(value, descriptionMaxLength, 'Description');
+
+  /// Checks [request] the way the backend does, plus duplicate names, so most
+  /// mistakes are caught without a round trip.
+  Map<String, String> validate(CategoryRequest request, {int? editingId}) {
+    final errors = Validators.collect({
+      'name': () => validateName(request.name),
+      'description': () => validateDescription(request.description),
+    });
+    if (!errors.containsKey('name')) {
+      final key = _key(request.name);
+      final clash = _all.where((c) => c.categoryId != editingId && _key(c.name) == key);
+      if (clash.isNotEmpty) errors['name'] = 'A category named "${clash.first.name}" already exists.';
     }
-    return status;
+    return errors;
   }
 
-  Future<String> addCategory(Map<String, dynamic> categoryData) async {
-    String status = "";
-    try {
-      isLoading = true;
-      notifyListeners();
+  // ── CRUD ────────────────────────────────────────────────
+  // Each returns true on success; on failure [error] / [fieldError] say why.
 
-      final response = await _categoryService.addCategory(_userViewModel.token, categoryData);
-
-      if (response.statusCode == 201 || response.statusCode == 200) {
-        debugPrint("Category added successfully");
-        await getAllCategories(); // Refresh the list
-        status = "category_added";
-      } else {
-        debugPrint("Failed to add category: ${response.statusCode}");
-        status = "category_not_added";
-      }
-    } catch (e) {
-      debugPrint("Error adding category: $e");
-      status = "category_not_added";
-    } finally {
-      isLoading = false;
-      notifyListeners();
-    }
-    return status;
+  Future<bool> add(CategoryRequest request) async {
+    final errors = validate(request);
+    if (errors.isNotEmpty) return fail(ApiException.validation(errors));
+    return run(() async => _all = [..._all, await _service.create(request)]);
   }
 
-  Future<String> updateCategory(int id, Map<String, dynamic> categoryData) async {
-    String status = "";
-    try {
-      final response = await _categoryService.updateCategory(_userViewModel.token, id, categoryData);
-
-      if (response.statusCode == 200) {
-        debugPrint("Category updated successfully");
-        await getAllCategories(); // Refresh the list
-        status = "category_updated";
-      } else {
-        status = "category_not_updated";
-      }
-    } catch (e) {
-      debugPrint("Error updating category: $e");
-      status = "category_not_updated";
-    } finally {
-      notifyListeners();
-    }
-    return status;
+  Future<bool> update(int id, CategoryRequest request) async {
+    final errors = validate(request, editingId: id);
+    if (errors.isNotEmpty) return fail(ApiException.validation(errors));
+    return run(() async {
+      final updated = await _service.update(id, request);
+      _all = [for (final c in _all) c.categoryId == id ? updated : c];
+    });
   }
 
-  Future<String> deleteCategory(int id) async {
-    String status = "";
-    try {
-      final response = await _categoryService.deleteCategory(_userViewModel.token, id);
+  Future<bool> delete(CategoryModel category) => run(() async {
+        await _service.delete(category.categoryId);
+        _all = _all.where((c) => c.categoryId != category.categoryId).toList();
+      });
 
-      if (response.statusCode == 200 || response.statusCode == 204) {
-        status = "category_deleted";
-        debugPrint("Category deleted successfully");
-        await getAllCategories(); // Refresh the list
-      } else {
-        status = "category_not_deleted";
-      }
-    } catch (e) {
-      status = "category_not_deleted";
-      debugPrint("Error deleting category: $e");
-    } finally {
-      notifyListeners();
-    }
-    return status;
-  }
+  static String _key(String name) => name.trim().replaceAll(RegExp(r'\s+'), ' ').toLowerCase();
 }
