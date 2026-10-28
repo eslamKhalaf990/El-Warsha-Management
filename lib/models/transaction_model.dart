@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'account_balance.dart';
+import 'json_read.dart';
 
 class Category {
   final int id;
@@ -14,11 +15,14 @@ class Category {
 
   factory Category.fromJson(Map<String, dynamic> json) {
     return Category(
-      id: json['categoryID'] as int,
-      categoryName: json['categoryName'] as String,
-      categoryType: json['categoryType'] as String,
+      id: readInt(json['categoryID'] ?? json['id']) ?? 0,
+      categoryName: readString(json['categoryName'] ?? json['name']),
+      categoryType: readString(json['categoryType'] ?? json['type']),
     );
   }
+
+  /// For transactions booked without a category.
+  static final none = Category(id: 0, categoryName: '—', categoryType: '');
 
   Map<String, dynamic> toJson() {
     return {
@@ -55,20 +59,18 @@ class BankTransaction {
 
   factory BankTransaction.fromJson(Map<String, dynamic> json) {
     return BankTransaction(
-      id: json['id'] as int,
-      bankAccount: BankAccount.fromJson(json['bankAccount']),
-      category: Category.fromJson(json['category']),
-      transactionType: json['transactionType'] as String,
-      amount: (json['amount'] as num).toDouble(),
-      description: json['description'] as String,
-      referenceType: json['referenceType'],
-      referenceId: json['referenceId'],
-      createdAt: DateTime.parse(json['createdAt'] as String),
+      id: readInt(json['id']) ?? 0,
+      bankAccount: BankAccount.fromJson(readMap(json['bankAccount']) ?? const {}),
+      category: readMap(json['category']) == null ? Category.none : Category.fromJson(readMap(json['category'])!),
+      transactionType: readString(json['transactionType']),
+      amount: readDouble(json['amount']),
+      description: readString(json['description']),
+      referenceType: readStringOrNull(json['referenceType']),
+      referenceId: readInt(json['referenceId']),
+      createdAt: readDate(json['createdAt']) ?? DateTime.fromMillisecondsSinceEpoch(0),
     );
   }
 
-  static List<BankTransaction> listFromJson(String jsonStr) {
-    final data = jsonDecode(jsonStr) as List;
-    return data.map((e) => BankTransaction.fromJson(e)).toList();
-  }
+  static List<BankTransaction> listFromJson(String jsonStr) =>
+      readList(jsonDecode(jsonStr)).map(BankTransaction.fromJson).toList();
 }

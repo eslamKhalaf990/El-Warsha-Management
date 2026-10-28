@@ -1,159 +1,128 @@
-import 'dart:convert';
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
+import 'package:warsha_app/core/network/api_exception.dart';
+import 'package:warsha_app/core/state/async_view_model.dart';
+import 'package:warsha_app/core/validation/validators.dart';
 import 'package:warsha_app/models/account_balance.dart';
 import 'package:warsha_app/models/transaction_add_model.dart';
 import 'package:warsha_app/models/transaction_cateogry.dart';
 import 'package:warsha_app/models/transaction_model.dart';
 import 'package:warsha_app/services/accounting_service.dart';
-import 'package:warsha_app/view_models/user_v_m.dart';
 
-class AccountingVM extends ChangeNotifier {
-  final AccountingService _accountingService;
-  final UserViewModel _userViewModel;
+/// Accounting screen (balances, transactions, deposits/withdrawals, reset)
+/// and the bank-account pickers on the order screens.
+class AccountingVM extends ChangeNotifier with AsyncViewModel {
+  AccountingVM(this._service);
 
-  List<BankAccount>? accountsBalance;
-  List<BankTransaction>? allTransactions;
-  List<TransactionCategory>? allTransactionCategories;
+  final AccountingService _service;
 
-  AccountingVM(this._accountingService, this._userViewModel) {
-    initAccounting();
-  }
+  static const descriptionMaxLength = 255;
 
-  void initAccounting () async {
-    await getTransactions();
-    await getAccountsBalance();
-    await getTransactionCategories();
-  }
+  List<BankAccount>? _accounts;
+  List<BankTransaction>? _transactions;
+  List<TransactionCategory>? _categories;
 
-  Future<String> getAccountsBalance({String? password}) async {
-    String status = "";
-    try {
-      final response = await _accountingService.getAccountsBalance(_userViewModel.token, password: password);
+  /// Kept for this session only, so refreshes keep showing the safe.
+  String? _ownerPassword;
 
-      if (response.statusCode == 200) {
+  /// Null until loaded.
+  List<BankAccount>? get accountsBalance => _accounts;
+  List<BankTransaction>? get allTransactions => _transactions;
+  List<TransactionCategory>? get allTransactionCategories => _categories;
 
-        status = "balance_fetched";
+  bool get isSafeUnlocked => _ownerPassword != null;
 
-        final data = jsonDecode(response.body) as List;
+  /// Loads balances, transactions and categories together.
+  Future<bool> fetch() => load(() async {
+        final results = await Future.wait([
+          _service.accounts(ownerPassword: _ownerPassword),
+          _service.transactions(),
+          _service.categories(),
+        ]);
+        _accounts = results[0] as List<BankAccount>;
+        _transactions = results[1] as List<BankTransaction>;
+        _categories = results[2] as List<TransactionCategory>;
+      });
 
-        accountsBalance = data.map((item) => BankAccount.fromJson(item)).toList();
-        debugPrint("balance fetched successfully");
-      } else {
+  /// Older name used by the order screens after a booking changes balances.
+  Future<bool> initAccounting() => fetch();
 
-        status = "balance_not_fetched";
-        debugPrint("Failed to fetch balance: ${response.statusCode}");
-      }
-
-    } catch (e) {
-      status = "balance_not_fetched";
-      debugPrint("Error fetching balance: $e");
-    } finally {
-      notifyListeners();
+  /// Shows the owner's safe when [password] is right; the first password ever
+  /// entered becomes the safe's password.
+  Future<bool> unlockSafe(String password) async {
+    if (password.trim().isEmpty) {
+      return fail(ApiException.validation({'password': 'Enter the owner password.'}));
     }
-    return status;
+    return run(() async {
+      _accounts = await _service.accounts(ownerPassword: password);
+      _ownerPassword = password;
+    });
   }
 
-  Future<String> deleteAllTransactions() async {
-    String status = "";
-    try {
-      final response = await _accountingService.deleteAllTransactions(_userViewModel.token);
-
-      if (response.statusCode == 200) {
-
-        status = "transactions_deleted";
-
-        debugPrint("transactions deleted successfully");
-      } else {
-
-        status = "transactions_not_deleted";
-        debugPrint("Failed to delete transactions: ${response.statusCode}");
-      }
-
-    } catch (e) {
-      status = "transactions_not_deleted";
-      debugPrint("Error deleting transactions: $e");
-    } finally {
-      notifyListeners();
-    }
-    return status;
+  void lockSafe() {
+    if (_ownerPassword == null) return;
+    _ownerPassword = null;
+    fetch();
   }
 
-  Future<String> getTransactions() async {
-    String status = "";
-    try {
-      final response = await _accountingService.getTransactions(_userViewModel.token);
+  // ── Validation ──────────────────────────────────────────
 
-      if (response.statusCode == 200) {
-
-        status = "transactions_fetched";
-
-        allTransactions = BankTransaction.listFromJson(response.body);
-        debugPrint("balance fetched successfully");
-      } else {
-
-        status = "transactions_not_fetched";
-        debugPrint("Failed to fetch transactions: ${response.statusCode}");
-      }
-
-    } catch (e) {
-      status = "transactions_not_fetched";
-      debugPrint("Error fetching transactions: $e");
-    } finally {
-      notifyListeners();
+  /// Checks a deposit/withdrawal typed on the screen. [amountText] is the raw
+  /// amount box.
+  Map<String, String> validateTransaction({
+    required BankAccount account,
+    required String transactionType,
+    required String amountText,
+    required String description,
+  }) {
+    final errors = Validators.collect({
+      'amount': () => Validators.firstOf([
+            () => Validators.nonNegativeNumber(amountText, 'Amount', required: true),
+            () => _amount(amountText)! <= 0 ? 'Amount must be more than 0.' : null,
+            () => RegExp(r'^\d+([.,]\d{1,2})?$').hasMatch(amountText.trim())
+                ? null
+                : 'Amount can have at most 2 decimal places.',
+          ]),
+      'description': () => Validators.maxLength(description, descriptionMaxLength, 'Description'),
+    });
+    final amount = _amount(amountText);
+    if (!errors.containsKey('amount') && transactionType == 'Withdrawal' && amount! > account.currentBalance) {
+      errors['amount'] = '${account.name} only has ${_money(account.currentBalance)} EGP.';
     }
-    return status;
+    return errors;
   }
 
-  Future<String> addTransaction(TransactionModel transaction) async {
-    String status = "";
-    try {
-      final response = await _accountingService.addTransaction(
-        _userViewModel.token,
-        transaction,
-      );
+  static double? _amount(String text) => double.tryParse(text.trim().replaceAll(',', '.'));
 
-      if (response.statusCode == 200) {
-        debugPrint("Transaction added successfully");
+  static String _money(double v) => v == v.roundToDouble() ? v.toStringAsFixed(0) : v.toStringAsFixed(2);
 
-        initAccounting();
+  // ── Actions ─────────────────────────────────────────────
 
-        status = "transaction_added";
-      } else {
-        debugPrint("Failed to add transaction: ${response.statusCode}");
-        status = "transaction_not_added";
-      }
-    } catch (e) {
-      debugPrint("Error adding transaction: $e");
-      status = "transaction_not_added";
-    } finally {
-      notifyListeners();
-    }
-    return status;
+  Future<bool> addTransaction({
+    required BankAccount account,
+    required String transactionType,
+    required String amountText,
+    required String description,
+    int? categoryId,
+  }) async {
+    final errors = validateTransaction(
+        account: account, transactionType: transactionType, amountText: amountText, description: description);
+    if (errors.isNotEmpty) return fail(ApiException.validation(errors));
+    final ok = await run(() => _service.addTransaction(TransactionModel(
+          bankAccountId: account.id,
+          categoryId: categoryId,
+          transactionType: transactionType,
+          amount: _amount(amountText)!,
+          description: description,
+        )));
+    if (ok) await fetch();
+    return ok;
   }
 
-  Future<String> getTransactionCategories() async {
-    String status = "";
-    try {
-      final response = await _accountingService.getTransactionCategories(_userViewModel.token);
-
-      if (response.statusCode == 200) {
-
-        status = "categories_fetched";
-
-        allTransactionCategories = TransactionCategory.listFromJson(response.body);
-        debugPrint("balance fetched successfully");
-      } else {
-
-        status = "categories_not_fetched";
-        debugPrint("Failed to fetch transactions categories: ${response.statusCode}");
-      }
-
-    } catch (e) {
-      status = "categories_not_fetched";
-      debugPrint("Error fetching transactions categories: $e");
-    } finally {
-      notifyListeners();
-    }
-    return status;
+  /// Deletes every transaction and zeroes balances.
+  Future<bool> resetAll({String? ownerPassword}) async {
+    final password = (ownerPassword == null || ownerPassword.isEmpty) ? _ownerPassword : ownerPassword;
+    final ok = await run(() => _service.resetAll(ownerPassword: password));
+    if (ok) await fetch();
+    return ok;
   }
 }

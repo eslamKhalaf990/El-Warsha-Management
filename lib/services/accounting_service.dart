@@ -1,122 +1,43 @@
-import 'dart:async';
-import 'dart:convert';
-import 'package:flutter/cupertino.dart';
-import 'package:http/http.dart' as http;
+import 'package:warsha_app/core/network/api_client.dart';
+import 'package:warsha_app/models/account_balance.dart';
+import 'package:warsha_app/models/json_read.dart';
 import 'package:warsha_app/models/transaction_add_model.dart';
-import 'package:warsha_app/utils/const_values.dart';
+import 'package:warsha_app/models/transaction_cateogry.dart';
+import 'package:warsha_app/models/transaction_model.dart';
 
-import 'base_url.dart';
-
+/// Bank accounts and transactions (backend: BankTransactionController under
+/// `/api/bank`). Every failure surfaces as an ApiException from [ApiClient].
 class AccountingService {
+  AccountingService(this._api);
 
-  // This class will handle the logic for attendance management.
-  Future<http.Response> getAccountsBalance(String token, {String? password}) async {
-    debugPrint("getAccountBalance called");
-    http.Response response;
-    try {
-      response = await http.get(
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          "Authorization": 'Bearer $token',
-        },
-        Uri.parse(
-          "${Baseurl.getAccountsBalanceAPI}?password=${password ?? ""}",
-        ),
-      ).timeout(const Duration(seconds: Constants.TIMEOUT));
+  final ApiClient _api;
 
-      debugPrint(response.body);
+  /// Sent as a header so the password never appears in a URL or a server log.
+  static const ownerPasswordHeader = 'X-Owner-Password';
 
-    } on TimeoutException {
-      throw Exception('The request timed out. Please try again later.');
-    } catch (e) {
-      throw Exception('Failed to get your accounts: $e');
-    }
-    return response;
+  /// Regular accounts; the owner's safe too when [ownerPassword] is right.
+  /// A wrong password fails with FORBIDDEN.
+  Future<List<BankAccount>> accounts({String? ownerPassword}) async {
+    final body = await _api.get('api/bank/accounts',
+        headers: ownerPassword == null ? null : {ownerPasswordHeader: ownerPassword});
+    return readList(body).map(BankAccount.fromJson).toList();
   }
 
-  Future<http.Response> deleteAllTransactions(String token) async {
-    debugPrint("deleteAllTransactions called");
-    http.Response response;
-    try {
-      response = await http.delete(
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          "Authorization": 'Bearer $token',
-        },
-        Uri.parse(
-          Baseurl.deleteAllTransactionsAPI,
-        ),
-      ).timeout(const Duration(seconds: Constants.TIMEOUT));
-    } on TimeoutException {
-      throw Exception('The request timed out. Please try again later.');
-    } catch (e) {
-      throw Exception('Failed to delete your transactions: $e');
-    }
-    return response;
+  /// Every transaction, newest first.
+  Future<List<BankTransaction>> transactions() async =>
+      readList(await _api.get('api/bank/transactions')).map(BankTransaction.fromJson).toList();
+
+  Future<List<TransactionCategory>> categories() async =>
+      readList(await _api.get('api/bank/transactionCategories')).map(TransactionCategory.fromJson).toList();
+
+  Future<void> addTransaction(TransactionModel transaction) async {
+    await _api.post('api/bank/transaction', body: transaction.toJson());
   }
 
-  Future<http.Response> getTransactions(String token) async {
-    debugPrint("getTransactions called");
-    http.Response response;
-    try {
-      response = await http.get(
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          "Authorization": 'Bearer $token',
-        },
-        Uri.parse(
-          Baseurl.getTransactionsAPI,
-        ),
-      ).timeout(const Duration(seconds: Constants.TIMEOUT));
-    } on TimeoutException {
-      throw Exception('The request timed out. Please try again later.');
-    } catch (e) {
-      throw Exception('Failed to get your transactions: $e');
-    }
-    return response;
+  /// Deletes every transaction and zeroes balances. Needs the owner password
+  /// once one is set.
+  Future<void> resetAll({String? ownerPassword}) async {
+    await _api.delete('api/bank/resetTransactions',
+        headers: ownerPassword == null ? null : {ownerPasswordHeader: ownerPassword});
   }
-
-  Future<http.Response> getTransactionCategories(String token) async {
-    debugPrint("getTransactionCategories called");
-    http.Response response;
-    try {
-      response = await http.get(
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          "Authorization": 'Bearer $token',
-        },
-        Uri.parse(
-          Baseurl.getTransactionCategoriesAPI,
-        ),
-      ).timeout(const Duration(seconds: Constants.TIMEOUT));
-    } on TimeoutException {
-      throw Exception('The request timed out. Please try again later.');
-    } catch (e) {
-      throw Exception('Failed to get your transaction categories: $e');
-    }
-    return response;
-  }
-
-  Future<http.Response> addTransaction(String token, TransactionModel transaction) async {
-    debugPrint("addTransaction called");
-
-    try {
-      final response = await http.post(
-        Uri.parse(Baseurl.addTransactionAPI),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-        body: jsonEncode(transaction.toJson()),
-      ).timeout(const Duration(seconds: Constants.TIMEOUT));
-
-      return response;
-    } on TimeoutException {
-      throw Exception('The request timed out. Please try again later.');
-    } catch (e) {
-      throw Exception('Failed to add your transaction: $e');
-    }
-  }
-
-
 }

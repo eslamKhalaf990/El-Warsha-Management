@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:warsha_app/models/account_balance.dart';
+import 'package:warsha_app/core/ui/feedback.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:provider/provider.dart';
-import 'package:warsha_app/models/transaction_add_model.dart';
 import 'package:warsha_app/models/transaction_cateogry.dart';
 import 'package:warsha_app/utils/default_text.dart';
 import 'package:warsha_app/view_models/accountings_v_m.dart';
@@ -22,11 +23,13 @@ class Accounting extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: accountBalance == null
-                ? Center(
-              child: SpinKitChasingDots(
-                color: Theme.of(context).colorScheme.tertiary,
-              ),
-            )
+                ? (value.loadFailed
+                    ? LoadErrorView(message: value.errorMessage!, onRetry: value.fetch)
+                    : Center(
+                        child: SpinKitChasingDots(
+                          color: Theme.of(context).colorScheme.tertiary,
+                        ),
+                      ))
                 : CustomScrollView( // Changed from Column to CustomScrollView
             slivers: [
               // TOP SECTION (Title, Reset, Cards)
@@ -74,63 +77,7 @@ class Accounting extends StatelessWidget {
                         const SizedBox(width: 10),
 
                         InkWell(
-                          onTap: () {
-                            // Create a TextEditingController to get the password from the TextField
-                            final passwordController = TextEditingController();
-
-                            showDialog(
-                              context: context,
-                              builder: (dialogContext) {
-                                return AlertDialog(
-                                  title: const Text("Enter Your Password"),
-                                  content: TextField(
-                                    controller: passwordController,
-                                    obscureText: true, // Hides the password text
-                                    autofocus: true,
-                                    decoration: const InputDecoration(
-                                      labelText: 'Password',
-                                      hintText: 'Enter password',
-                                      prefixIcon: Padding(
-                                        padding: EdgeInsets.symmetric(horizontal: 10.0),
-                                        child: Icon(Iconsax.key_copy),
-                                      ),
-                                    ),
-                                  ),
-                                  actions: [
-                                    TextButton(
-                                      child: const Text("Cancel"),
-                                      onPressed: () {
-                                        Navigator.of(dialogContext).pop(); // Close the dialog
-                                      },
-                                    ),
-                                    ElevatedButton(
-                                      style: ElevatedButton.styleFrom(
-                                        // backgroundColor: Theme.of(context).colorScheme.tertiary,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(15),
-                                        ),
-                                      ),
-                                      onPressed: () {
-                                        // Get the password from the controller
-                                        final password = passwordController.text;
-
-                                        // Call the provider method with the entered password
-                                        if (password.isNotEmpty) {
-                                          Navigator.of(context).pop(); // Close the dialog
-
-                                          value.getAccountsBalance(password: password);
-                                        }
-                                      },
-                                      child: const Text("Open"),
-                                    ),
-                                  ],
-                                );
-                              },
-                            ).whenComplete(() {
-                              // Dispose the controller when the dialog is closed to free up resources
-                              passwordController.dispose();
-                            });
-                          },
+                          onTap: () => showDialog(context: context, builder: (_) => const _UnlockSafeDialog()),
 
                           child: Container(
                             decoration: BoxDecoration(
@@ -194,16 +141,10 @@ class Accounting extends StatelessWidget {
                               color: Theme.of(context).colorScheme.tertiary,
                               onDeposit: () => _showTransactionDialog(
                                   value, Colors.green, context,
-                                  bankAccountId: accountBalance[4].id,
-                                  categoryId: 1,
-                                  transactionType: "Deposit",
-                                  accountName: accountBalance[4].name),
+                                  account: accountBalance[4], transactionType: "Deposit"),
                               onWithdraw: () => _showTransactionDialog(
                                   value, Colors.red, context,
-                                  bankAccountId: accountBalance[4].id,
-                                  categoryId: 1,
-                                  transactionType: "Withdrawal",
-                                  accountName: accountBalance[4].name),
+                                  account: accountBalance[4], transactionType: "Withdrawal"),
                             ) : Container(),
 
                             _buildCashCard(
@@ -216,16 +157,10 @@ class Accounting extends StatelessWidget {
                               color: Colors.red,
                               onDeposit: () => _showTransactionDialog(
                                   value, Colors.green, context,
-                                  bankAccountId: accountBalance[0].id,
-                                  categoryId: 1,
-                                  transactionType: "Deposit",
-                                  accountName: accountBalance[0].name),
+                                  account: accountBalance[0], transactionType: "Deposit"),
                               onWithdraw: () => _showTransactionDialog(
                                   value, Colors.red, context,
-                                  bankAccountId: accountBalance[0].id,
-                                  categoryId: 1,
-                                  transactionType: "Withdrawal",
-                                  accountName: accountBalance[0].name),
+                                  account: accountBalance[0], transactionType: "Withdrawal"),
                             ),
                             _buildCashCard(
                               context,
@@ -237,16 +172,10 @@ class Accounting extends StatelessWidget {
                               color: Colors.blue,
                               onDeposit: () => _showTransactionDialog(
                                   value, Colors.green, context,
-                                  bankAccountId: accountBalance[1].id,
-                                  categoryId: 1,
-                                  transactionType: "Deposit",
-                                  accountName: accountBalance[1].name),
+                                  account: accountBalance[1], transactionType: "Deposit"),
                               onWithdraw: () => _showTransactionDialog(
                                   value, Colors.red, context,
-                                  bankAccountId: accountBalance[1].id,
-                                  categoryId: 1,
-                                  transactionType: "Withdrawal",
-                                  accountName: accountBalance[1].name),
+                                  account: accountBalance[1], transactionType: "Withdrawal"),
                             ),
                             _buildCashCard(
                               context,
@@ -258,16 +187,10 @@ class Accounting extends StatelessWidget {
                               color: Colors.green,
                               onDeposit: () => _showTransactionDialog(
                                   value, Colors.green, context,
-                                  bankAccountId: accountBalance[2].id,
-                                  categoryId: 1,
-                                  transactionType: "Deposit",
-                                  accountName: accountBalance[2].name),
+                                  account: accountBalance[2], transactionType: "Deposit"),
                               onWithdraw: () => _showTransactionDialog(
                                   value, Colors.red, context,
-                                  bankAccountId: accountBalance[2].id,
-                                  categoryId: 1,
-                                  transactionType: "Withdrawal",
-                                  accountName: accountBalance[2].name),
+                                  account: accountBalance[2], transactionType: "Withdrawal"),
                             ),
                             _buildCashCard(
                               context,
@@ -279,16 +202,10 @@ class Accounting extends StatelessWidget {
                               color: Colors.yellow.shade800,
                               onDeposit: () => _showTransactionDialog(
                                   value, Colors.green, context,
-                                  bankAccountId: accountBalance[3].id,
-                                  categoryId: 1,
-                                  transactionType: "Deposit",
-                                  accountName: accountBalance[3].name),
+                                  account: accountBalance[3], transactionType: "Deposit"),
                               onWithdraw: () => _showTransactionDialog(
                                   value, Colors.red, context,
-                                  bankAccountId: accountBalance[3].id,
-                                  categoryId: 1,
-                                  transactionType: "Withdrawal",
-                                  accountName: accountBalance[3].name),
+                                  account: accountBalance[3], transactionType: "Withdrawal"),
                             ),
                           ],
                         );
@@ -331,243 +248,19 @@ class Accounting extends StatelessWidget {
   // [Paste the helper methods from the previous response here if you haven't already]
 
   void _showResetDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15),
-          ),
-          content: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 400),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  "Are you sure you want to reset all transactions?",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 16),
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(15),
-                        ),
-                      ),
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text("Cancel"),
-                    ),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(15),
-                        ),
-                      ),
-                      onPressed: () async {
-                        final accountingVM =
-                        Provider.of<AccountingVM>(context, listen: false);
-                        final state = await accountingVM.deleteAllTransactions();
-
-                        if (!context.mounted) return;
-                        Navigator.pop(context);
-
-                        if (state == "transactions_deleted") {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text("Transactions reset successfully"),
-                              backgroundColor: Colors.red,
-                            ),
-                          );
-                          accountingVM.initAccounting();
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text("Failed to reset transactions"),
-                              backgroundColor: Colors.red,
-                            ),
-                          );
-                        }
-                      },
-                      child: const Text("Reset"),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
+    showDialog(context: context, builder: (_) => const _ResetDialog());
   }
 
   void _showTransactionDialog(
-      AccountingVM accountVM,
-      Color color,
-      BuildContext context, {
-        required int bankAccountId,
-        required int categoryId,
-        required String transactionType,
-        required String accountName,
-      }) {
-    final amountController = TextEditingController();
-    final descriptionController = TextEditingController();
-
+    AccountingVM accountVM,
+    Color color,
+    BuildContext context, {
+    required BankAccount account,
+    required String transactionType,
+  }) {
     showDialog(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          scrollable: true,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15),
-          ),
-          title: Center(
-            child: Wrap(
-              alignment: WrapAlignment.center,
-              children: [
-                Text(
-                  "$transactionType ",
-                  style: TextStyle(fontWeight: FontWeight.bold, color: color),
-                ),
-                Text(
-                  ": $accountName",
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-          ),
-          content: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 400),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  cursorColor: Theme.of(context).colorScheme.tertiary,
-                  controller: amountController,
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(
-                    prefixIcon: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 15.0),
-                      child: Icon(Iconsax.money_copy, color: Colors.green.shade400),
-                    ),
-                    suffixIcon: const Padding(
-                        padding: EdgeInsets.only(left: 15.0, right: 15, top: 11),
-                        child: DefaultText(txt: "EGP")),
-                    hintText: "Amount",
-                    hintStyle: const TextStyle(fontSize: 14, color: Colors.grey),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                DropdownButtonFormField<TransactionCategory>(
-                  initialValue: accountVM.allTransactionCategories?.first,
-                  isExpanded: true,
-                  items: accountVM.allTransactionCategories == null
-                      ? []
-                      : accountVM.allTransactionCategories!.map((cat) {
-                    return DropdownMenuItem<TransactionCategory>(
-                      value: cat,
-                      child: Text(
-                        cat.categoryName,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    );
-                  }).toList(),
-                  icon: const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 15.0),
-                    child: Icon(Iconsax.arrow_down_1_copy),
-                  ),
-                  onChanged: (value) {
-                    categoryId = value!.categoryID;
-                  },
-                  decoration: InputDecoration(
-                    prefixIcon: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 15.0),
-                      child: Icon(Iconsax.transaction_minus_copy,
-                          color: Colors.green.shade400),
-                    ),
-                    hintText: "Select Category",
-                    hintStyle: const TextStyle(fontSize: 14, color: Colors.grey),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                TextField(
-                  cursorColor: Theme.of(context).colorScheme.tertiary,
-                  controller: descriptionController,
-                  decoration: InputDecoration(
-                    prefixIcon: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 15.0),
-                      child: Icon(Iconsax.book_copy, color: Colors.green.shade400),
-                    ),
-                    hintText: "Description",
-                    hintStyle: const TextStyle(fontSize: 14, color: Colors.grey),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Cancel"),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: color,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(15),
-                ),
-              ),
-              onPressed: () async {
-                final transaction = TransactionModel(
-                  bankAccountId: bankAccountId,
-                  categoryId: categoryId,
-                  transactionType: transactionType,
-                  amount: double.tryParse(amountController.text) ?? 0,
-                  description: descriptionController.text.trim(),
-                );
-
-                final accountingVM =
-                Provider.of<AccountingVM>(context, listen: false);
-
-                showDialog(
-                  context: context,
-                  barrierDismissible: false,
-                  builder: (_) => Center(
-                      child: SpinKitChasingDots(
-                        color: Theme.of(context).colorScheme.tertiary,
-                        size: 30,
-                      )),
-                );
-
-                final status = await accountingVM.addTransaction(transaction);
-
-                if (!context.mounted) return;
-                Navigator.pop(context);
-                Navigator.pop(context);
-
-                if (status == "transaction_added") {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Transaction added successfully")),
-                  );
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Failed to add transaction")),
-                  );
-                }
-              },
-              child: Text(transactionType),
-            ),
-          ],
-        );
-      },
+      builder: (_) => _TransactionDialog(account: account, transactionType: transactionType, color: color),
     );
   }
 
@@ -660,6 +353,262 @@ class Accounting extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Asks for the owner password and shows the owner's safe when it is right.
+class _UnlockSafeDialog extends StatefulWidget {
+  const _UnlockSafeDialog();
+
+  @override
+  State<_UnlockSafeDialog> createState() => _UnlockSafeDialogState();
+}
+
+class _UnlockSafeDialogState extends State<_UnlockSafeDialog> {
+  final _password = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) context.read<AccountingVM>().clearError();
+    });
+  }
+
+  @override
+  void dispose() {
+    _password.dispose();
+    super.dispose();
+  }
+
+  Future<void> _open() async {
+    final vm = context.read<AccountingVM>();
+    final ok = await vm.unlockSafe(_password.text);
+    if (!mounted) return;
+    if (ok) Navigator.pop(context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final vm = context.watch<AccountingVM>();
+    // A wrong password comes back as a general error; show it under the field too
+    final error = vm.fieldError('password') ?? (vm.error != null && !vm.loadFailed ? vm.errorMessage : null);
+    return AlertDialog(
+      title: const Text("Enter the owner password"),
+      content: TextField(
+        controller: _password,
+        obscureText: true,
+        autofocus: true,
+        onChanged: (_) => vm.clearError(),
+        onSubmitted: (_) => _open(),
+        decoration: InputDecoration(
+          labelText: 'Password',
+          errorText: error,
+          prefixIcon: const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 10.0),
+            child: Icon(Iconsax.key_copy),
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
+        ElevatedButton(onPressed: vm.isSaving ? null : _open, child: const Text("Open")),
+      ],
+    );
+  }
+}
+
+/// Confirms wiping every transaction; asks for the owner password, which the
+/// server requires once one is set.
+class _ResetDialog extends StatefulWidget {
+  const _ResetDialog();
+
+  @override
+  State<_ResetDialog> createState() => _ResetDialogState();
+}
+
+class _ResetDialogState extends State<_ResetDialog> {
+  final _password = TextEditingController();
+
+  @override
+  void dispose() {
+    _password.dispose();
+    super.dispose();
+  }
+
+  Future<void> _reset() async {
+    final vm = context.read<AccountingVM>();
+    final ok = await vm.resetAll(ownerPassword: _password.text);
+    if (!mounted) return;
+    reportResult(context, ok: ok, errorMessage: vm.errorMessage, success: 'All transactions were reset.', pop: ok);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final vm = context.watch<AccountingVM>();
+    return AlertDialog(
+      title: const Text("Reset all transactions?"),
+      content: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 400),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text("This deletes every transaction and sets all balances to 0. It can't be undone."),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _password,
+              obscureText: true,
+              decoration: const InputDecoration(labelText: 'Owner password', prefixIcon: Icon(Iconsax.key_copy)),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+          onPressed: vm.isSaving ? null : _reset,
+          child: const Text("Reset"),
+        ),
+      ],
+    );
+  }
+}
+
+/// A deposit to or withdrawal from [account].
+class _TransactionDialog extends StatefulWidget {
+  const _TransactionDialog({required this.account, required this.transactionType, required this.color});
+
+  final BankAccount account;
+  final String transactionType;
+  final Color color;
+
+  @override
+  State<_TransactionDialog> createState() => _TransactionDialogState();
+}
+
+class _TransactionDialogState extends State<_TransactionDialog> {
+  final _amount = TextEditingController();
+  final _description = TextEditingController();
+  int? _categoryId;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final vm = context.read<AccountingVM>();
+      vm.clearError();
+      setState(() => _categoryId = vm.allTransactionCategories?.firstOrNull?.categoryID);
+    });
+  }
+
+  @override
+  void dispose() {
+    _amount.dispose();
+    _description.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    final vm = context.read<AccountingVM>();
+    final ok = await vm.addTransaction(
+      account: widget.account,
+      transactionType: widget.transactionType,
+      amountText: _amount.text,
+      description: _description.text,
+      categoryId: _categoryId,
+    );
+    if (!mounted) return;
+    reportResult(
+      context,
+      ok: ok,
+      errorMessage: vm.errorMessage,
+      success: '${widget.transactionType} saved.',
+      fieldError: vm.fieldError,
+      fields: const ['amount', 'description'],
+      pop: true,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final vm = context.watch<AccountingVM>();
+    final categories = vm.allTransactionCategories ?? const <TransactionCategory>[];
+    return AlertDialog(
+      scrollable: true,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+      title: Center(
+        child: Wrap(
+          alignment: WrapAlignment.center,
+          children: [
+            Text("${widget.transactionType} ", style: TextStyle(fontWeight: FontWeight.bold, color: widget.color)),
+            Text(": ${widget.account.name}", style: const TextStyle(fontWeight: FontWeight.bold)),
+          ],
+        ),
+      ),
+      content: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 400),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: _amount,
+              autofocus: true,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              onChanged: (_) => vm.clearError(),
+              decoration: InputDecoration(
+                prefixIcon: Icon(Iconsax.money_copy, color: Colors.green.shade400),
+                suffixText: "EGP",
+                hintText: "Amount",
+                errorText: vm.fieldError('amount'),
+                errorMaxLines: 2,
+              ),
+            ),
+            const SizedBox(height: 10),
+            DropdownButtonFormField<int>(
+              initialValue: _categoryId,
+              isExpanded: true,
+              items: [
+                for (final cat in categories)
+                  DropdownMenuItem(value: cat.categoryID, child: Text(cat.categoryName, overflow: TextOverflow.ellipsis)),
+              ],
+              onChanged: (value) => setState(() => _categoryId = value),
+              decoration: InputDecoration(
+                prefixIcon: Icon(Iconsax.transaction_minus_copy, color: Colors.green.shade400),
+                hintText: "Select category",
+              ),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: _description,
+              maxLength: AccountingVM.descriptionMaxLength,
+              onChanged: (_) => vm.clearError(),
+              decoration: InputDecoration(
+                prefixIcon: Icon(Iconsax.book_copy, color: Colors.green.shade400),
+                hintText: "Description",
+                counterText: '',
+                errorText: vm.fieldError('description'),
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: widget.color,
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+          ),
+          onPressed: vm.isSaving ? null : _save,
+          child: vm.isSaving
+              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+              : Text(widget.transactionType),
+        ),
+      ],
     );
   }
 }

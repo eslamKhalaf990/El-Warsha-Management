@@ -265,7 +265,7 @@ class TransactionsTable extends StatelessWidget {
                   DataCell(SizedBox(
                     width: 280,
                     child: Text(
-                      t.description ?? "",
+                      t.description,
                       overflow: TextOverflow.ellipsis,
                     ),
                   )),

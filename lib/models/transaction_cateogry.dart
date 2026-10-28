@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'json_read.dart';
+
 class TransactionCategory {
   final int categoryID;
   final String categoryName;
@@ -13,9 +15,9 @@ class TransactionCategory {
 
   factory TransactionCategory.fromJson(Map<String, dynamic> json) {
     return TransactionCategory(
-      categoryID: json['categoryID'],
-      categoryName: json['categoryName'],
-      categoryType: json['categoryType'],
+      categoryID: readInt(json['categoryID'] ?? json['id']) ?? 0,
+      categoryName: readString(json['categoryName']),
+      categoryType: readString(json['categoryType']),
     );
   }
 
@@ -28,7 +30,6 @@ class TransactionCategory {
   }
 
   static List<TransactionCategory> listFromJson(String jsonStr) {
-    final data = json.decode(jsonStr) as List;
-    return data.map((item) => TransactionCategory.fromJson(item)).toList();
+    return readList(json.decode(jsonStr)).map(TransactionCategory.fromJson).toList();
   }
 }
