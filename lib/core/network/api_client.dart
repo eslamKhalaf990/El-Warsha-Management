@@ -32,8 +32,8 @@ class ApiClient {
   /// Invoked once per 401 on a request that carried a token.
   VoidCallback? onUnauthorized;
 
-  Future<dynamic> get(String path, {Map<String, String>? query}) =>
-      _send('GET', path, query: query);
+  Future<dynamic> get(String path, {Map<String, String>? query, Map<String, String>? headers}) =>
+      _send('GET', path, query: query, headers: headers);
 
   Future<dynamic> post(String path, {Object? body, Map<String, String>? query}) =>
       _send('POST', path, body: body, query: query);
@@ -44,8 +44,8 @@ class ApiClient {
   Future<dynamic> patch(String path, {Object? body, Map<String, String>? query}) =>
       _send('PATCH', path, body: body, query: query);
 
-  Future<dynamic> delete(String path, {Map<String, String>? query}) =>
-      _send('DELETE', path, query: query);
+  Future<dynamic> delete(String path, {Map<String, String>? query, Map<String, String>? headers}) =>
+      _send('DELETE', path, query: query, headers: headers);
 
   /// For binary downloads such as invoice PDFs.
   Future<Uint8List> getBytes(String path, {Map<String, String>? query}) async {
@@ -61,9 +61,20 @@ class ApiClient {
     return _decode(await _execute(request));
   }
 
+  /// Multipart form with text [fields] and, when [bytes] is given, one file
+  /// under [fileField] (e.g. a product JSON part plus its image).
+  Future<dynamic> multipart(String method, String path,
+      {Map<String, String> fields = const {}, String fileField = 'file', List<int>? bytes, String? filename}) async {
+    final request = http.MultipartRequest(method, resolve(path, null))..fields.addAll(fields);
+    if (bytes != null) {
+      request.files.add(http.MultipartFile.fromBytes(fileField, bytes, filename: filename ?? 'upload.jpg'));
+    }
+    return _decode(await _execute(request));
+  }
+
   Future<dynamic> _send(String method, String path,
-      {Object? body, Map<String, String>? query}) async {
-    return _decode(await _raw(method, path, body: body, query: query));
+      {Object? body, Map<String, String>? query, Map<String, String>? headers}) async {
+    return _decode(await _raw(method, path, body: body, query: query, headers: headers));
   }
 
   dynamic _decode(http.Response response) {
@@ -76,8 +87,9 @@ class ApiClient {
   }
 
   Future<http.Response> _raw(String method, String path,
-      {Object? body, Map<String, String>? query, String accept = 'application/json'}) {
+      {Object? body, Map<String, String>? query, Map<String, String>? headers, String accept = 'application/json'}) {
     final request = http.Request(method, resolve(path, query));
+    if (headers != null) request.headers.addAll(headers);
     if (body != null) {
       request.headers['Content-Type'] = 'application/json; charset=utf-8';
       request.body = jsonEncode(body);

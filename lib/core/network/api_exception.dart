@@ -24,6 +24,8 @@ class ApiException implements Exception {
   static const codeNetwork = 'NETWORK_ERROR';
   static const codeTimeout = 'TIMEOUT';
   static const codeBadResponse = 'BAD_RESPONSE';
+  static const codeUnexpected = 'UNEXPECTED';
+  static const codeValidation = 'VALIDATION_FAILED';
 
   final int? statusCode;
   final String code;
@@ -41,7 +43,8 @@ class ApiException implements Exception {
 
   bool get isUnauthenticated => code == 'UNAUTHENTICATED';
   bool get isNotFound => statusCode == 404;
-  bool get isValidation => code == 'VALIDATION_FAILED';
+  bool get isValidation => code == codeValidation;
+  bool get isConflict => statusCode == 409;
 
   /// Message for a single field, if the backend reported one.
   String? messageFor(String field) {
@@ -65,6 +68,22 @@ class ApiException implements Exception {
         code: codeBadResponse,
         statusCode: statusCode,
         message: 'The server sent a response the app could not read.',
+      );
+
+  /// A bug or malformed data on the app's side. The details go to the debug
+  /// log, never to the screen.
+  factory ApiException.unexpected() => const ApiException(
+        code: codeUnexpected,
+        message: 'Something went wrong. Please try again.',
+      );
+
+  /// Input rejected by the app before it reached the server, keyed by field.
+  /// Uses the same shape as the backend's `VALIDATION_FAILED` errors so the
+  /// screens show both the same way.
+  factory ApiException.validation(Map<String, String> fieldErrors) => ApiException(
+        code: codeValidation,
+        message: fieldErrors.length == 1 ? fieldErrors.values.first : 'Please fix the highlighted fields.',
+        details: [for (final e in fieldErrors.entries) FieldViolation(e.key, e.value)],
       );
 
   /// Builds an exception from a non-2xx response. Prefers the backend's
