@@ -3,14 +3,13 @@ import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:warsha_app/controllers/add_order/add_product.dart';
 import 'package:warsha_app/controllers/drag_drop_controller.dart';
-import 'package:warsha_app/core/network/api_exception.dart';
-import 'package:warsha_app/models/product_variant.dart';
-import 'package:warsha_app/services/product_variants_service.dart';
+import 'package:warsha_app/core/ui/feedback.dart';
 import 'package:warsha_app/models/category_model.dart';
+import 'package:warsha_app/models/product_model.dart';
 import 'package:warsha_app/utils/default_button.dart';
 import 'package:warsha_app/utils/default_text.dart';
-import 'package:warsha_app/utils/navigator.dart';
 import 'package:warsha_app/view_models/add_product_v_m.dart';
+import 'package:warsha_app/view_models/category_v_m.dart';
 
 // Assuming DragDropImageUpload is in the same file or imported
 import 'drag_drop_widget.dart';
@@ -26,7 +25,48 @@ class _AddProductState extends State<AddProduct> {
   final _formKey = GlobalKey<FormState>();
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) context.read<ProductVM>().clearError();
+    });
+  }
+
+  Future<void> _save(ProductProvider product) async {
+    final vm = context.read<ProductVM>();
+    final drop = context.read<DragDropController>();
+    final ok = await vm.add(
+      ProductForm(
+        name: product.productName.text,
+        nameAr: product.productNameAr.text,
+        description: product.productDescription.text,
+        descriptionAr: product.productDescriptionAr.text,
+        buyingPrice: product.productBuyingPrice.text,
+        sellingPrice: product.productSellingPrice.text,
+        discount: product.discount.text,
+        quantity: product.productQuantity.text,
+        categoryId: int.tryParse(product.productCategory.text),
+      ),
+      image: drop.droppedBytes,
+      imageName: drop.droppedFileName,
+      sizes: List.of(product.productSizes),
+      colors: List.of(product.productColors),
+    );
+    if (!mounted) return;
+    if (ok) {
+      product.clear();
+      drop.clear();
+      Navigator.pop(context);
+      showSuccess(context, vm.warning ?? 'Product added.');
+    } else if (ProductVM.formFields.every((f) => vm.fieldError(f) == null)) {
+      showError(context, vm.errorMessage!);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final vm = context.watch<ProductVM>();
+    final categories = context.watch<CategoryVM>().allCategories;
     return Consumer<ProductProvider>(
       builder: (context, product, child) => Scaffold(
         body: SingleChildScrollView(
@@ -45,9 +85,16 @@ class _AddProductState extends State<AddProduct> {
                       _buildSectionContainer(
                         context,
                         title: "Product Image",
-                        child: const SizedBox(
-                          height: 250, // Fixed height for upload area
-                          child: DragDropImageUpload(),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const SizedBox(height: 250, child: DragDropImageUpload()),
+                            if (vm.fieldError('image') case final String error)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 8, left: 8),
+                                child: Text(error, style: TextStyle(color: Colors.red.shade300, fontSize: 12)),
+                              ),
+                          ],
                         ),
                       ),
                       const SizedBox(height: 20),
@@ -65,20 +112,12 @@ class _AddProductState extends State<AddProduct> {
                                   child: DefaultProductForm(
                                     title: "Buying Price",
                                     controller: product.productBuyingPrice,
+                                    errorText: vm.fieldError('buyingPrice'),
                                     onChange: product.updateBuyingPrice,
                                     icon: Iconsax.moneys,
                                     currency: true,
                                     isRequired: true,
                                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                    validator: (value) {
-                                      if (value == null || value.isEmpty) {
-                                        return 'Required';
-                                      }
-                                      if (double.tryParse(value) == null) {
-                                        return 'Invalid';
-                                      }
-                                      return null;
-                                    },
                                   ),
                                 ),
                                 const SizedBox(width: 15),
@@ -86,20 +125,12 @@ class _AddProductState extends State<AddProduct> {
                                   child: DefaultProductForm(
                                     title: "Selling Price",
                                     controller: product.productSellingPrice,
+                                    errorText: vm.fieldError('sellingPrice'),
                                     onChange: product.updateSellingPrice,
                                     icon: Iconsax.moneys,
                                     currency: true,
                                     isRequired: true,
                                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                    validator: (value) {
-                                      if (value == null || value.isEmpty) {
-                                        return 'Required';
-                                      }
-                                      if (double.tryParse(value) == null) {
-                                        return 'Invalid';
-                                      }
-                                      return null;
-                                    },
                                   ),
                                 ),
                               ],
@@ -108,6 +139,7 @@ class _AddProductState extends State<AddProduct> {
                             DefaultProductForm(
                               title: "Discount Amount",
                               controller: product.discount,
+                              errorText: vm.fieldError('discount'),
                               icon: Iconsax.discount_shape,
                               currency: true,
                               keyboardType: const TextInputType.numberWithOptions(decimal: true),
@@ -161,19 +193,15 @@ class _AddProductState extends State<AddProduct> {
                         DefaultProductForm(
                           title: "Product Name",
                           controller: product.productName,
+                          errorText: vm.fieldError('name'),
                           icon: Iconsax.bag_2,
                           isRequired: true,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Product name is required';
-                            }
-                            return null;
-                          },
                         ),
                         const SizedBox(height: 20),
                         DefaultProductForm(
                           title: "Product Name (Arabic)",
                           controller: product.productNameAr,
+                          errorText: vm.fieldError('nameAr'),
                           icon: Iconsax.language_square,
                           textDirection: TextDirection.rtl,
                         ),
@@ -203,21 +231,14 @@ class _AddProductState extends State<AddProduct> {
                                     borderSide: BorderSide(color: Theme.of(context).colorScheme.tertiary, width: 1.5),
                                   ),
                                   errorStyle: TextStyle(color: Colors.red.shade300),
+                                  errorText: vm.fieldError('categoryId'),
                                   prefixIcon: Padding(
                                     padding: const EdgeInsets.symmetric(horizontal: 15),
                                     child: Icon(Iconsax.category, color: Theme.of(context).colorScheme.tertiary),
                                   ),
                                 ),
-                                validator: (value) {
-                                  if (value == null) {
-                                    return 'Category is required';
-                                  }
-                                  return null;
-                                },
                                 dropdownColor: Colors.white,
-                                items: Provider.of<ProductVM>(context, listen: false)
-                                    .allCategories
-                                    ?.map((category) {
+                                items: categories.map((category) {
                                   return DropdownMenuItem<CategoryModel>(
                                     value: category,
                                     child: Text(category.name),
@@ -258,18 +279,10 @@ class _AddProductState extends State<AddProduct> {
                         DefaultProductForm(
                           title: "Initial Quantity",
                           controller: product.productQuantity,
+                          errorText: vm.fieldError('quantity'),
                           icon: Iconsax.box_add,
                           isRequired: true,
                           keyboardType: TextInputType.number,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Required';
-                            }
-                            if (int.tryParse(value) == null) {
-                              return 'Invalid';
-                            }
-                            return null;
-                          },
                         ),
                         const SizedBox(height: 20),
                         
@@ -291,6 +304,7 @@ class _AddProductState extends State<AddProduct> {
                         DefaultProductForm(
                           title: "Description",
                           controller: product.productDescription,
+                          errorText: vm.fieldError('description'),
                           icon: Iconsax.document_text,
                           maxLines: 3,
                         ),
@@ -298,6 +312,7 @@ class _AddProductState extends State<AddProduct> {
                         DefaultProductForm(
                           title: "Description (Arabic)",
                           controller: product.productDescriptionAr,
+                          errorText: vm.fieldError('descriptionAr'),
                           icon: Iconsax.document_text,
                           maxLines: 3,
                           textDirection: TextDirection.rtl,
@@ -324,45 +339,9 @@ class _AddProductState extends State<AddProduct> {
                             Expanded(
                               flex: 2,
                               child: DefaultButton(
-                                onTap: () async {
-                                  if (_formKey.currentState!.validate()) {
-                                    final productVM = Provider.of<ProductVM>(context, listen: false);
-                                    final variantsService = context.read<ProductVariantsService>();
-                                    String status = await productVM.addProduct(
-                                      productName: product.productName.text,
-                                      productDescription: product.productDescription.text,
-                                      productNameAr: product.productNameAr.text,
-                                      productDescriptionAr: product.productDescriptionAr.text,
-                                      productBPrice: product.productBuyingPrice.text,
-                                      productDiscount: product.discount.text,
-                                      productSPrice: product.productSellingPrice.text,
-                                      productCategory: product.productCategory.text,
-                                      productQuantity: product.productQuantity.text,
-                                      imageBytes: Provider.of<DragDropController>(context, listen: false).droppedBytes,
-                                    );
-                                    if (status == "product_added") {
-                                      final variantError = await _createVariants(
-                                          variantsService, productVM.lastCreatedProductId, product);
-                                      Navigator.pop(navigatorKey.currentContext!);
-                                      Provider.of<ProductVM>(navigatorKey.currentContext!, listen: false).initAllProducts();
-                                      Provider.of<ProductVM>(navigatorKey.currentContext!, listen: false).getAllProducts();
-                                      final hadVariants = product.productSizes.isNotEmpty || product.productColors.isNotEmpty;
-                                      product.clear();
-                                      Provider.of<DragDropController>(navigatorKey.currentContext!, listen: false).clear();
-                                      ScaffoldMessenger.of(navigatorKey.currentContext!).showSnackBar(
-                                        SnackBar(
-                                          backgroundColor: Theme.of(context).colorScheme.tertiary,
-                                          content: Text(variantError ??
-                                              (!hadVariants
-                                                  ? "Product added successfully"
-                                                  : "Product added. Set the stock of each size/color from Edit product.")),
-                                        ),
-                                      );
-                                    }
-                                  }
-                                },
-                                isValid: !Provider.of<ProductVM>(context).isLoading,
-                                isLoading: Provider.of<ProductVM>(context).isLoading,
+                                onTap: () => _save(product),
+                                isValid: !vm.isSaving,
+                                isLoading: vm.isSaving,
                                 title: "Save Product", margin: EdgeInsets.zero,
                               ),
                             ),
@@ -381,39 +360,7 @@ class _AddProductState extends State<AddProduct> {
   }
 
   void _showAddCategoryDialog(BuildContext context) {
-    final TextEditingController controller = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Add New Category'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          decoration: const InputDecoration(
-            hintText: 'Enter category name',
-            border: OutlineInputBorder(),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: Provider.of<ProductVM>(context).isLoading ? null :() {
-              String name = controller.text.trim();
-              if (name.isNotEmpty) {
-                Provider.of<ProductVM>(context, listen: false).addCategory(name);
-                controller.clear();
-                Navigator.pop(context);
-              }
-            },
-            child: const Text('Save'),
-          ),
-        ],
-      ),
-    );
+    showDialog(context: context, builder: (_) => const _QuickAddCategory());
   }
 
   Widget _buildSectionContainer(BuildContext context, {required String title, required Widget child}) {
@@ -449,25 +396,60 @@ class _AddProductState extends State<AddProduct> {
   }
 }
 
-/// Creates one variant per size × color picked on the form, with no stock yet.
-/// Returns a message when some could not be created.
-Future<String?> _createVariants(
-    ProductVariantsService service, int? productId, ProductProvider product) async {
-  final sizes = product.productSizes.isEmpty ? <String?>[null] : product.productSizes;
-  final colors = product.productColors.isEmpty ? <String?>[null] : product.productColors;
-  if (product.productSizes.isEmpty && product.productColors.isEmpty) return null;
-  if (productId == null) {
-    return "Product added, but its sizes/colors weren't saved. Add them from Edit product.";
+/// Adds a category without leaving the product form.
+class _QuickAddCategory extends StatefulWidget {
+  const _QuickAddCategory();
+
+  @override
+  State<_QuickAddCategory> createState() => _QuickAddCategoryState();
+}
+
+class _QuickAddCategoryState extends State<_QuickAddCategory> {
+  final _controller = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) context.read<CategoryVM>().clearError();
+    });
   }
-  try {
-    for (final size in sizes) {
-      for (final color in colors) {
-        await service.create(productId, ProductVariantRequest(size: size, color: color, quantity: 0));
-      }
-    }
-    return null;
-  } on ApiException catch (e) {
-    return "Product added, but some sizes/colors weren't saved: ${e.message}";
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    final vm = context.read<CategoryVM>();
+    final ok = await vm.add(CategoryRequest(name: _controller.text));
+    if (!mounted) return;
+    reportResult(context, ok: ok, errorMessage: vm.errorMessage, success: 'Category added.',
+        fieldError: vm.fieldError, fields: const ['name'], pop: true);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final vm = context.watch<CategoryVM>();
+    return AlertDialog(
+      title: const Text('Add New Category'),
+      content: TextField(
+        controller: _controller,
+        autofocus: true,
+        onChanged: (_) => vm.clearError(),
+        onSubmitted: (_) => _save(),
+        decoration: InputDecoration(
+          hintText: 'Enter category name',
+          errorText: vm.fieldError('name'),
+          border: const OutlineInputBorder(),
+        ),
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+        ElevatedButton(onPressed: vm.isSaving ? null : _save, child: const Text('Save')),
+      ],
+    );
   }
 }
 
@@ -699,8 +681,10 @@ class DefaultProductForm extends StatelessWidget {
     this.validator,
     this.keyboardType,
     this.textDirection,
+    this.errorText,
   });
 
+  final String? errorText;
   final String title;
   final TextEditingController controller;
   final Function(String)? onChange;
@@ -736,6 +720,8 @@ class DefaultProductForm extends StatelessWidget {
           borderRadius: BorderRadius.circular(25),
         ),
         errorStyle: TextStyle(color: Colors.red.shade300),
+        errorText: errorText,
+        errorMaxLines: 2,
         prefixIcon: icon != null
             ? Padding(
           padding: const EdgeInsets.symmetric(horizontal: 15.0),

@@ -1,202 +1,41 @@
-import 'dart:async';
 import 'dart:convert';
-import 'dart:typed_data';
-import 'package:flutter/cupertino.dart';
-import 'package:http/http.dart' as http;
-import 'package:warsha_app/utils/const_values.dart';
 
-import 'base_url.dart';
+import 'package:warsha_app/core/network/api_client.dart';
+import 'package:warsha_app/core/network/api_exception.dart';
+import 'package:warsha_app/models/product_model.dart';
 
+/// Products API (backend: ProductController under `/products`). Sizes/colors
+/// and the gallery have their own services. Every failure surfaces as an
+/// [ApiException] from [ApiClient].
 class ProductService {
-  // This class will handle the logic for attendance management.
-  Future<http.Response> getAllProducts(String token) async {
-    debugPrint("getAllProducts called");
-    http.Response response;
-    try {
-      response = await http.get(
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          "Authorization": 'Bearer $token',
-        },
-        Uri.parse(
-          Baseurl.getAllProductsAPI,
-        ),
-      ).timeout(const Duration(seconds: Constants.TIMEOUT));
-    } on TimeoutException {
-      throw Exception('The request timed out. Please try again later.');
-    } catch (e) {
-      throw Exception('Failed to get your requests: $e');
-    }
-    return response;
+  ProductService(this._api);
+
+  final ApiClient _api;
+
+  /// Products that are not deleted, best sellers first.
+  Future<List<ProductModel>> list() async {
+    final body = await _api.get('products');
+    if (body is! List) throw ApiException.badResponse(200);
+    return body.whereType<Map<String, dynamic>>().map(ProductModel.fromJson).toList();
   }
 
-  // This class will handle the logic for attendance management.
-  Future<http.Response> getAllCategories(String token) async {
-    debugPrint("getAllCategories called");
-    http.Response response;
-    try {
-      response = await http.get(
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          "Authorization": 'Bearer $token',
-        },
-        Uri.parse(
-          Baseurl.getAllCategoriesAPI,
-        ),
-      ).timeout(const Duration(seconds: Constants.TIMEOUT));
-    } on TimeoutException {
-      throw Exception('The request timed out. Please try again later.');
-    } catch (e) {
-      throw Exception('Failed to get your requests: $e');
-    }
-    return response;
+  /// [product] is the backend's ProductRequest; the cover [image] is required.
+  Future<ProductModel> create(Map<String, dynamic> product, {required List<int> image, String? filename}) async =>
+      _product(await _api.multipart('POST', 'products',
+          fields: {'product': jsonEncode(product)}, fileField: 'image', bytes: image, filename: filename));
+
+  /// Sends [image] only when it should replace the cover.
+  Future<ProductModel> update(int id, Map<String, dynamic> product, {List<int>? image, String? filename}) async =>
+      _product(await _api.multipart('PUT', 'products/$id',
+          fields: {'product': jsonEncode(product)}, fileField: 'image', bytes: image, filename: filename));
+
+  /// Soft delete: order history keeps the product.
+  Future<void> delete(int id) async {
+    await _api.delete('products/$id');
   }
 
-  Future<http.Response> deleteProduct(String id, String token) async {
-    debugPrint("deleteProduct with id: $id called");
-    http.Response response;
-    try {
-      response = await http.delete(
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          "Authorization": 'Bearer $token',
-        },
-        Uri.parse(
-          "${Baseurl.deleteProductAPI}/$id",
-        ),
-      ).timeout(const Duration(seconds: Constants.TIMEOUT));
-
-    } on TimeoutException {
-      throw Exception('The request timed out. Please try again later.');
-    } catch (e) {
-      throw Exception('Failed to delete your product: $e');
-    }
-    return response;
-  }
-
-  Future<http.Response> addCategory(String name, String token) async {
-    debugPrint("addCategory with name: $name called");
-    http.Response response;
-    try {
-      response = await http.post(
-        headers: {
-          'Content-Type': 'application/json',
-          "Authorization": 'Bearer $token',
-        },
-        Uri.parse(
-          "${Baseurl.addCategoryAPI}/add",
-        ),
-        body: jsonEncode({
-          'name': name,
-        }),
-      ).timeout(const Duration(seconds: Constants.TIMEOUT));
-
-      print(response.body);
-
-    } on TimeoutException {
-      throw Exception('The request timed out. Please try again later.');
-    } catch (e) {
-      throw Exception('Failed to add your category: $e');
-    }
-    return response;
-  }
-
-  Future<http.StreamedResponse> addProductWithImage({
-    required String name,
-    required String description,
-    String nameAr = "",
-    String descriptionAr = "",
-    required String buyingPrice,
-    required String sellingPrice,
-    required String discount,
-    required String category,
-    required String quantity,
-    required Uint8List? imageBytes,
-    String? imageName,
-    required String token,
-  }) async {
-    var uri = Uri.parse(Baseurl.addProductAPI);
-    print(discount);
-    final product = jsonEncode({
-      "name": name,
-      "nameAr": nameAr,
-      "description": description,
-      "descriptionAr": descriptionAr,
-      "buyingPrice": buyingPrice,
-      "discount": discount,
-      "sellingPrice": sellingPrice,
-      "category": {"categoryId": category},
-      "quantity": quantity,
-    });
-
-    var request = http.MultipartRequest("POST", uri);
-    request.fields['product'] = product;
-
-    if (imageBytes != null) {
-      request.files.add(
-        http.MultipartFile.fromBytes(
-          'image',
-          imageBytes as List<int>,
-          filename: imageName ?? "upload.jpg",
-        ),
-      );
-    }
-
-    request.headers.addAll({
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer $token',
-    });
-
-    return await request.send();
-  }
-
-  Future<http.StreamedResponse> updateProductWithImage({
-    required String id,
-    required String name,
-    required String description,
-    String nameAr = "",
-    String descriptionAr = "",
-    required String buyingPrice,
-    required String sellingPrice,
-    required String discount,
-    required String category,
-    required String quantity,
-    required String token,
-    required Uint8List? imageBytes,
-    String? imageName,
-  }) async {
-    var uri = Uri.parse("${Baseurl.updateProductAPI}/$id");
-
-    final product = jsonEncode({
-      "name": name,
-      "nameAr": nameAr,
-      "description": description,
-      "descriptionAr": descriptionAr,
-      "buyingPrice": buyingPrice,
-      "sellingPrice": sellingPrice,
-      "discount": discount,
-      "category": {"categoryId": category},
-      "quantity": quantity,
-    });
-
-    var request = http.MultipartRequest("PUT", uri);
-    request.fields['product'] = product;
-
-    if (imageBytes != null) {
-      request.files.add(
-        http.MultipartFile.fromBytes(
-          'image',
-          imageBytes,
-          filename: imageName ?? "upload.jpg",
-        ),
-      );
-    }
-
-    request.headers.addAll({
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer $token',
-    });
-
-    return await request.send();
+  static ProductModel _product(Object? body) {
+    if (body is! Map<String, dynamic>) throw ApiException.badResponse(200);
+    return ProductModel.fromJson(body);
   }
 }

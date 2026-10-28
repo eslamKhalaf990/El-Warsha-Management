@@ -8,8 +8,9 @@ import 'package:warsha_app/models/product_model.dart';
 import 'package:warsha_app/utils/const_values.dart';
 import 'package:warsha_app/utils/default_button.dart';
 import 'package:warsha_app/utils/default_text.dart';
+import 'package:warsha_app/core/ui/feedback.dart';
 import 'package:warsha_app/view_models/add_product_v_m.dart';
-import 'package:warsha_app/view_models/update_product_v_m.dart';
+import 'package:warsha_app/view_models/category_v_m.dart';
 import 'package:warsha_app/views/products/product_gallery_editor.dart';
 import 'package:warsha_app/views/products/product_variants_editor.dart';
 import 'package:warsha_app/views/products/update_drag_drop.dart';
@@ -24,7 +25,38 @@ class UpdateProduct extends StatelessWidget {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       productProvider.loadProduct(productModel);
+      context.read<ProductVM>().clearError();
     });
+    final vm = context.watch<ProductVM>();
+    final categories = context.watch<CategoryVM>().allCategories;
+
+    Future<void> save(UpdateProductProvider update) async {
+      final drop = context.read<UpdateDragDropController>();
+      final ok = await vm.update(
+        productModel,
+        ProductForm(
+          name: update.productName.text,
+          nameAr: update.productNameAr.text,
+          description: update.productDescription.text,
+          descriptionAr: update.productDescriptionAr.text,
+          buyingPrice: update.productBuyingPrice.text,
+          sellingPrice: update.productSellingPrice.text,
+          discount: update.discount.text,
+          quantity: update.productQuantity.text,
+          categoryId: int.tryParse(productModel.categoryId),
+        ),
+        // Only a newly picked image replaces the cover
+        image: drop.changed ? drop.droppedBytes : null,
+        imageName: drop.droppedFileName,
+      );
+      if (!context.mounted) return;
+      if (ok) {
+        Navigator.pop(context);
+        showSuccess(context, 'Product updated.');
+      } else if (ProductVM.formFields.every((f) => vm.fieldError(f) == null)) {
+        showError(context, vm.errorMessage!);
+      }
+    }
 
     return Consumer<UpdateProductProvider>(
       builder: (context, update, child) => Scaffold(
@@ -67,7 +99,7 @@ class UpdateProduct extends StatelessWidget {
                                 productModel.images = images;
                                 update.refresh();
                                 if (context.mounted) {
-                                  Provider.of<ProductVM>(context, listen: false).initAllProducts();
+                                  context.read<ProductVM>().fetch();
                                 }
                               },
                               icon: const Icon(Iconsax.gallery),
@@ -92,6 +124,7 @@ class UpdateProduct extends StatelessWidget {
                                 child: DefaultProductForm(
                                   title: "Product buying price",
                                   controller: update.productBuyingPrice,
+                                  errorText: vm.fieldError('buyingPrice'),
                                   onChange: update.updateBuyingPrice,
                                   icon: null,
                                 ),
@@ -104,6 +137,7 @@ class UpdateProduct extends StatelessWidget {
                                 child: DefaultProductForm(
                                   title: "Product selling price",
                                   controller: update.productSellingPrice,
+                                  errorText: vm.fieldError('sellingPrice'),
                                   onChange: update.updateSellingPrice,
                                   icon: null,
                                 ),
@@ -119,6 +153,7 @@ class UpdateProduct extends StatelessWidget {
                             child: DefaultProductForm(
                               title: "Discount by EGP",
                               controller: update.discount,
+                              errorText: vm.fieldError('discount'),
                               icon: Iconsax.discount_shape,
                             ),
                           ),
@@ -159,6 +194,7 @@ class UpdateProduct extends StatelessWidget {
                                   child: DefaultProductForm(
                                     title: "Product name",
                                     controller: update.productName,
+                                    errorText: vm.fieldError('name'),
                                     icon: Iconsax.bag,
                                   ),
                                 ),
@@ -167,6 +203,7 @@ class UpdateProduct extends StatelessWidget {
                                   child: DefaultProductForm(
                                     title: "Product name (Arabic)",
                                     controller: update.productNameAr,
+                                    errorText: vm.fieldError('nameAr'),
                                     icon: Iconsax.language_square,
                                     textDirection: TextDirection.rtl,
                                   ),
@@ -186,6 +223,7 @@ class UpdateProduct extends StatelessWidget {
                                   child: DefaultProductForm(
                                     title: "Product description",
                                     controller: update.productDescription,
+                                    errorText: vm.fieldError('description'),
                                     icon: Iconsax.document,
                                   ),
                                 ),
@@ -194,6 +232,7 @@ class UpdateProduct extends StatelessWidget {
                                   child: DefaultProductForm(
                                     title: "Product description (Arabic)",
                                     controller: update.productDescriptionAr,
+                                    errorText: vm.fieldError('descriptionAr'),
                                     icon: Iconsax.document,
                                     textDirection: TextDirection.rtl,
                                   ),
@@ -217,11 +256,11 @@ class UpdateProduct extends StatelessWidget {
                                 ),
                                 DropdownButtonFormField<CategoryModel>(
                                   // Find the matching category instance from the list
-                                  initialValue: Provider.of<ProductVM>(context, listen: false).allCategories?.firstWhere(
-                                        (c) => c.categoryId.toString() == productModel.categoryId,
-                                    orElse: () => Provider.of<ProductVM>(context, listen: false).allCategories!.first,
-                                  ),
+                                  initialValue: categories
+                                      .where((c) => c.categoryId.toString() == productModel.categoryId)
+                                      .firstOrNull,
                                   decoration: InputDecoration(
+                                    errorText: vm.fieldError('categoryId'),
                                     filled: true,
                                     fillColor: Colors.grey.shade100,
                                     border: OutlineInputBorder(
@@ -242,7 +281,7 @@ class UpdateProduct extends StatelessWidget {
                                     ),
                                   ),
                                   hint: const Text("Select a category"),
-                                  items: Provider.of<ProductVM>(context, listen: false).allCategories?.map((category) {
+                                  items: categories.map((category) {
                                     return DropdownMenuItem<CategoryModel>(
                                       value: category,
                                       child: Text(category.name),
@@ -274,6 +313,7 @@ class UpdateProduct extends StatelessWidget {
                                         ? "Product quantity (total of sizes/colors)"
                                         : "Product quantity",
                                     controller: update.productQuantity,
+                                    errorText: vm.fieldError('quantity'),
                                     icon: Iconsax.add,
                                     readOnly: productModel.hasVariants,
                                   ),
@@ -294,7 +334,7 @@ class UpdateProduct extends StatelessWidget {
                                     }
                                     update.refresh();
                                     if (context.mounted) {
-                                      Provider.of<ProductVM>(context, listen: false).initAllProducts();
+                                      context.read<ProductVM>().fetch();
                                     }
                                   },
                                   icon: const Icon(Iconsax.color_swatch),
@@ -309,56 +349,14 @@ class UpdateProduct extends StatelessWidget {
                         const SizedBox(height: 20),
                         Row(
                           children: [
-                            Consumer<UpdateProductVM>(
-                              builder: (context, productVM, child) =>
-                                  Expanded(
-                                flex: 3,
-                                child: DefaultButton(
-                                  onTap: () async {
-                                    String status =
-                                        await productVM.updateProduct(
-                                      productName: update.productName.text,
-                                      productDescription:
-                                          update.productDescription.text,
-                                      productNameAr: update.productNameAr.text,
-                                      productDescriptionAr:
-                                          update.productDescriptionAr.text,
-                                      productBPrice:
-                                          update.productBuyingPrice.text,
-                                      productSPrice:
-                                          update.productSellingPrice.text,
-                                      productCategory: productModel.categoryId,
-                                      productDiscount:
-                                          update.discount.text,
-                                      productQuantity:
-                                          update.productQuantity.text,
-                                      imageBytes:
-                                          Provider.of<UpdateDragDropController>(
-                                                  context,
-                                                  listen: false)
-                                              .droppedBytes, id: productModel.id,
-                                    );
-                                    if (status == "product_updated") {
-                                      Navigator.pop(context);
-                                      Provider.of<ProductVM>(context, listen: false).initAllProducts();
-                                      Provider.of<ProductVM>(context, listen: false).getAllProducts();
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        const SnackBar(
-                                          content: Text(
-                                              "Product updated successfully"),
-                                        ),
-                                      );
-                                    }
-                                  },
-                                  isValid: !Provider.of<UpdateProductVM>(context)
-                                      .isLoading,
-                                  isLoading: Provider.of<UpdateProductVM>(context)
-                                      .isLoading,
-                                  title: "Update product",
-                                  margin: const EdgeInsets.symmetric(
-                                      horizontal: 15),
-                                ),
+                            Expanded(
+                              flex: 3,
+                              child: DefaultButton(
+                                onTap: () => save(update),
+                                isValid: !vm.isSaving,
+                                isLoading: vm.isSaving,
+                                title: "Update product",
+                                margin: const EdgeInsets.symmetric(horizontal: 15),
                               ),
                             ),
                             Expanded(
@@ -409,7 +407,9 @@ class DefaultProductForm extends StatelessWidget {
     this.fillColor, this.currency,
     this.textDirection,
     this.readOnly = false,
+    this.errorText,
   });
+  final String? errorText;
   final String title;
   final TextEditingController controller;
   final Function(String)? onChange;
@@ -436,6 +436,8 @@ class DefaultProductForm extends StatelessWidget {
             ),
             borderRadius: Constants.BORDER_RADIUS_15),
         errorStyle: TextStyle(color: Colors.red.shade300),
+        errorText: errorText,
+        errorMaxLines: 2,
         prefixIcon: icon != null
             ? Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 15.0),

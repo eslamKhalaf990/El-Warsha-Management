@@ -57,17 +57,18 @@ class ProductModel {
 
   factory ProductModel.fromJson(Map<String, dynamic> json) {
     final product = ProductModel.get(
-      name: json['name'],
-      id: json['id'].toString(),
-      productDescription: json['description'],
-      sellingPrice: json['sellingPrice'].toString(),
-      buyingPrice: json['buyingPrice'].toString(),
-      discount: json['discount'].toString(),
-      totalPrice: json['totalPrice'].toString(),
-      category: json['categoryName'],
-      categoryId: json['categoryId'].toString(),
-      quantity: json['quantity'],
-      sku: json['sku'], image: json['imageUrl'] ?? "-",
+      name: readString(json['name']),
+      id: readString(json['id'] ?? json['productID']),
+      productDescription: readString(json['description']),
+      sellingPrice: readString(json['sellingPrice'], '0'),
+      buyingPrice: readString(json['buyingPrice'], '0'),
+      discount: readString(json['discount'], '0'),
+      totalPrice: readString(json['totalPrice'], '0'),
+      category: readString(json['categoryName']),
+      categoryId: readString(json['categoryId']),
+      quantity: readString(json['quantity'], '0'),
+      sku: readStringOrNull(json['sku']),
+      image: readString(json['imageUrl'], '-'),
     );
     product.nameAr = readString(json['nameAr']);
     product.descriptionAr = readString(json['descriptionAr']);
@@ -88,20 +89,29 @@ class ProductModel {
       'sku': sku,
     };
   }
+}
 
+/// What the product form holds, as typed. [ProductVM] validates and parses it.
+class ProductForm {
+  final String name;
+  final String nameAr;
+  final String description;
+  final String descriptionAr;
+  final String buyingPrice;
+  final String sellingPrice;
+  final String discount;
+  final String quantity;
+  final int? categoryId;
 
-    factory ProductModel.toJson(Map<String, dynamic> json) {
-    return ProductModel.add(
-      name: json['name'],
-      productDescription: json['description'],
-      buyingPrice: json['sellingPrice'].toString(),
-      sellingPrice: json['BuyingPrice'].toString(),
-      discount: json['discount'].toString(),
-      totalPrice: json['totalPrice'].toString(),
-      quantity: json['quantity'],
-      category: json['category'],
-      categoryId: json['categoryId'],
-      sku: json['sku'], image: json['imageUrl']??"-",
-    );
-  }
+  const ProductForm({
+    required this.name,
+    this.nameAr = '',
+    this.description = '',
+    this.descriptionAr = '',
+    required this.buyingPrice,
+    required this.sellingPrice,
+    this.discount = '',
+    this.quantity = '',
+    this.categoryId,
+  });
 }

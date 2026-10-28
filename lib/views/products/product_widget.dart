@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:provider/provider.dart';
+import 'package:warsha_app/core/ui/feedback.dart';
 import 'package:warsha_app/models/product_model.dart';
-import 'package:warsha_app/services/base_url.dart';
 import 'package:warsha_app/utils/default_text.dart';
-import 'package:warsha_app/utils/image_helper.dart';
 import 'package:warsha_app/view_models/add_product_v_m.dart';
 import 'package:warsha_app/views/products/update_product.dart';
 
@@ -359,21 +358,22 @@ class ProductWidget extends StatelessWidget {
   }
 
   Widget _buildDeleteButton(BuildContext context, {required bool compact}) {
-    final productVM = Provider.of<ProductVM>(context);
-    final isDeletingThis = productVM.isLoading && productVM.deletedProduct == product.id;
-    final canDelete = !productVM.isLoading;
+    final productVM = context.watch<ProductVM>();
+    final isDeletingThis = productVM.deletingId == product.id;
+    final canDelete = !productVM.isSaving;
 
     void onDelete() async {
       if (!canDelete) return;
-      final state = await Provider.of<ProductVM>(context, listen: false).deleteProduct(product.id);
-      if (state == "product_deleted") {
-        if(context.mounted) {
-          Provider.of<ProductVM>(context, listen: false).initAllProducts();
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Product deleted successfully")),
-          );
-        }
-      }
+      final confirmed = await confirmAction(
+        context,
+        title: "Delete Product",
+        message: "Delete ${product.name}? It disappears from the store; past orders keep it.",
+        confirmLabel: "Delete",
+      );
+      if (!confirmed || !context.mounted) return;
+      final ok = await productVM.delete(product);
+      if (!context.mounted) return;
+      reportResult(context, ok: ok, errorMessage: productVM.errorMessage, success: "${product.name} deleted.");
     }
 
     // Loading State

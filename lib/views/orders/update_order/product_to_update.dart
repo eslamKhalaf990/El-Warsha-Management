@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 
-// Assuming these are your paths
 import 'package:warsha_app/models/product_model.dart';
 import 'package:warsha_app/models/orderItemModel.dart';
 import 'package:warsha_app/models/product_variant.dart';
@@ -11,36 +10,29 @@ import 'package:warsha_app/view_models/update_order_v_m.dart';
 import 'package:warsha_app/utils/const_values.dart';
 import 'package:warsha_app/utils/default_text.dart';
 
+/// Product picker on the edit-order screen, filtered by [query].
 class ProductToUpdate extends StatelessWidget {
-  const ProductToUpdate({super.key});
+  const ProductToUpdate({super.key, this.query = ''});
+
+  final String query;
 
   @override
   Widget build(BuildContext context) {
-    // We listen to ProductVM for search query changes
-    final productVM = Provider.of<ProductVM>(context);
-    final orderVM = Provider.of<UpdateOrderVM>(context);
+    final productVM = context.watch<ProductVM>();
+    final orderVM = context.watch<UpdateOrderVM>();
 
-    return FutureBuilder<List<ProductModel>>(
-      future: productVM.allProducts,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        } else if (snapshot.hasError) {
-          return Center(child: Text('Error: ${snapshot.error}'));
-        } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return const Center(child: Text("No products found"));
-        }
+    if (productVM.loadFailed) {
+      return Center(child: Text(productVM.errorMessage!, textAlign: TextAlign.center));
+    }
+    if (!productVM.hasLoaded) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    final filteredProducts = productVM.search(query, limit: 50);
+    if (filteredProducts.isEmpty) {
+      return Center(child: Text(query.trim().isEmpty ? "No products yet." : 'No product matches "${query.trim()}".'));
+    }
 
-        // Filtering logic
-        final query = productVM.searchController.text.toLowerCase();
-        final filteredProducts = snapshot.data!.where((product) {
-          final name = product.name.toLowerCase();
-          final sku = product.sku?.toLowerCase() ?? "";
-          return name.contains(query) || sku.contains(query);
-        }).toList();
-
-        return Expanded(
-          child: ListView.builder(
+    return ListView.builder(
             itemCount: filteredProducts.length,
             padding: const EdgeInsets.symmetric(vertical: 10),
             itemBuilder: (context, index) {
@@ -81,10 +73,7 @@ class ProductToUpdate extends StatelessWidget {
                 ),
               );
             },
-          ),
-        );
-      },
-    );
+          );
   }
 }
 

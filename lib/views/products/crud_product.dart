@@ -8,8 +8,21 @@ import 'package:warsha_app/view_models/add_product_v_m.dart';
 
 import 'add_product.dart';
 
-class CRUDProduct extends StatelessWidget {
+class CRUDProduct extends StatefulWidget {
   const CRUDProduct({super.key});
+
+  @override
+  State<CRUDProduct> createState() => _CRUDProductState();
+}
+
+class _CRUDProductState extends State<CRUDProduct> {
+  late final _searchController = TextEditingController(text: context.read<ProductVM>().query);
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,8 +44,8 @@ class CRUDProduct extends StatelessWidget {
                 children: [
                   DefaultForm(
                     title: 'Search For Product By Name or ID',
-                    controller:
-                    Provider.of<ProductVM>(context).searchController,
+                    controller: _searchController,
+                    onChanged: context.read<ProductVM>().setQuery,
                     numberOfLines: 1,
                   ),
                   const SizedBox(height: 15),
@@ -47,8 +60,8 @@ class CRUDProduct extends StatelessWidget {
                   Expanded(
                     child: DefaultForm(
                       title: 'Search For Product By Name or ID',
-                      controller:
-                      Provider.of<ProductVM>(context).searchController,
+                      controller: _searchController,
+                    onChanged: context.read<ProductVM>().setQuery,
                       numberOfLines: 1,
                     ),
                   ),
