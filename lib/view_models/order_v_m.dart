@@ -1,30 +1,88 @@
 import 'package:flutter/material.dart';
 import 'package:warsha_app/core/network/api_exception.dart';
+import 'package:warsha_app/core/state/async_view_model.dart';
+import 'package:warsha_app/core/validation/validators.dart';
+import 'package:warsha_app/models/customerModel.dart';
+import 'package:warsha_app/models/orderItemModel.dart';
 import 'package:warsha_app/models/order_request.dart';
 import 'package:warsha_app/models/order_status.dart';
+import 'package:warsha_app/models/order_totals.dart';
 import 'package:warsha_app/services/orders_service.dart';
 import '../models/orderModel.dart';
 
 enum ViewState { idle, loading, error }
 
-class OrderVM extends ChangeNotifier {
+/// What the add/edit order screens hold, as typed. [OrderVM] validates it and
+/// turns it into an [OrderRequest].
+class OrderForm {
+  final CustomerModel? customer;
+  final List<OrderItemModel> items;
+
+  /// The quantity field the screen edits (`quantityToOrder` when adding,
+  /// `orderedQuantity` when editing).
+  final int Function(OrderItemModel item) quantityOf;
+  final String paymentMethod;
+  final String orderSource;
+  final String notes;
+  final String downPayment;
+  final String delivery;
+  final String discount;
+
+  const OrderForm({
+    required this.customer,
+    required this.items,
+    required this.quantityOf,
+    required this.paymentMethod,
+    required this.orderSource,
+    this.notes = '',
+    this.downPayment = '',
+    this.delivery = '',
+    this.discount = '',
+  });
+
+  static double amount(String text) => double.tryParse(text.trim().replaceAll(',', '.')) ?? 0;
+
+  OrderTotals get totals => OrderTotals.compute(
+        items: items,
+        quantityOf: quantityOf,
+        extraDiscount: amount(discount),
+        delivery: amount(delivery),
+        downPayment: amount(downPayment),
+      );
+
+  /// A down payment has to land in a bank account the user picks.
+  bool get needsBankAccount => amount(downPayment) > 0;
+
+  OrderRequest toRequest({int? bankAccountId}) => OrderRequest(
+        customerId: customer!.customerId,
+        items: [
+          for (final item in items)
+            OrderLineRequest(
+              productId: item.productId,
+              variantId: item.variantId,
+              quantity: quantityOf(item),
+              unitPrice: item.unitPrice,
+            ),
+        ],
+        paymentMethod: _orEmpty(paymentMethod),
+        orderSource: _orEmpty(orderSource),
+        notes: _orEmpty(notes),
+        downPayment: amount(downPayment),
+        delivery: amount(delivery),
+        discount: amount(discount),
+        bankAccountId: bankAccountId,
+      );
+
+  /// Old orders show "-" for empty fields; send those as empty.
+  static String _orEmpty(String s) => s.trim() == '-' ? '' : s.trim();
+}
+
+/// Orders screen (list, filters, status changes, delete) and saving from the
+/// add/edit order screens.
+class OrderVM extends ChangeNotifier with AsyncViewModel {
   final OrdersService _orderService;
 
-  TextEditingController customer = TextEditingController();
-  TextEditingController status = TextEditingController();
-  TextEditingController phone = TextEditingController();
-  TextEditingController governorate = TextEditingController();
-  TextEditingController total = TextEditingController();
-  TextEditingController source = TextEditingController();
-  TextEditingController paymentMethod = TextEditingController();
-
   OrderVM(this._orderService);
-
-  // State
-  ViewState _state = ViewState.idle;
-  bool _isSaving = false;
-  String _errorMessage = '';
-  ApiException? _lastError;
 
   // Orders
   List<OrderModel> _orders = [];
@@ -36,82 +94,111 @@ class OrderVM extends ChangeNotifier {
 
   // Filtering
   final Map<String, String> _filters = {};
-  DateTime? _startDate; // ✨ ADDED
-  DateTime? _endDate; // ✨ ADDED
+  DateTime? _startDate;
+  DateTime? _endDate;
 
-  // Getters
-  ViewState get state => _state;
-  bool get isSaving => _isSaving;
-  String get errorMessage => _errorMessage;
+  ViewState get state => isLoading
+      ? ViewState.loading
+      : loadFailed
+          ? ViewState.error
+          : ViewState.idle;
 
   /// The failure of the last load or save, for the screens to show.
-  ApiException? get lastError => _lastError;
+  ApiException? get lastError => error;
 
-  /// The backend's message for [field] (e.g. `discount`, `items[0].quantity`)
-  /// when the last save failed validation.
-  String? fieldError(String field) =>
-      (_lastError?.isValidation ?? false) ? _lastError!.messageFor(field) : null;
+  /// Only input mistakes go under a field; stock and status problems are
+  /// shown as a message.
+  @override
+  String? fieldError(String field) => (error?.isValidation ?? false) ? error!.messageFor(field) : null;
 
-  /// Forgets the last failure, e.g. when a form is opened again.
-  void clearError() {
-    if (_lastError == null && _errorMessage.isEmpty) return;
-    _lastError = null;
-    _errorMessage = '';
-    notifyListeners();
-  }
-
-  // ✨ MODIFIED getter to check all filter types
   List<OrderModel> get orders =>
-      _filteredOrders.isEmpty &&
-          _filters.isEmpty &&
-          _startDate == null &&
-          _endDate == null
+      _filteredOrders.isEmpty && _filters.isEmpty && _startDate == null && _endDate == null
           ? _orders
           : _filteredOrders;
 
-  // ✨ ADDED getters for date range
   DateTime? get startDate => _startDate;
   DateTime? get endDate => _endDate;
+
+  /// The text typed in the filter for [key], to restore the filter fields.
+  String filterValue(String key) => _filters[key] ?? '';
 
   // ────────────────────────────
   // FETCH ORDERS
   // ────────────────────────────
-  Future<void> fetchOrders() async {
-    _state = ViewState.loading;
-    notifyListeners();
+  Future<bool> fetchOrders() => load(() async {
+        final now = DateTime.now();
+        _orders = await _orderService.list(from: now.subtract(const Duration(days: 45)), to: now);
+        _filterOrders(notifyNow: false);
+      });
 
-    try {
-      final now = DateTime.now();
-      _orders = await _orderService.list(
-        from: now.subtract(const Duration(days: 45)),
-        to: now,
-      );
-      _filteredOrders = List.from(_orders);
-      _setError(null);
-      _state = ViewState.idle;
-    } on ApiException catch (e) {
-      _setError(e);
-      _state = ViewState.error;
+  // ────────────────────────────
+  // VALIDATION
+  // Keys match the backend's field names, so both show the same way.
+  // ────────────────────────────
+  Map<String, String> validateOrder(OrderForm form) {
+    final errors = Validators.collect({
+      'customerId': () => form.customer == null ? 'Choose a customer.' : null,
+      'items': () => form.items.isEmpty ? 'Add at least one product.' : null,
+      'paymentMethod': () => OrderForm._orEmpty(form.paymentMethod).isEmpty ? 'Choose the payment method.' : null,
+      'orderSource': () => OrderForm._orEmpty(form.orderSource).isEmpty ? 'Choose where the order came from.' : null,
+      'downPayment': () => Validators.nonNegativeNumber(form.downPayment, 'Down payment'),
+      'delivery': () => Validators.nonNegativeNumber(form.delivery, 'Delivery'),
+      'discount': () => Validators.nonNegativeNumber(form.discount, 'Discount'),
+    });
+    for (var i = 0; i < form.items.length; i++) {
+      if (form.quantityOf(form.items[i]) < 1) errors['items[$i].quantity'] = 'Quantity must be at least 1.';
     }
+    if (form.items.isNotEmpty && !errors.keys.any((k) => const ['downPayment', 'delivery', 'discount'].contains(k))) {
+      final totals = form.totals;
+      if (totals.grandTotal < 0) {
+        errors['discount'] = "Discount can't be more than the order total.";
+      } else if (totals.downPayment > totals.grandTotal) {
+        errors['downPayment'] = "Down payment can't be more than the order total.";
+      }
+    }
+    return errors;
+  }
 
-    notifyListeners();
+  /// Checks [form] before asking for a bank account; true when it can be sent.
+  bool checkOrder(OrderForm form) {
+    final errors = validateOrder(form);
+    if (errors.isEmpty) {
+      clearError();
+      return true;
+    }
+    return fail(ApiException.validation(errors));
   }
 
   // ────────────────────────────
   // ADD / UPDATE / STATUS / DELETE
-  // Each returns true on success; on failure [lastError] says why.
+  // Each returns true (or the order) on success; on failure [lastError] says why.
   // ────────────────────────────
 
-  /// Returns the created order, or null on failure.
-  Future<OrderModel?> addOrder(OrderRequest request) => _save(() async {
-        final created = await _orderService.create(request);
-        _orders.insert(0, created);
-        _filterOrders();
-        return created;
-      });
+  /// Validates and creates the order. Returns it, or null on failure.
+  Future<OrderModel?> placeOrder(OrderForm form, {int? bankAccountId}) async {
+    if (!checkOrder(form)) return null;
+    return addOrder(form.toRequest(bankAccountId: bankAccountId));
+  }
 
-  Future<bool> updateOrder(int orderId, OrderRequest request) async =>
-      await _save(() async => _replaceOrder(await _orderService.update(orderId, request))) != null;
+  /// Validates and saves the edited order.
+  Future<bool> saveOrder(int orderId, OrderForm form) async {
+    if (!checkOrder(form)) return false;
+    return updateOrder(orderId, form.toRequest());
+  }
+
+  /// Returns the created order, or null on failure.
+  Future<OrderModel?> addOrder(OrderRequest request) async {
+    OrderModel? created;
+    await run(() async {
+      created = await _orderService.create(request);
+      _orders.insert(0, created!);
+      _filterOrders(notifyNow: false);
+    });
+    return created;
+  }
+
+  Future<bool> updateOrder(int orderId, OrderRequest request) =>
+      run(() async => _replaceOrder(await _orderService.update(orderId, request)));
 
   /// Cancelling goes through the cancel endpoint, which also returns the stock
   /// and refunds the down payment. Completing needs the [bankAccountId] that
@@ -120,49 +207,23 @@ class OrderVM extends ChangeNotifier {
     required int orderId,
     required OrderStatus status,
     int? bankAccountId,
-  }) async =>
-      await _save(() async => _replaceOrder(status == OrderStatus.cancelled
+  }) =>
+      run(() async => _replaceOrder(status == OrderStatus.cancelled
           ? await _orderService.cancel(orderId)
-          : await _orderService.changeStatus(orderId, status, bankAccountId: bankAccountId))) !=
-      null;
+          : await _orderService.changeStatus(orderId, status, bankAccountId: bankAccountId)));
 
-  Future<bool> deleteOrder(int id) async =>
-      await _save(() async {
+  Future<bool> deleteOrder(int id) => run(() async {
         await _orderService.delete(id);
         _orders.removeWhere((order) => order.orderId == id);
         _filteredOrders.removeWhere((order) => order.orderId == id);
-        return true;
-      }) !=
-      null;
+      });
 
-  Future<T?> _save<T extends Object>(Future<T> Function() action) async {
-    _isSaving = true;
-    _setError(null);
-    notifyListeners();
-
-    try {
-      return await action();
-    } on ApiException catch (e) {
-      _setError(e);
-      return null;
-    } finally {
-      _isSaving = false;
-      notifyListeners();
-    }
-  }
-
-  void _setError(ApiException? e) {
-    _lastError = e;
-    _errorMessage = e?.message ?? '';
-  }
-
-  OrderModel _replaceOrder(OrderModel updated) {
+  void _replaceOrder(OrderModel updated) {
     int indexIn(List<OrderModel> list) => list.indexWhere((o) => o.orderId == updated.orderId);
     final i = indexIn(_orders);
     if (i >= 0) _orders[i] = updated;
     final j = indexIn(_filteredOrders);
     if (j >= 0) _filteredOrders[j] = updated;
-    return updated;
   }
 
   // ────────────────────────────
@@ -183,7 +244,7 @@ class OrderVM extends ChangeNotifier {
 
     sortColumnIndex = columnIndex;
     sortAscending = ascending;
-    notifyListeners();
+    notify();
   }
 
   // ────────────────────────────
@@ -217,11 +278,11 @@ class OrderVM extends ChangeNotifier {
     _startDate = null;
     _endDate = null;
     _filteredOrders = List.from(_orders);
-    notifyListeners();
+    notify();
   }
 
   // applies both text and date filters
-  void _filterOrders() {
+  void _filterOrders({bool notifyNow = true}) {
     _filteredOrders = _orders.where((order) {
 
       // --- 1. Text Filters (Existing Logic) ---
@@ -233,6 +294,10 @@ class OrderVM extends ChangeNotifier {
 
           String target = '';
           switch (key) {
+            case 'search':
+              // Order number, customer name or phone
+              target = '#${order.orderId} ${order.customer?.fullName ?? ''} ${order.customer?.phone ?? ''}'.toLowerCase();
+              break;
             case 'status':
               target = order.status?.label.toLowerCase() ?? '';
               break;
@@ -300,6 +365,6 @@ class OrderVM extends ChangeNotifier {
 
     }).toList();
 
-    notifyListeners();
+    if (notifyNow) notify();
   }
 }

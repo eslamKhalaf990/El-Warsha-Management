@@ -4,6 +4,7 @@ import 'package:warsha_app/core/network/api_exception.dart';
 import 'package:warsha_app/models/order_status.dart';
 import 'package:warsha_app/models/order_totals.dart';
 import 'package:warsha_app/view_models/accountings_v_m.dart';
+import 'package:warsha_app/view_models/add_order_v_m.dart';
 import 'package:warsha_app/view_models/add_product_v_m.dart';
 
 /// One color per status, used by the status dropdown and badge.
@@ -52,7 +53,8 @@ bool isOrderFormField(String field) =>
 /// Stock and bank balances change with every order change.
 void refreshAfterOrderChange(BuildContext context) {
   context.read<AccountingVM>().initAccounting();
-  context.read<ProductVM>().initAllProducts();
+  context.read<ProductVM>().fetch();
+  context.read<AddOrderVM>().fetchGovernorateCounts();
 }
 
 /// Subtotal → amount due breakdown, as the backend calculates it.

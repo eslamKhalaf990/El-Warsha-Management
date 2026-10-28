@@ -1,15 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:warsha_app/controllers/add_order/add_customer.dart';
 import 'package:warsha_app/controllers/update_order/updatePaymentDetails.dart';
 import 'package:warsha_app/models/orderModel.dart';
-import 'package:warsha_app/models/order_request.dart';
 import 'package:warsha_app/view_models/order_v_m.dart';
-import 'package:warsha_app/utils/const_values.dart';
-import 'package:warsha_app/utils/deafualt_form_field.dart';
-import 'package:warsha_app/utils/default_button.dart';
-import 'package:warsha_app/utils/default_text.dart';
-import 'package:warsha_app/view_models/customers_v_m.dart';
 import 'package:warsha_app/view_models/add_product_v_m.dart';
 import 'package:warsha_app/view_models/update_order_v_m.dart';
 import 'package:warsha_app/views/orders/order_ui.dart';
@@ -26,6 +19,16 @@ class UpdateOrder extends StatefulWidget {
 }
 
 class _UpdateOrderState extends State<UpdateOrder> {
+  final _customerSearch = TextEditingController();
+  final _productSearch = TextEditingController();
+
+  @override
+  void dispose() {
+    _customerSearch.dispose();
+    _productSearch.dispose();
+    super.dispose();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -41,45 +44,31 @@ class _UpdateOrderState extends State<UpdateOrder> {
 
     // Product discounts aren't in the order response; take them from the
     // catalogue, as the backend does when the order is saved.
-    final products = await context.read<ProductVM>().allProducts ?? const [];
+    final productVM = context.read<ProductVM>();
+    if (!productVM.hasLoaded) await productVM.fetch();
     if (!mounted) return;
-    updateVM.applyUnitDiscounts({
-      for (final p in products)
-        if (int.tryParse(p.id) case final id?) id: double.tryParse(p.discount) ?? 0,
-    });
+    updateVM.applyUnitDiscounts(productVM.unitDiscounts);
   }
 
-  Future<void> _submit(UpdateOrderVM orderVM, UpdatePaymentDetails payment,
-      CustomerProvider customers) async {
-    final customer = orderVM.orderModel.customer;
+  Future<void> _submit(UpdateOrderVM orderVM, UpdatePaymentDetails payment) async {
     final orderId = orderVM.orderModel.orderId;
-    if (customer == null || orderId == null) return;
-    if (orderVM.orderModel.orderItems.isEmpty) {
-      showOrderMessage(context, 'Please add at least one product', isError: true);
-      return;
-    }
+    if (orderId == null) return;
 
     // No bankAccountId: the backend keeps the down payment in its original account.
-    final request = OrderRequest(
-      customerId: customer.customerId,
-      items: orderVM.orderModel.orderItems
-          .map((item) => OrderLineRequest(
-                productId: item.productId,
-                variantId: item.variantId,
-                quantity: item.orderedQuantity,
-                unitPrice: item.unitPrice,
-              ))
-          .toList(),
-      delivery: double.tryParse(payment.delivery.text) ?? 0,
-      downPayment: double.tryParse(payment.downPayment.text) ?? 0,
-      discount: double.tryParse(payment.discount.text) ?? 0,
-      notes: payment.notes.text,
+    final form = OrderForm(
+      customer: orderVM.orderModel.customer,
+      items: orderVM.orderModel.orderItems,
+      quantityOf: (item) => item.orderedQuantity,
       paymentMethod: payment.paymentMethod.text,
       orderSource: payment.platformSource.text,
+      notes: payment.notes.text,
+      downPayment: payment.downPayment.text,
+      delivery: payment.delivery.text,
+      discount: payment.discount.text,
     );
 
     final ordersVM = context.read<OrderVM>();
-    final updated = await ordersVM.updateOrder(orderId, request);
+    final updated = await ordersVM.saveOrder(orderId, form);
     if (!mounted) return;
 
     if (!updated) {
@@ -90,7 +79,6 @@ class _UpdateOrderState extends State<UpdateOrder> {
     showOrderMessage(context, 'Order #$orderId updated');
     refreshAfterOrderChange(context);
     payment.clearPaymentDetails();
-    customers.clearCustomer();
     Navigator.pop(context);
   }
 
@@ -99,8 +87,7 @@ class _UpdateOrderState extends State<UpdateOrder> {
     final orderVM = context.read<UpdateOrderVM>();
     final payment = context.read<UpdatePaymentDetails>();
 
-    return Consumer<CustomerProvider>(
-      builder: (context, value, child) => Scaffold(
+    return Scaffold(
         extendBodyBehindAppBar: true,
         appBar: AppBar(
           backgroundColor: Colors.transparent,
@@ -133,7 +120,7 @@ class _UpdateOrderState extends State<UpdateOrder> {
                                   child: ElevatedButton(
                                     onPressed: Provider.of<OrderVM>(context).isSaving
                                         ? null
-                                        : () => _submit(orderVM, payment, value),
+                                        : () => _submit(orderVM, payment),
                                     child: Provider.of<OrderVM>(context).isSaving
                                         ? const SizedBox(
                                             height: 20,
@@ -206,17 +193,15 @@ class _UpdateOrderState extends State<UpdateOrder> {
                           ),
                           const SizedBox(height: 16),
                           TextField(
-                            controller: context.read<ProductVM>().searchController,
+                            controller: _productSearch,
+                            onChanged: (_) => setState(() {}),
                             decoration: const InputDecoration(
-                              hintText: 'Search For Products',
+                              hintText: 'Search by name or SKU',
                               prefixIcon: Icon(Icons.search, size: 20),
                             ),
-                            onChanged: (val) {
-                               // Add search logic if needed or it might be handled in VM
-                            },
                           ),
                           const SizedBox(height: 16),
-                          const Expanded(child: ProductToUpdate()),
+                          Expanded(child: ProductToUpdate(query: _productSearch.text)),
                         ],
                       ),
                     ),
@@ -245,14 +230,15 @@ class _UpdateOrderState extends State<UpdateOrder> {
                           ),
                           const SizedBox(height: 16),
                           TextField(
-                            controller: context.read<CustomerVM>().searchController,
+                            controller: _customerSearch,
+                            onChanged: (_) => setState(() {}),
                             decoration: const InputDecoration(
-                              hintText: 'Search For Customer',
+                              hintText: 'Search by name or phone',
                               prefixIcon: Icon(Icons.search, size: 20),
                             ),
                           ),
                           const SizedBox(height: 16),
-                          const Expanded(child: CustomerToUpdate()),
+                          Expanded(child: CustomerToUpdate(query: _customerSearch.text)),
                         ],
                       ),
                     ),
@@ -262,9 +248,6 @@ class _UpdateOrderState extends State<UpdateOrder> {
             ],
           ),
         ),
-
-      ),
     );
   }
 }
-

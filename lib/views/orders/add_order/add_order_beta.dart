@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:warsha_app/models/account_balance.dart';
-import 'package:warsha_app/models/order_request.dart';
 
 // Models & Values
 import 'package:warsha_app/models/orderItemModel.dart';
@@ -139,52 +138,38 @@ class CustomerSelectionSection extends StatelessWidget {
 
           Consumer<CustomerVM>(
             builder: (context, customerVM, _) {
-              if (customerVM.allCustomers == null) {
-                return const LinearProgressIndicator();
+              if (!customerVM.hasLoaded) {
+                return customerVM.loadFailed
+                    ? Text(customerVM.errorMessage!, style: const TextStyle(color: Colors.red, fontSize: 12))
+                    : const LinearProgressIndicator();
               }
 
-              return FutureBuilder(
-                future: customerVM.allCustomers,
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData) return const SizedBox();
-
-                  return SearchAnchor(
-                    viewElevation: 2,
-                    builder: (BuildContext context, SearchController controller) {
-                      return SearchBar(
-                        elevation: const WidgetStatePropertyAll<double>(0.0),
-                        shape: WidgetStatePropertyAll<RoundedRectangleBorder>(
-                            RoundedRectangleBorder(
-                                borderRadius: const BorderRadius.all(Radius.circular(15)),
-                                side: BorderSide(color: Theme.of(context).colorScheme.tertiary, width: 1)
-
-                            ),
-                        ),
-                        controller: controller,
-                        padding: const WidgetStatePropertyAll<EdgeInsets>(
-                            EdgeInsets.symmetric(horizontal: 16.0)),
-                        onTap: () => controller.openView(),
-                        onChanged: (_) => controller.openView(),
-                        leading: const Icon(Iconsax.profile_circle),
-                        hintText: "Search Customer...",
-                      );
-                    },
-                    suggestionsBuilder: (BuildContext context, SearchController controller) {
-                      final String input = controller.value.text.toLowerCase();
-
-                      // snapshot.data is your List<CustomerModel>
-                      return snapshot.data!
-                          .where((customer) =>
-                          customer.fullName.toLowerCase().contains(input) ||
-                          customer.phone.contains(input))
-                          .take(15) // Performance: Limit suggestions
-                          .map((customer) => ListTile(
+              return SearchAnchor(
+                viewElevation: 2,
+                builder: (BuildContext context, SearchController controller) {
+                  return SearchBar(
+                    elevation: const WidgetStatePropertyAll<double>(0.0),
+                    shape: WidgetStatePropertyAll<RoundedRectangleBorder>(
+                      RoundedRectangleBorder(
+                        borderRadius: const BorderRadius.all(Radius.circular(15)),
+                        side: BorderSide(color: Theme.of(context).colorScheme.tertiary, width: 1),
+                      ),
+                    ),
+                    controller: controller,
+                    padding: const WidgetStatePropertyAll<EdgeInsets>(EdgeInsets.symmetric(horizontal: 16.0)),
+                    onTap: () => controller.openView(),
+                    onChanged: (_) => controller.openView(),
+                    leading: const Icon(Iconsax.profile_circle),
+                    hintText: "Search Customer...",
+                  );
+                },
+                suggestionsBuilder: (BuildContext context, SearchController controller) {
+                  return customerVM.search(controller.value.text, limit: 15).map((customer) => ListTile(
                         title: Text(customer.fullName),
                         subtitle: Text(customer.phone),
                         onTap: () {
                           controller.closeView(customer.fullName);
-                          Provider.of<AddOrderVM>(context, listen: false)
-                              .addCustomer = customer;
+                          Provider.of<AddOrderVM>(context, listen: false).addCustomer = customer;
                           // Delivery follows the customer's shipping zone; it can still be edited
                           final price = context.read<ShippingZoneVM>().priceFor(customer.governorate);
                           if (price != null) {
@@ -193,8 +178,6 @@ class CustomerSelectionSection extends StatelessWidget {
                           }
                         },
                       ));
-                    },
-                  );
                 },
               );
             },
@@ -293,12 +276,12 @@ class _OrderLineItemsSectionState extends State<OrderLineItemsSection> {
             children: [
               Consumer<ProductVM>(
                 builder: (context, productVM, _) {
-                  return FutureBuilder<List<ProductModel>>(
-                    future: productVM.allProducts,
-                    builder: (context, snapshot) {
-                      if (!snapshot.hasData) return const SizedBox();
-
-                      return SearchAnchor(
+                  if (!productVM.hasLoaded) {
+                    return productVM.loadFailed
+                        ? Text(productVM.errorMessage!, style: const TextStyle(color: Colors.red, fontSize: 12))
+                        : const LinearProgressIndicator();
+                  }
+                  return SearchAnchor(
                         viewElevation: 0, // Removes shadow from the expanded list
                         viewHintText: "Type product name...",
                         viewShape: RoundedRectangleBorder(
@@ -331,11 +314,8 @@ class _OrderLineItemsSectionState extends State<OrderLineItemsSection> {
                           );
                         },
                         suggestionsBuilder: (BuildContext context, SearchController controller) {
-                          final String input = controller.value.text.toLowerCase();
-
-                          return snapshot.data!
-                              .where((prod) => prod.name.toLowerCase().contains(input))
-                              .take(15) // Performance: Limit suggestions
+                          return productVM
+                              .search(controller.value.text, limit: 15)
                               .map((prod) => ListTile(
                             title: Text(prod.name),
                             onTap: () {
@@ -349,8 +329,6 @@ class _OrderLineItemsSectionState extends State<OrderLineItemsSection> {
                           ));
                         },
                       );
-                    },
-                  );
                 },
               ),
               if (selectedProduct?.hasVariants ?? false) ...[
@@ -672,81 +650,40 @@ class OrderSummaryCard extends StatelessWidget {
   }
 
   Future<void> _submitOrder(BuildContext context) async {
-    final addOrderVM = Provider.of<AddOrderVM>(context, listen: false);
-    final payment = Provider.of<PaymentProvider>(context, listen: false);
-    final orderVM = Provider.of<OrderVM>(context, listen: false);
+    final addOrderVM = context.read<AddOrderVM>();
+    final payment = context.read<PaymentProvider>();
+    final orderVM = context.read<OrderVM>();
 
-    // --- VALIDATION STEP ---
-
-    // Check Customer
-    if (addOrderVM.orderModel.customer == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Please select a customer first'),
-            backgroundColor: Colors.red),
-      );
+    final form = OrderForm(
+      customer: addOrderVM.orderModel.customer,
+      items: addOrderVM.orderModel.orderItems,
+      quantityOf: (item) => item.quantityToOrder,
+      paymentMethod: payment.paymentMethod.text,
+      orderSource: payment.platformSource.text,
+      notes: payment.notes.text,
+      downPayment: payment.downPayment.text,
+      delivery: payment.delivery.text,
+      discount: payment.discount.text,
+    );
+    if (!orderVM.checkOrder(form)) {
+      showOrderError(context, orderVM.lastError, isShownField: isOrderFormField);
       return;
     }
 
-    // Check Items (Logic Fix: Don't allow empty orders)
-    if (addOrderVM.orderModel.orderItems.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Please add at least one product'),
-            backgroundColor: Colors.red),
-      );
-      return;
-    }
-
-    // --- PREPARATION STEP ---
-
-    // Safe Parsing (Logic Fix: Prevent crash if text is empty)
-    final double deliveryCost = double.tryParse(payment.delivery.text) ?? 0.0;
-    final double discountAmount = double.tryParse(payment.discount.text) ?? 0.0;
-    final double downPaymentAmount =
-        double.tryParse(payment.downPayment.text) ?? 0.0;
-
+    // A down payment needs the bank account that received it
     int? bankAccountId;
-
-    // Logic Fix: Only ask for Bank Account if there is a down payment
-    if (downPaymentAmount > 0) {
-      final bankAccount = await showTransferDialog(context, downPaymentAmount);
-
+    if (form.needsBankAccount) {
+      final bankAccount = await showTransferDialog(context, OrderForm.amount(form.downPayment));
       if (bankAccount == null) {
-        // User cancelled the dialog, so we stop the save process
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-                content: Text(
-                    'Bank account selection is required for down payments'),
-                backgroundColor: Colors.orange),
-          );
+          showOrderMessage(context, 'Choose the bank account that received the down payment.', isError: true);
         }
         return;
       }
       bankAccountId = bankAccount.id;
     }
 
-    final request = OrderRequest(
-      customerId: addOrderVM.orderModel.customer!.customerId,
-      delivery: deliveryCost,
-      discount: discountAmount,
-      downPayment: downPaymentAmount,
-      notes: payment.notes.text,
-      orderSource: payment.platformSource.text,
-      paymentMethod: payment.paymentMethod.text,
-      items: addOrderVM.orderModel.orderItems
-          .map((item) => OrderLineRequest(
-                productId: item.productId,
-                variantId: item.variantId,
-                quantity: item.quantityToOrder,
-                unitPrice: item.unitPrice,
-              ))
-          .toList(),
-      bankAccountId: bankAccountId,
-    );
-
-    final created = await orderVM.addOrder(request);
+    final created = await orderVM.placeOrder(form, bankAccountId: bankAccountId);
     if (!context.mounted) return;
 
     if (created == null) {

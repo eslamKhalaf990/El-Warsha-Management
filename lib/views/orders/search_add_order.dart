@@ -2,10 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:warsha_app/controllers/export_orders.dart';
-import 'package:warsha_app/utils/const_values.dart';
-import 'package:warsha_app/utils/deafualt_form_field.dart';
-import 'package:warsha_app/utils/default_text.dart';
-import 'package:warsha_app/view_models/add_order_v_m.dart';
 import 'package:warsha_app/view_models/order_v_m.dart';
 import 'package:warsha_app/views/orders/add_order/add_order_beta.dart';
 
@@ -26,10 +22,11 @@ class CRUDOrder extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // Search Bar takes full width
-                  TextField(
-                    controller: Provider.of<AddOrderVM>(context).searchController,
+                  TextFormField(
+                    initialValue: context.read<OrderVM>().filterValue('search'),
+                    onChanged: (q) => context.read<OrderVM>().applyFilter('search', q),
                     decoration: const InputDecoration(
-                      hintText: 'Search By Order Id or customer name',
+                      hintText: 'Search by order number, customer or phone',
                       prefixIcon: Icon(Icons.search, size: 20),
                     ),
                   ),
@@ -48,10 +45,11 @@ class CRUDOrder extends StatelessWidget {
               return Row(
                 children: [
                   Expanded(
-                    child: TextField(
-                      controller: Provider.of<AddOrderVM>(context).searchController,
+                    child: TextFormField(
+                      initialValue: context.read<OrderVM>().filterValue('search'),
+                    onChanged: (q) => context.read<OrderVM>().applyFilter('search', q),
                       decoration: const InputDecoration(
-                        hintText: 'Search By Order Id or customer name or phone',
+                        hintText: 'Search by order number, customer or phone',
                         prefixIcon: Icon(Icons.search, size: 20),
                       ),
                     ),

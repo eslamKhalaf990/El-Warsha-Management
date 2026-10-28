@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:provider/provider.dart';
+import 'package:warsha_app/core/ui/feedback.dart';
 import 'package:warsha_app/models/orderModel.dart';
 import 'package:warsha_app/models/order_status.dart';
 import 'package:warsha_app/models/order_totals.dart';
@@ -31,12 +32,7 @@ class OrderList extends StatelessWidget {
           ),
         );
       case ViewState.error:
-        return Center(
-          child: Text(
-            'Error: ${provider.errorMessage}',
-            style: const TextStyle(color: Colors.red),
-          ),
-        );
+        return LoadErrorView(message: provider.errorMessage!, onRetry: provider.fetchOrders);
       case ViewState.idle:
         return SizedBox(
           width: double.infinity,
@@ -133,7 +129,7 @@ class OrderList extends StatelessWidget {
             label: SizedBox(
               height: 22,
               width: 120,
-              child: TextField(
+              child: TextFormField(
                 decoration: const InputDecoration(
                   hintText: 'Customer',
                   hintStyle:
@@ -143,7 +139,7 @@ class OrderList extends StatelessWidget {
                   contentPadding: EdgeInsets.symmetric(horizontal: 0),
                   suffixIcon: Icon(Iconsax.sort_copy, size: 20),
                 ),
-                controller: orderVM.customer,
+                initialValue: orderVM.filterValue('customer'),
                 onChanged: (val) => orderVM.applyFilter('customer', val),
               ),
             ),
@@ -161,7 +157,7 @@ class OrderList extends StatelessWidget {
             label: SizedBox(
               height: 22,
               width: 120,
-              child: TextField(
+              child: TextFormField(
                 decoration: const InputDecoration(
                   hintText: 'Phone',
                   hintStyle:
@@ -171,7 +167,7 @@ class OrderList extends StatelessWidget {
                   contentPadding: EdgeInsets.symmetric(horizontal: 0),
                   suffixIcon: Icon(Iconsax.sort_copy, size: 20),
                 ),
-                controller: orderVM.phone,
+                initialValue: orderVM.filterValue('phone'),
                 onChanged: (val) => orderVM.applyFilter('phone', val),
               ),
             ),
@@ -189,7 +185,7 @@ class OrderList extends StatelessWidget {
             label: SizedBox(
               height: 22,
               width: 120,
-              child: TextField(
+              child: TextFormField(
                 decoration: const InputDecoration(
                   hintText: 'Status',
                   hintStyle:
@@ -199,7 +195,7 @@ class OrderList extends StatelessWidget {
                   contentPadding: EdgeInsets.symmetric(horizontal: 0),
                   suffixIcon: Icon(Iconsax.sort_copy, size: 20),
                 ),
-                controller: orderVM.status,
+                initialValue: orderVM.filterValue('status'),
                 onChanged: (val) => orderVM.applyFilter('status', val),
               ),
             ),
@@ -217,7 +213,7 @@ class OrderList extends StatelessWidget {
             label: SizedBox(
               height: 22,
               width: 120,
-              child: TextField(
+              child: TextFormField(
                 decoration: const InputDecoration(
                   hintText: 'Governorate',
                   hintStyle:
@@ -227,7 +223,7 @@ class OrderList extends StatelessWidget {
                   contentPadding: EdgeInsets.symmetric(horizontal: 0),
                   suffixIcon: Icon(Iconsax.sort_copy, size: 20),
                 ),
-                controller: orderVM.governorate,
+                initialValue: orderVM.filterValue('governorate'),
                 onChanged: (val) => orderVM.applyFilter('governorate', val),
               ),
             ),
@@ -245,7 +241,7 @@ class OrderList extends StatelessWidget {
             label: SizedBox(
               height: 22,
               width: 120,
-              child: TextField(
+              child: TextFormField(
                 decoration: const InputDecoration(
                   hintText: 'Total',
                   hintStyle:
@@ -255,7 +251,7 @@ class OrderList extends StatelessWidget {
                   contentPadding: EdgeInsets.symmetric(horizontal: 0),
                   suffixIcon: Icon(Iconsax.sort_copy, size: 20),
                 ),
-                controller: orderVM.total,
+                initialValue: orderVM.filterValue('total'),
                 onChanged: (val) => orderVM.applyFilter('total', val),
               ),
             ),
@@ -273,7 +269,7 @@ class OrderList extends StatelessWidget {
             label: SizedBox(
               height: 22,
               width: 120,
-              child: TextField(
+              child: TextFormField(
                 decoration: const InputDecoration(
                   hintText: 'Source',
                   hintStyle:
@@ -283,7 +279,7 @@ class OrderList extends StatelessWidget {
                   contentPadding: EdgeInsets.symmetric(horizontal: 0),
                   suffixIcon: Icon(Iconsax.sort_copy, size: 20),
                 ),
-                controller: orderVM.source,
+                initialValue: orderVM.filterValue('source'),
                 onChanged: (val) => orderVM.applyFilter('source', val),
               ),
             ),
@@ -301,7 +297,7 @@ class OrderList extends StatelessWidget {
             label: SizedBox(
               height: 22,
               width: 120,
-              child: TextField(
+              child: TextFormField(
                 decoration: const InputDecoration(
                   hintText: 'Payment Method',
                   hintStyle:
@@ -311,7 +307,7 @@ class OrderList extends StatelessWidget {
                   contentPadding: EdgeInsets.symmetric(horizontal: 0),
                   suffixIcon: Icon(Iconsax.sort_copy, size: 20),
                 ),
-                controller: orderVM.paymentMethod,
+                initialValue: orderVM.filterValue('paymentMethod'),
                 onChanged: (val) => orderVM.applyFilter('paymentMethod', val),
               ),
             ),

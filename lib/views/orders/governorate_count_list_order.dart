@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:warsha_app/models/order_governorate_count.dart';
 import 'package:warsha_app/view_models/add_order_v_m.dart';
 
 class GovernorateCountList extends StatelessWidget {
@@ -10,17 +9,14 @@ class GovernorateCountList extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 15.0),
-      child: FutureBuilder<List<GovernorateCountPerOrder>>(
-        future: Provider.of<AddOrderVM>(context, listen: false).allCounts,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Container();
-          } else if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(child: Text('No governorate data found.'));
+      child: Builder(
+        builder: (context) {
+          final vm = context.watch<AddOrderVM>();
+          if (!vm.hasLoaded) {
+            return const SizedBox.shrink();
           } else {
-            final governorateCounts = snapshot.data!;
+            final governorateCounts = vm.governorateCounts;
+            if (governorateCounts.isEmpty) return const SizedBox.shrink();
             return SizedBox(
               height: 110,
               child: ListView.separated(

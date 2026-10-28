@@ -178,6 +178,6 @@ void main() {
     routes['PUT /orders/1'] = (_) => json(order(1, 'Pending'));
     await model.updateOrder(1, request);
     expect(model.lastError, isNull);
-    expect(model.errorMessage, isEmpty);
+    expect(model.errorMessage, isNull);
   });
 }
