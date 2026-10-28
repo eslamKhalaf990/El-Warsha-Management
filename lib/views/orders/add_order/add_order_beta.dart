@@ -7,6 +7,7 @@ import 'package:warsha_app/models/order_request.dart';
 // Models & Values
 import 'package:warsha_app/models/orderItemModel.dart';
 import 'package:warsha_app/models/product_model.dart';
+import 'package:warsha_app/models/product_variant.dart';
 import 'package:warsha_app/utils/const_values.dart';
 import 'package:warsha_app/utils/default_button.dart';
 import 'package:warsha_app/utils/default_text.dart';
@@ -18,6 +19,7 @@ import 'package:warsha_app/view_models/add_product_v_m.dart';
 import 'package:warsha_app/view_models/customers_v_m.dart';
 import 'package:warsha_app/controllers/add_order/add_payment.dart';
 import 'package:warsha_app/view_models/order_v_m.dart';
+import 'package:warsha_app/view_models/shipping_zone_v_m.dart';
 import 'package:warsha_app/views/orders/order_ui.dart';
 
 class AddOrderBeta extends StatelessWidget {
@@ -183,6 +185,12 @@ class CustomerSelectionSection extends StatelessWidget {
                           controller.closeView(customer.fullName);
                           Provider.of<AddOrderVM>(context, listen: false)
                               .addCustomer = customer;
+                          // Delivery follows the customer's shipping zone; it can still be edited
+                          final price = context.read<ShippingZoneVM>().priceFor(customer.governorate);
+                          if (price != null) {
+                            context.read<PaymentProvider>().delivery.text =
+                                price.toStringAsFixed(price % 1 == 0 ? 0 : 2);
+                          }
                         },
                       ));
                     },
@@ -253,6 +261,8 @@ class OrderLineItemsSection extends StatefulWidget {
 
 class _OrderLineItemsSectionState extends State<OrderLineItemsSection> {
   ProductModel? selectedProduct;
+  ProductVariant? selectedVariant;
+  String? _variantError;
   final TextEditingController _qtyController = TextEditingController(text: "1");
 
   @override
@@ -331,6 +341,8 @@ class _OrderLineItemsSectionState extends State<OrderLineItemsSection> {
                             onTap: () {
                               setState(() {
                                 selectedProduct = prod;
+                                selectedVariant = null;
+                                _variantError = null;
                                 controller.closeView(prod.name);
                               });
                             },
@@ -341,6 +353,26 @@ class _OrderLineItemsSectionState extends State<OrderLineItemsSection> {
                   );
                 },
               ),
+              if (selectedProduct?.hasVariants ?? false) ...[
+                const SizedBox(height: 12),
+                DropdownButtonFormField<ProductVariant>(
+                  key: ValueKey(selectedProduct!.id),
+                  initialValue: selectedVariant,
+                  decoration: _inputDecoration("Size / color", Iconsax.color_swatch, errorText: _variantError),
+                  items: selectedProduct!.variants
+                      .map((v) => DropdownMenuItem(
+                            value: v,
+                            enabled: v.inStock,
+                            child: Text("${v.label} · ${v.price} EGP · stock ${v.quantity}",
+                                style: TextStyle(color: v.inStock ? null : Colors.grey)),
+                          ))
+                      .toList(),
+                  onChanged: (v) => setState(() {
+                    selectedVariant = v;
+                    _variantError = null;
+                  }),
+                ),
+              ],
               const SizedBox(height: 12),
               Row(
                 children: [
@@ -367,21 +399,29 @@ class _OrderLineItemsSectionState extends State<OrderLineItemsSection> {
                         ),
                         onPressed: () {
                           if (selectedProduct != null) {
-                            // print(_qtyController.text);
+                            if (selectedProduct!.hasVariants && selectedVariant == null) {
+                              setState(() => _variantError = "Choose a size/color");
+                              return;
+                            }
                             final vm =
                                 Provider.of<AddOrderVM>(context, listen: false);
+                            final variant = selectedVariant;
                             OrderItemModel item = OrderItemModel(
                               productId: int.parse(selectedProduct!.id),
                               quantity: int.tryParse(_qtyController.text) ?? 1,
-                              unitPrice:
+                              unitPrice: variant?.price ??
                                   double.parse(selectedProduct!.sellingPrice),
                               productName: selectedProduct!.name,
+                              variantId: variant?.id,
+                              size: variant?.size,
+                              color: variant?.color,
                             );
                             item.quantityToOrder = int.tryParse(_qtyController.text) ?? 1;
                             item.unitDiscount = double.tryParse(selectedProduct!.discount) ?? 0;
                             vm.addToOrderItems = item;
                             setState(() {
                               selectedProduct = null;
+                              selectedVariant = null;
                               _qtyController.text = "1";
                             });
                           }
@@ -447,7 +487,7 @@ class _OrderLineItemsSectionState extends State<OrderLineItemsSection> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(item.productName,
+                              Text(item.displayName,
                                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                               Text(
                                   "${item.unitPrice} EGP × ${item.quantityToOrder}",
@@ -468,7 +508,7 @@ class _OrderLineItemsSectionState extends State<OrderLineItemsSection> {
                         IconButton(
                           icon: const Icon(Iconsax.trash, size: 18, color: Colors.redAccent),
                           onPressed: () {
-                            vm.removeFromOrderItems = item.productId;
+                            vm.removeFromOrderItems = item;
                           },
                         ),
                       ],
@@ -698,6 +738,7 @@ class OrderSummaryCard extends StatelessWidget {
       items: addOrderVM.orderModel.orderItems
           .map((item) => OrderLineRequest(
                 productId: item.productId,
+                variantId: item.variantId,
                 quantity: item.quantityToOrder,
                 unitPrice: item.unitPrice,
               ))

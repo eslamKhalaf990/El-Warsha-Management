@@ -3,10 +3,14 @@ class ShippingZone {
   final String cityName;
   final double shippingPrice;
 
+  /// Inactive zones are hidden from the store and can't be ordered to.
+  final bool isActive;
+
   ShippingZone({
     this.id,
     required this.cityName,
     required this.shippingPrice,
+    this.isActive = true,
   });
 
   factory ShippingZone.fromJson(Map<String, dynamic> json) {
@@ -14,6 +18,7 @@ class ShippingZone {
       id: json['id'] as int?,
       cityName: json['cityName'] as String,
       shippingPrice: (json['shippingFee'] as num).toDouble(),
+      isActive: json['isActive'] != false,
     );
   }
 
@@ -34,4 +39,17 @@ class ShippingZone {
 
   @override
   int get hashCode => id.hashCode;
+}
+
+/// Matching key for Arabic governorate names (same rules as the backend), so
+/// "الاسكندريه" and "الإسكندرية" find the same zone.
+String governorateKey(String name) {
+  var s = name
+      .trim()
+      .replaceAll(RegExp('[\u064B-\u065F\u0640]'), '')
+      .replaceAll(RegExp('[أإآ]'), 'ا')
+      .replaceAll('ة', 'ه')
+      .replaceAll('ى', 'ي')
+      .replaceAll(RegExp(r'\s+'), ' ');
+  return s.startsWith('ال') ? s.substring(2) : s;
 }

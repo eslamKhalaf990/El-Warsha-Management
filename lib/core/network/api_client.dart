@@ -53,9 +53,20 @@ class ApiClient {
     return response.bodyBytes;
   }
 
+  /// Uploads one file as multipart form data under [field] (POST).
+  Future<dynamic> postFile(String path,
+      {required String field, required List<int> bytes, required String filename}) async {
+    final request = http.MultipartRequest('POST', resolve(path, null))
+      ..files.add(http.MultipartFile.fromBytes(field, bytes, filename: filename));
+    return _decode(await _execute(request));
+  }
+
   Future<dynamic> _send(String method, String path,
       {Object? body, Map<String, String>? query}) async {
-    final response = await _raw(method, path, body: body, query: query);
+    return _decode(await _raw(method, path, body: body, query: query));
+  }
+
+  dynamic _decode(http.Response response) {
     if (response.bodyBytes.isEmpty) return null;
     try {
       return jsonDecode(utf8.decode(response.bodyBytes));
@@ -65,17 +76,21 @@ class ApiClient {
   }
 
   Future<http.Response> _raw(String method, String path,
-      {Object? body, Map<String, String>? query, String accept = 'application/json'}) async {
-    final token = tokenProvider?.call();
-    final hasToken = token != null && token.isNotEmpty;
-
+      {Object? body, Map<String, String>? query, String accept = 'application/json'}) {
     final request = http.Request(method, resolve(path, query));
-    request.headers['Accept'] = accept;
-    if (hasToken) request.headers['Authorization'] = 'Bearer $token';
     if (body != null) {
       request.headers['Content-Type'] = 'application/json; charset=utf-8';
       request.body = jsonEncode(body);
     }
+    return _execute(request, accept: accept);
+  }
+
+  Future<http.Response> _execute(http.BaseRequest request, {String accept = 'application/json'}) async {
+    final token = tokenProvider?.call();
+    final hasToken = token != null && token.isNotEmpty;
+    request.headers['Accept'] = accept;
+    if (hasToken) request.headers['Authorization'] = 'Bearer $token';
+    final method = request.method;
 
     final http.Response response;
     try {

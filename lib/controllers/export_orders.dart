@@ -86,7 +86,7 @@ Future<void> exportToExcel(List<OrderModel> orders) async {
       ..numberFormat = egpFormat;
 
     final String itemSummary = order.orderItems
-        .map((item) => '${item.productName} (x${item.quantity})')
+        .map((item) => '${item.displayName} (x${item.quantity})')
         .join(', ');
 
     sheet.getRangeByName('P$rowIndex').setText(itemSummary);

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:warsha_app/views/customers/governorate_dropdown.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:warsha_app/controllers/add_order/add_customer.dart';
@@ -196,55 +197,7 @@ class AddCustomer extends StatelessWidget {
   }
 
   Widget _buildGovernorateDropdown(BuildContext context, dynamic value) {
-    return DropdownButtonFormField<String>(
-      initialValue: value.governorate.text.isNotEmpty ? value.governorate.text : null,
-      decoration: InputDecoration(
-        labelText: "Governorate",
-        labelStyle: const TextStyle(color: Colors.grey, fontSize: 14),
-        contentPadding: const EdgeInsets.symmetric(vertical: 20),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(25),
-          borderSide: BorderSide(
-            color: Theme.of(context).colorScheme.tertiary.withAlpha(50),
-          ),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(25),
-          borderSide: BorderSide(
-            color: Theme.of(context).colorScheme.tertiary.withAlpha(50),
-
-          ),
-        ),
-        prefixIcon: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Icon(
-            Iconsax.map_1_copy,
-            color: Theme.of(context).colorScheme.secondary,
-          ),
-        ),
-      ),
-      icon: const Padding(
-        padding: EdgeInsets.only(right: 10),
-        child: Icon(Icons.arrow_drop_down_rounded),
-      ),
-      items: [
-        "القاهرة", "الجيزة", "الإسكندرية", "بورسعيد", "السويس", "الدقهلية",
-        "الشرقية", "القليوبية", "كفر الشيخ", "الغربية", "المنوفية", "البحيرة",
-        "الإسماعيلية", "المنيا", "بني سويف", "الفيوم", "أسيوط", "سوهاج",
-        "قنا", "الأقصر", "أسوان", "البحر الأحمر", "الوادي الجديد", "مطروح",
-        "شمال سيناء", "جنوب سيناء", "دمياط",
-      ].map((gov) {
-        return DropdownMenuItem(
-          value: gov,
-          child: Text(gov),
-        );
-      }).toList(),
-      onChanged: (String? newValue) {
-        if (newValue != null) {
-          value.governorate.text = newValue;
-        }
-      },
-    );
+    return GovernorateDropdown(controller: value.governorate);
   }
 }
 

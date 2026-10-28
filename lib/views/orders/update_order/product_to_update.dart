@@ -5,6 +5,7 @@ import 'package:iconsax_flutter/iconsax_flutter.dart';
 // Assuming these are your paths
 import 'package:warsha_app/models/product_model.dart';
 import 'package:warsha_app/models/orderItemModel.dart';
+import 'package:warsha_app/models/product_variant.dart';
 import 'package:warsha_app/view_models/add_product_v_m.dart';
 import 'package:warsha_app/view_models/update_order_v_m.dart';
 import 'package:warsha_app/utils/const_values.dart';
@@ -50,18 +51,28 @@ class ProductToUpdate extends StatelessWidget {
                   .any((item) => item.productId.toString() == product.id);
 
               return GestureDetector(
-                onTap: () {
+                onTap: () async {
+                  ProductVariant? variant;
+                  if (product.hasVariants) {
+                    variant = await _pickVariant(context, product);
+                    if (variant == null) return;
+                  }
                   OrderItemModel orderItemModel = OrderItemModel(
                     productId: int.parse(product.id),
                     productName: product.name,
-                    quantity: int.parse(product.quantity),
-                    unitPrice: double.parse(product.sellingPrice),
+                    quantity: variant?.quantity ?? int.tryParse(product.quantity) ?? 0,
+                    unitPrice: variant?.price ?? double.parse(product.sellingPrice),
+                    variantId: variant?.id,
+                    size: variant?.size,
+                    color: variant?.color,
                   )..unitDiscount = double.tryParse(product.discount) ?? 0;
 
-                  if (!isSelected) {
+                  final lineExists = orderVM.orderModel.orderItems
+                      .any((item) => item.sameLineAs(orderItemModel));
+                  if (!lineExists) {
                     orderVM.addToOrderItems = orderItemModel;
                   } else {
-                    orderVM.removeFromOrderItems = orderItemModel.productId;
+                    orderVM.removeFromOrderItems = orderItemModel;
                   }
                 },
                 child: ProductWidget(
@@ -75,6 +86,24 @@ class ProductToUpdate extends StatelessWidget {
       },
     );
   }
+}
+
+/// Asks which size/color to add (or remove, if it is already on the order).
+Future<ProductVariant?> _pickVariant(BuildContext context, ProductModel product) {
+  return showDialog<ProductVariant>(
+    context: context,
+    builder: (context) => SimpleDialog(
+      backgroundColor: Colors.white,
+      title: Text("${product.name}: size / color"),
+      children: product.variants
+          .map((v) => SimpleDialogOption(
+                onPressed: v.inStock ? () => Navigator.pop(context, v) : null,
+                child: Text("${v.label} · ${v.price} EGP · stock ${v.quantity}",
+                    style: TextStyle(color: v.inStock ? null : Colors.grey)),
+              ))
+          .toList(),
+    ),
+  );
 }
 
 class ProductWidget extends StatelessWidget {

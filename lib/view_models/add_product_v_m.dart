@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/cupertino.dart';
 import 'package:warsha_app/models/category_model.dart';
+import 'package:warsha_app/models/json_read.dart';
 import 'package:warsha_app/models/product_model.dart';
 import 'package:warsha_app/services/products_service.dart';
 import 'package:warsha_app/view_models/user_v_m.dart';
@@ -12,6 +13,9 @@ class ProductVM extends ChangeNotifier {
 
   bool isLoading = false;
   String deletedProduct = "";
+
+  /// Id of the product created by the last successful [addProduct].
+  int? lastCreatedProductId;
 
   Future<List<ProductModel>>? allProducts;
   List<CategoryModel>? allCategories;
@@ -82,6 +86,8 @@ class ProductVM extends ChangeNotifier {
   Future<String> addProduct({
     required String productName,
     required String productDescription,
+    String productNameAr = "",
+    String productDescriptionAr = "",
     required String productBPrice,
     required String productSPrice,
     required String productDiscount,
@@ -101,6 +107,8 @@ class ProductVM extends ChangeNotifier {
       final response = await _productService.addProductWithImage(
           name: productName,
           description: productDescription,
+          nameAr: productNameAr,
+          descriptionAr: productDescriptionAr,
           buyingPrice: productBPrice,
           sellingPrice: productSPrice,
           discount: productDiscount,
@@ -113,6 +121,8 @@ class ProductVM extends ChangeNotifier {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         status = "product_added";
+        final created = jsonDecode(responseBody);
+        lastCreatedProductId = created is Map ? readInt(created['productID'] ?? created['id']) : null;
         debugPrint("Product added: $responseBody");
       } else {
         status = "product_not_added";

@@ -3,6 +3,9 @@ import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:warsha_app/controllers/add_order/add_product.dart';
 import 'package:warsha_app/controllers/drag_drop_controller.dart';
+import 'package:warsha_app/core/network/api_exception.dart';
+import 'package:warsha_app/models/product_variant.dart';
+import 'package:warsha_app/services/product_variants_service.dart';
 import 'package:warsha_app/models/category_model.dart';
 import 'package:warsha_app/utils/default_button.dart';
 import 'package:warsha_app/utils/default_text.dart';
@@ -168,6 +171,13 @@ class _AddProductState extends State<AddProduct> {
                           },
                         ),
                         const SizedBox(height: 20),
+                        DefaultProductForm(
+                          title: "Product Name (Arabic)",
+                          controller: product.productNameAr,
+                          icon: Iconsax.language_square,
+                          textDirection: TextDirection.rtl,
+                        ),
+                        const SizedBox(height: 20),
 
                         // Category Dropdown (Styled to match inputs)
                         Row(
@@ -284,6 +294,14 @@ class _AddProductState extends State<AddProduct> {
                           icon: Iconsax.document_text,
                           maxLines: 3,
                         ),
+                        const SizedBox(height: 20),
+                        DefaultProductForm(
+                          title: "Description (Arabic)",
+                          controller: product.productDescriptionAr,
+                          icon: Iconsax.document_text,
+                          maxLines: 3,
+                          textDirection: TextDirection.rtl,
+                        ),
                         const SizedBox(height: 40),
 
                         // Action Buttons
@@ -308,9 +326,13 @@ class _AddProductState extends State<AddProduct> {
                               child: DefaultButton(
                                 onTap: () async {
                                   if (_formKey.currentState!.validate()) {
-                                    String status = await Provider.of<ProductVM>(context, listen: false).addProduct(
+                                    final productVM = Provider.of<ProductVM>(context, listen: false);
+                                    final variantsService = context.read<ProductVariantsService>();
+                                    String status = await productVM.addProduct(
                                       productName: product.productName.text,
                                       productDescription: product.productDescription.text,
+                                      productNameAr: product.productNameAr.text,
+                                      productDescriptionAr: product.productDescriptionAr.text,
                                       productBPrice: product.productBuyingPrice.text,
                                       productDiscount: product.discount.text,
                                       productSPrice: product.productSellingPrice.text,
@@ -319,15 +341,21 @@ class _AddProductState extends State<AddProduct> {
                                       imageBytes: Provider.of<DragDropController>(context, listen: false).droppedBytes,
                                     );
                                     if (status == "product_added") {
+                                      final variantError = await _createVariants(
+                                          variantsService, productVM.lastCreatedProductId, product);
                                       Navigator.pop(navigatorKey.currentContext!);
                                       Provider.of<ProductVM>(navigatorKey.currentContext!, listen: false).initAllProducts();
                                       Provider.of<ProductVM>(navigatorKey.currentContext!, listen: false).getAllProducts();
+                                      final hadVariants = product.productSizes.isNotEmpty || product.productColors.isNotEmpty;
                                       product.clear();
                                       Provider.of<DragDropController>(navigatorKey.currentContext!, listen: false).clear();
                                       ScaffoldMessenger.of(navigatorKey.currentContext!).showSnackBar(
                                         SnackBar(
                                           backgroundColor: Theme.of(context).colorScheme.tertiary,
-                                          content: const Text("Product added successfully"),
+                                          content: Text(variantError ??
+                                              (!hadVariants
+                                                  ? "Product added successfully"
+                                                  : "Product added. Set the stock of each size/color from Edit product.")),
                                         ),
                                       );
                                     }
@@ -418,6 +446,28 @@ class _AddProductState extends State<AddProduct> {
         ],
       ),
     );
+  }
+}
+
+/// Creates one variant per size × color picked on the form, with no stock yet.
+/// Returns a message when some could not be created.
+Future<String?> _createVariants(
+    ProductVariantsService service, int? productId, ProductProvider product) async {
+  final sizes = product.productSizes.isEmpty ? <String?>[null] : product.productSizes;
+  final colors = product.productColors.isEmpty ? <String?>[null] : product.productColors;
+  if (product.productSizes.isEmpty && product.productColors.isEmpty) return null;
+  if (productId == null) {
+    return "Product added, but its sizes/colors weren't saved. Add them from Edit product.";
+  }
+  try {
+    for (final size in sizes) {
+      for (final color in colors) {
+        await service.create(productId, ProductVariantRequest(size: size, color: color, quantity: 0));
+      }
+    }
+    return null;
+  } on ApiException catch (e) {
+    return "Product added, but some sizes/colors weren't saved: ${e.message}";
   }
 }
 
@@ -648,6 +698,7 @@ class DefaultProductForm extends StatelessWidget {
     this.isRequired = false,
     this.validator,
     this.keyboardType,
+    this.textDirection,
   });
 
   final String title;
@@ -660,6 +711,7 @@ class DefaultProductForm extends StatelessWidget {
   final bool isRequired;
   final String? Function(String?)? validator;
   final TextInputType? keyboardType;
+  final TextDirection? textDirection;
 
   @override
   Widget build(BuildContext context) {
@@ -669,6 +721,7 @@ class DefaultProductForm extends StatelessWidget {
       maxLines: maxLines,
       validator: validator,
       keyboardType: keyboardType,
+      textDirection: textDirection,
       style: const TextStyle(fontWeight: FontWeight.w500),
       cursorColor: Theme.of(context).colorScheme.tertiary,
       decoration: InputDecoration(

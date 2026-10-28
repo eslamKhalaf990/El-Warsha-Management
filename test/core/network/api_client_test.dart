@@ -21,6 +21,23 @@ http.Response jsonResponse(Object body, int status) => http.Response(
 
 void main() {
   group('requests', () {
+    test('postFile sends multipart with the token and decodes the reply', () async {
+      late http.Request seen;
+      final api = clientWith((req) async {
+        seen = req;
+        return jsonResponse({'id': 7}, 201);
+      })
+        ..tokenProvider = (() => 'abc');
+
+      final body = await api.postFile('products/5/images/upload', field: 'image', bytes: [1, 2, 3], filename: 'a.png');
+
+      expect(body, {'id': 7});
+      expect(seen.url.toString(), 'http://api.test/products/5/images/upload');
+      expect(seen.headers['Authorization'], 'Bearer abc');
+      expect(seen.headers['content-type'], startsWith('multipart/form-data'));
+      expect(seen.body, contains('name="image"; filename="a.png"'));
+    });
+
     test('resolves relative paths and adds the bearer token', () async {
       late http.BaseRequest seen;
       final api = clientWith((req) async {

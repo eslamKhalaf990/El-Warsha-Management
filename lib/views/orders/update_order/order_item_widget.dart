@@ -31,7 +31,7 @@ class UpdateOrderItem extends StatelessWidget {
         children: [
           Expanded(
             child: Text(
-              order.productName,
+              order.displayName,
               style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
               overflow: TextOverflow.ellipsis,
             ),

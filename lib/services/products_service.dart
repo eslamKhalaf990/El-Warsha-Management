@@ -104,6 +104,8 @@ class ProductService {
   Future<http.StreamedResponse> addProductWithImage({
     required String name,
     required String description,
+    String nameAr = "",
+    String descriptionAr = "",
     required String buyingPrice,
     required String sellingPrice,
     required String discount,
@@ -117,7 +119,9 @@ class ProductService {
     print(discount);
     final product = jsonEncode({
       "name": name,
+      "nameAr": nameAr,
       "description": description,
+      "descriptionAr": descriptionAr,
       "buyingPrice": buyingPrice,
       "discount": discount,
       "sellingPrice": sellingPrice,
@@ -150,6 +154,8 @@ class ProductService {
     required String id,
     required String name,
     required String description,
+    String nameAr = "",
+    String descriptionAr = "",
     required String buyingPrice,
     required String sellingPrice,
     required String discount,
@@ -163,7 +169,9 @@ class ProductService {
 
     final product = jsonEncode({
       "name": name,
+      "nameAr": nameAr,
       "description": description,
+      "descriptionAr": descriptionAr,
       "buyingPrice": buyingPrice,
       "sellingPrice": sellingPrice,
       "discount": discount,

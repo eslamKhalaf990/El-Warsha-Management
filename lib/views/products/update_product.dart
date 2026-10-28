@@ -10,6 +10,8 @@ import 'package:warsha_app/utils/default_button.dart';
 import 'package:warsha_app/utils/default_text.dart';
 import 'package:warsha_app/view_models/add_product_v_m.dart';
 import 'package:warsha_app/view_models/update_product_v_m.dart';
+import 'package:warsha_app/views/products/product_gallery_editor.dart';
+import 'package:warsha_app/views/products/product_variants_editor.dart';
 import 'package:warsha_app/views/products/update_drag_drop.dart';
 
 class UpdateProduct extends StatelessWidget {
@@ -48,6 +50,32 @@ class UpdateProduct extends StatelessWidget {
                         Expanded(
                           flex: 3,
                           child: UpdateDragDropImageUpload(productImage: productModel.image,),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(15, 12, 15, 0),
+                          child: SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton.icon(
+                              onPressed: () async {
+                                final images = await showProductGalleryEditor(
+                                  context,
+                                  productId: int.parse(productModel.id),
+                                  productName: productModel.name,
+                                  coverUrl: productModel.image,
+                                );
+                                if (images == null) return;
+                                productModel.images = images;
+                                update.refresh();
+                                if (context.mounted) {
+                                  Provider.of<ProductVM>(context, listen: false).initAllProducts();
+                                }
+                              },
+                              icon: const Icon(Iconsax.gallery),
+                              label: Text(productModel.images.isEmpty
+                                  ? "Add more images"
+                                  : "Gallery (${productModel.images.length + 1} images)"),
+                            ),
+                          ),
                         ),
                         Container(
                           margin: const EdgeInsets.all(15),
@@ -125,10 +153,25 @@ class UpdateProduct extends StatelessWidget {
                           child: Padding(
                             padding:
                                 const EdgeInsets.symmetric(horizontal: 15.0),
-                            child: DefaultProductForm(
-                              title: "Product name",
-                              controller: update.productName,
-                              icon: Iconsax.bag,
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: DefaultProductForm(
+                                    title: "Product name",
+                                    controller: update.productName,
+                                    icon: Iconsax.bag,
+                                  ),
+                                ),
+                                const SizedBox(width: 15),
+                                Expanded(
+                                  child: DefaultProductForm(
+                                    title: "Product name (Arabic)",
+                                    controller: update.productNameAr,
+                                    icon: Iconsax.language_square,
+                                    textDirection: TextDirection.rtl,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ),
@@ -137,10 +180,25 @@ class UpdateProduct extends StatelessWidget {
                           child: Padding(
                             padding:
                                 const EdgeInsets.symmetric(horizontal: 15.0),
-                            child: DefaultProductForm(
-                              title: "Product description",
-                              controller: update.productDescription,
-                              icon: Iconsax.document,
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: DefaultProductForm(
+                                    title: "Product description",
+                                    controller: update.productDescription,
+                                    icon: Iconsax.document,
+                                  ),
+                                ),
+                                const SizedBox(width: 15),
+                                Expanded(
+                                  child: DefaultProductForm(
+                                    title: "Product description (Arabic)",
+                                    controller: update.productDescriptionAr,
+                                    icon: Iconsax.document,
+                                    textDirection: TextDirection.rtl,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ),
@@ -208,10 +266,43 @@ class UpdateProduct extends StatelessWidget {
                           child: Padding(
                             padding:
                                 const EdgeInsets.symmetric(horizontal: 15.0),
-                            child: DefaultProductForm(
-                              title: "Product quantity",
-                              controller: update.productQuantity,
-                              icon: Iconsax.add,
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: DefaultProductForm(
+                                    title: productModel.hasVariants
+                                        ? "Product quantity (total of sizes/colors)"
+                                        : "Product quantity",
+                                    controller: update.productQuantity,
+                                    icon: Iconsax.add,
+                                    readOnly: productModel.hasVariants,
+                                  ),
+                                ),
+                                const SizedBox(width: 15),
+                                OutlinedButton.icon(
+                                  onPressed: () async {
+                                    final variants = await showProductVariantsEditor(
+                                      context,
+                                      productId: int.parse(productModel.id),
+                                      productName: productModel.name,
+                                    );
+                                    if (variants == null) return;
+                                    productModel.variants = variants;
+                                    if (variants.isNotEmpty) {
+                                      update.productQuantity.text =
+                                          variants.fold<int>(0, (sum, v) => sum + v.quantity).toString();
+                                    }
+                                    update.refresh();
+                                    if (context.mounted) {
+                                      Provider.of<ProductVM>(context, listen: false).initAllProducts();
+                                    }
+                                  },
+                                  icon: const Icon(Iconsax.color_swatch),
+                                  label: Text(productModel.hasVariants
+                                      ? "Sizes & colors (${productModel.variants.length})"
+                                      : "Add sizes & colors"),
+                                ),
+                              ],
                             ),
                           ),
                         ),
@@ -229,6 +320,9 @@ class UpdateProduct extends StatelessWidget {
                                       productName: update.productName.text,
                                       productDescription:
                                           update.productDescription.text,
+                                      productNameAr: update.productNameAr.text,
+                                      productDescriptionAr:
+                                          update.productDescriptionAr.text,
                                       productBPrice:
                                           update.productBuyingPrice.text,
                                       productSPrice:
@@ -313,6 +407,8 @@ class DefaultProductForm extends StatelessWidget {
     required this.controller,
     this.onChange,
     this.fillColor, this.currency,
+    this.textDirection,
+    this.readOnly = false,
   });
   final String title;
   final TextEditingController controller;
@@ -320,11 +416,15 @@ class DefaultProductForm extends StatelessWidget {
   final IconData? icon;
   final bool? currency;
   final Color? fillColor;
+  final TextDirection? textDirection;
+  final bool readOnly;
   @override
   Widget build(BuildContext context) {
     return TextFormField(
       controller: controller,
       onChanged: onChange,
+      textDirection: textDirection,
+      readOnly: readOnly,
       cursorColor: Theme.of(context)
           .colorScheme
           .tertiary

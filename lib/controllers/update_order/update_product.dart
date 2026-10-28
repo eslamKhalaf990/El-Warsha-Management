@@ -5,6 +5,8 @@ class UpdateProductProvider extends ChangeNotifier {
   // TextEditingControllers
   final TextEditingController productName = TextEditingController();
   final TextEditingController productDescription = TextEditingController();
+  final TextEditingController productNameAr = TextEditingController();
+  final TextEditingController productDescriptionAr = TextEditingController();
   final TextEditingController productBuyingPrice = TextEditingController();
   final TextEditingController productSellingPrice = TextEditingController();
   final TextEditingController productCategory = TextEditingController();
@@ -32,6 +34,8 @@ class UpdateProductProvider extends ChangeNotifier {
   void loadProduct(ProductModel existingProduct) {
     productName.text = existingProduct.name;
     productDescription.text = existingProduct.productDescription;
+    productNameAr.text = existingProduct.nameAr;
+    productDescriptionAr.text = existingProduct.descriptionAr;
     productBuyingPrice.text = existingProduct.buyingPrice.toString();
     productSellingPrice.text = existingProduct.sellingPrice.toString();
     productCategory.text = existingProduct.category;
@@ -45,11 +49,16 @@ class UpdateProductProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Rebuilds the form after something outside the text fields changed.
+  void refresh() => notifyListeners();
+
   // Dispose controllers
   @override
   void dispose() {
     productName.dispose();
     productDescription.dispose();
+    productNameAr.dispose();
+    productDescriptionAr.dispose();
     productBuyingPrice.dispose();
     productSellingPrice.dispose();
     productCategory.dispose();

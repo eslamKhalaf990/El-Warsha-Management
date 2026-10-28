@@ -11,6 +11,19 @@ class ShippingZoneVM extends ChangeNotifier {
   List<ShippingZone>? allZones;
   bool isLoading = false;
 
+  /// Zones customers can be delivered to, in the order the ERP lists them.
+  List<ShippingZone> get activeZones => (allZones ?? []).where((z) => z.isActive).toList();
+
+  /// Delivery price for [governorate], or null when it has no active zone.
+  double? priceFor(String? governorate) {
+    if (governorate == null || governorate.trim().isEmpty) return null;
+    final key = governorateKey(governorate);
+    for (final zone in activeZones) {
+      if (governorateKey(zone.cityName) == key) return zone.shippingPrice;
+    }
+    return null;
+  }
+
   ShippingZoneVM(this._shippingZoneService, this._userViewModel) {
     initZones();
   }

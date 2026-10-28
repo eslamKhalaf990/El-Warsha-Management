@@ -3,14 +3,18 @@ class OrderLineRequest {
   final int productId;
   final int quantity;
 
+  /// Required when the product has sizes/colors.
+  final int? variantId;
+
   /// Overrides the catalogue price (ERP only); null uses the product's price.
   final double? unitPrice;
 
-  const OrderLineRequest({required this.productId, required this.quantity, this.unitPrice});
+  const OrderLineRequest({required this.productId, required this.quantity, this.variantId, this.unitPrice});
 
   Map<String, dynamic> toJson() => {
         'productId': productId,
         'quantity': quantity,
+        if (variantId != null) 'variantId': variantId,
         if (unitPrice != null) 'unitPrice': unitPrice,
       };
 }

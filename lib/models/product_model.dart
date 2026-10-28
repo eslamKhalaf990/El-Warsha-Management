@@ -1,7 +1,13 @@
+import 'package:warsha_app/models/json_read.dart';
+import 'package:warsha_app/models/product_image.dart';
+import 'package:warsha_app/models/product_variant.dart';
+
 class ProductModel {
   String name;
+  String nameAr = '';
   late String id;
   String productDescription;
+  String descriptionAr = '';
   String sellingPrice;
   String buyingPrice;
   String discount;
@@ -11,6 +17,14 @@ class ProductModel {
   String quantity;
   String image;
   String? sku;
+
+  /// Active sizes/colors; empty for products without variants.
+  List<ProductVariant> variants = const [];
+
+  bool get hasVariants => variants.isNotEmpty;
+
+  /// Extra gallery images after the cover [image], in display order.
+  List<ProductImage> images = const [];
 
   ProductModel.add({
     required this.name,
@@ -42,7 +56,7 @@ class ProductModel {
   });
 
   factory ProductModel.fromJson(Map<String, dynamic> json) {
-    return ProductModel.get(
+    final product = ProductModel.get(
       name: json['name'],
       id: json['id'].toString(),
       productDescription: json['description'],
@@ -55,6 +69,11 @@ class ProductModel {
       quantity: json['quantity'],
       sku: json['sku'], image: json['imageUrl'] ?? "-",
     );
+    product.nameAr = readString(json['nameAr']);
+    product.descriptionAr = readString(json['descriptionAr']);
+    product.variants = readList(json['variants']).map(ProductVariant.fromJson).toList();
+    product.images = readList(json['images']).map(ProductImage.fromJson).toList();
+    return product;
   }
 
   Map<String, dynamic> toJson() {

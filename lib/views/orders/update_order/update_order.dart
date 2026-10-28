@@ -65,6 +65,7 @@ class _UpdateOrderState extends State<UpdateOrder> {
       items: orderVM.orderModel.orderItems
           .map((item) => OrderLineRequest(
                 productId: item.productId,
+                variantId: item.variantId,
                 quantity: item.orderedQuantity,
                 unitPrice: item.unitPrice,
               ))

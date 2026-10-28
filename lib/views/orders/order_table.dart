@@ -544,7 +544,7 @@ class OrderList extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(vertical: 4.0),
                           child: Row(
                             children: [
-                              Expanded(flex: 4, child: Text(item.productName)),
+                              Expanded(flex: 4, child: Text(item.displayName)),
                               Expanded(
                                   flex: 2,
                                   child: Text(item.quantity.toString())),

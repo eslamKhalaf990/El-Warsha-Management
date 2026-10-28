@@ -4,6 +4,8 @@ class ProductProvider extends ChangeNotifier {
   // TextEditingControllers
   final TextEditingController productName = TextEditingController();
   final TextEditingController productDescription = TextEditingController();
+  final TextEditingController productNameAr = TextEditingController();
+  final TextEditingController productDescriptionAr = TextEditingController();
   final TextEditingController productBuyingPrice = TextEditingController();
   final TextEditingController productSellingPrice = TextEditingController();
   final TextEditingController productCategory = TextEditingController();
@@ -77,6 +79,8 @@ class ProductProvider extends ChangeNotifier {
   void dispose() {
     productName.dispose();
     productDescription.dispose();
+    productNameAr.dispose();
+    productDescriptionAr.dispose();
     productBuyingPrice.dispose();
     productSellingPrice.dispose();
     productCategory.dispose();
@@ -90,6 +94,10 @@ class ProductProvider extends ChangeNotifier {
     productName.clear();
     productName.clear();
     productDescription.clear();
+    productNameAr.clear();
+    productDescriptionAr.clear();
+    productColors.clear();
+    productSizes.clear();
     productBuyingPrice.clear();
     productSellingPrice.clear();
     productCategory.clear();

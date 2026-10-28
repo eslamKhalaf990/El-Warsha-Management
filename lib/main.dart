@@ -14,6 +14,8 @@ import 'package:warsha_app/services/customers_services.dart';
 import 'package:warsha_app/services/home_service.dart';
 import 'package:warsha_app/services/orders_service.dart';
 import 'package:warsha_app/services/products_service.dart';
+import 'package:warsha_app/services/product_images_service.dart';
+import 'package:warsha_app/services/product_variants_service.dart';
 import 'package:warsha_app/services/shipping_zone_service.dart';
 import 'package:warsha_app/services/user_service.dart';
 import 'package:warsha_app/services/vendors_service.dart';
@@ -95,6 +97,12 @@ class SessionScope extends StatelessWidget {
           create: (context) => OrdersService(context.read<ApiClient>()),
         ),
         Provider<CustomerService>(create: (_) => CustomerService()),
+        Provider<ProductVariantsService>(
+          create: (context) => ProductVariantsService(context.read<ApiClient>()),
+        ),
+        Provider<ProductImagesService>(
+          create: (context) => ProductImagesService(context.read<ApiClient>()),
+        ),
 
         // View models
         ChangeNotifierProvider<OrderVM>(

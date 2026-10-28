@@ -98,7 +98,7 @@ class UpdateOrderDetails extends StatelessWidget {
           for (var i = 0; i < order.orderModel.orderItems.length; i++)
             if (ordersVM.fieldError('items[$i].quantity') case final error?)
               SliverToBoxAdapter(
-                  child: _errorLine('${order.orderModel.orderItems[i].productName}: $error')),
+                  child: _errorLine('${order.orderModel.orderItems[i].displayName}: $error')),
 
           const SliverToBoxAdapter(child: SizedBox(height: 15)),
           SliverToBoxAdapter(

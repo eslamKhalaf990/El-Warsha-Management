@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:warsha_app/views/customers/governorate_dropdown.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:warsha_app/controllers/update_order/update_customer.dart';
@@ -71,10 +72,9 @@ class UpdateCustomer extends StatelessWidget {
                             child: Padding(
                               padding:
                               const EdgeInsets.symmetric(horizontal: 15.0),
-                              child: DefaultCustomerForm(
-                                title: "Governorate",
-                                controller: customerProvider.governorate,
-                                icon: Iconsax.building,
+                              child: Align(
+                                alignment: Alignment.center,
+                                child: GovernorateDropdown(controller: customerProvider.governorate),
                               ),
                             ),
                           ),

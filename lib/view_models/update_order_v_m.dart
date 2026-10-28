@@ -61,10 +61,10 @@ class UpdateOrderVM extends ChangeNotifier {
     notifyListeners();
   }
 
-  set removeFromOrderItems(int productId) {
-    // Removes the item from the list
+  set removeFromOrderItems(OrderItemModel line) {
+    // Removes the line (same product and size/color) from the list
     final updatedList = List<OrderItemModel>.from(orderModel.orderItems);
-    updatedList.removeWhere((item) => item.productId == productId);
+    updatedList.removeWhere((item) => item.sameLineAs(line));
     orderModel = orderModel.copyWith(orderItems: updatedList);
     notifyListeners();
   }
@@ -81,7 +81,7 @@ class UpdateOrderVM extends ChangeNotifier {
       item.orderedQuantity--;
     } else {
       // If quantity is 1, decrementing removes it
-      removeFromOrderItems = item.productId;
+      removeFromOrderItems = item;
     }
     notifyListeners();
   }
