@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:provider/provider.dart';
+import 'package:warsha_app/core/ui/feedback.dart';
 import 'package:warsha_app/models/vendor.dart';
 import 'package:warsha_app/utils/default_text.dart';
 import 'package:warsha_app/view_models/vendors_v_m.dart';
+import 'package:warsha_app/views/vendors/add_vendor.dart';
 
 class VendorWidget extends StatelessWidget {
   final Vendor vendor;
@@ -59,7 +61,7 @@ class VendorWidget extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   DefaultText(
-                    txt: vendor.name ?? "Unknown Vendor",
+                    txt: vendor.name,
                     size: 16,
                     bold: true,
                   ),
@@ -99,7 +101,7 @@ class VendorWidget extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              DefaultText(txt: vendor.name ?? "", size: 18, bold: true),
+              DefaultText(txt: vendor.name, size: 18, bold: true),
               const SizedBox(height: 4),
               DefaultText(
                 txt: "Tax ID: ${vendor.taxNumber ?? 'No Tax ID'}",
@@ -132,9 +134,7 @@ class VendorWidget extends StatelessWidget {
   // ==========================================
 
   Widget _buildVendorAvatar(BuildContext context) {
-    String initials = vendor.name != null && vendor.name!.isNotEmpty
-        ? vendor.name!.substring(0, 1).toUpperCase()
-        : "V";
+    String initials = vendor.name.isNotEmpty ? vendor.name.substring(0, 1).toUpperCase() : "V";
 
     return Container(
       width: 50,
@@ -189,15 +189,20 @@ class VendorWidget extends StatelessWidget {
     );
   }
 
+  void _openEdit(BuildContext context) {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => AddVendor(vendor: vendor)));
+  }
+
   Widget _buildEditButton(BuildContext context, {required bool compact}) {
     if (compact) {
       return IconButton(
-        onPressed: () { /* Navigate to UpdateVendor */ },
+        tooltip: "Edit",
+        onPressed: () => _openEdit(context),
         icon: const Icon(Iconsax.edit, color: Colors.black87, size: 20),
       );
     }
     return OutlinedButton.icon(
-      onPressed: () {},
+      onPressed: () => _openEdit(context),
       icon: const Icon(Iconsax.edit, size: 16),
       label: const Text("Edit"),
       style: OutlinedButton.styleFrom(
@@ -209,13 +214,19 @@ class VendorWidget extends StatelessWidget {
   }
 
   Widget _buildDeleteButton(BuildContext context, {required bool compact}) {
-    final vendorVM = Provider.of<VendorVM>(context, listen: false);
+    final vendorVM = context.read<VendorVM>();
 
     return IconButton(
+      tooltip: "Archive",
       onPressed: () async {
         final confirm = await _showDeleteDialog(context);
-        if (confirm == true) {
-          await vendorVM.deleteVendor(vendor.vendorId!);
+        if (confirm != true || !context.mounted) return;
+        final ok = await vendorVM.archive(vendor);
+        if (!context.mounted) return;
+        if (ok) {
+          showSuccess(context, '"${vendor.name}" archived.');
+        } else {
+          showError(context, vendorVM.errorMessage!);
         }
       },
       icon: Icon(Iconsax.trash, color: Colors.red.shade400, size: compact ? 20 : 24),
@@ -226,8 +237,8 @@ class VendorWidget extends StatelessWidget {
     return showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text("Soft Delete Vendor"),
-        content: Text("Are you sure you want to archive ${vendor.name}?"),
+        title: const Text("Archive Vendor"),
+        content: Text("Archive ${vendor.name}? It will be hidden from this list, but its record is kept."),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Cancel")),
           TextButton(onPressed: () => Navigator.pop(context, true), child: const Text("Archive", style: TextStyle(color: Colors.red))),

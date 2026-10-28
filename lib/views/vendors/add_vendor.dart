@@ -1,26 +1,43 @@
 import 'package:flutter/material.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:provider/provider.dart';
+import 'package:warsha_app/core/ui/feedback.dart';
+import 'package:warsha_app/models/vendor.dart';
 import 'package:warsha_app/utils/default_button.dart';
 import 'package:warsha_app/utils/default_text.dart';
 import 'package:warsha_app/view_models/vendors_v_m.dart';
 
+/// Add a vendor, or edit [vendor] when given.
 class AddVendor extends StatefulWidget {
-  const AddVendor({super.key});
+  const AddVendor({super.key, this.vendor});
+
+  final Vendor? vendor;
 
   @override
   State<AddVendor> createState() => _AddVendorState();
 }
 
 class _AddVendorState extends State<AddVendor> {
-  // Controllers for vendor data
-  final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _phoneController = TextEditingController();
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _addressController = TextEditingController();
-  final TextEditingController _taxNumberController = TextEditingController();
-  final TextEditingController _contactPersonController = TextEditingController();
-  final TextEditingController _notesController = TextEditingController();
+  late final _nameController = TextEditingController(text: widget.vendor?.name);
+  late final _phoneController = TextEditingController(text: widget.vendor?.phone);
+  late final _emailController = TextEditingController(text: widget.vendor?.email);
+  late final _addressController = TextEditingController(text: widget.vendor?.address);
+  late final _taxNumberController = TextEditingController(text: widget.vendor?.taxNumber);
+  late final _contactPersonController = TextEditingController(text: widget.vendor?.contactPerson);
+  late final _notesController = TextEditingController(text: widget.vendor?.notes);
+
+  static const _fields = ['name', 'phone', 'email', 'address', 'taxNumber', 'contactPerson', 'notes'];
+
+  bool get _isEdit => widget.vendor != null;
+
+  @override
+  void initState() {
+    super.initState();
+    // Errors from a previous visit don't belong to this form.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) context.read<VendorVM>().clearError();
+    });
+  }
 
   @override
   void dispose() {
@@ -34,13 +51,35 @@ class _AddVendorState extends State<AddVendor> {
     super.dispose();
   }
 
+  Future<void> _save() async {
+    final vm = context.read<VendorVM>();
+    final request = VendorRequest(
+      name: _nameController.text,
+      phone: _phoneController.text,
+      email: _emailController.text,
+      address: _addressController.text,
+      taxNumber: _taxNumberController.text,
+      contactPerson: _contactPersonController.text,
+      notes: _notesController.text,
+    );
+    final ok = _isEdit ? await vm.update(widget.vendor!.vendorId, request) : await vm.add(request);
+    if (!mounted) return;
+    if (ok) {
+      Navigator.pop(context);
+      showSuccess(context, _isEdit ? 'Vendor updated.' : 'Vendor added.');
+    } else if (_fields.every((f) => vm.fieldError(f) == null)) {
+      // Not about a field (network, server...): say it in a snackbar.
+      showError(context, vm.errorMessage!);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final vendorVM = Provider.of<VendorVM>(context);
+    final vendorVM = context.watch<VendorVM>();
 
     return Scaffold(
       appBar: AppBar(
-        title: const DefaultText(txt: "Add New Vendor", bold: true, size: 20),
+        title: DefaultText(txt: _isEdit ? "Edit Vendor" : "Add New Vendor", bold: true, size: 20),
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
@@ -66,12 +105,18 @@ class _AddVendorState extends State<AddVendor> {
                         DefaultVendorForm(
                           title: "Tax Registration Number",
                           controller: _taxNumberController,
+                          errorText: vendorVM.fieldError('taxNumber'),
+                          maxLength: VendorVM.taxNumberMaxLength,
+                          onChanged: (_) => vendorVM.clearError(),
                           icon: Iconsax.document_text_copy,
                         ),
                         const SizedBox(height: 20),
                         DefaultVendorForm(
                           title: "Company Email",
                           controller: _emailController,
+                          errorText: vendorVM.fieldError('email'),
+                          maxLength: VendorVM.emailMaxLength,
+                          onChanged: (_) => vendorVM.clearError(),
                           icon: Iconsax.sms_copy,
                         ),
                       ],
@@ -84,6 +129,9 @@ class _AddVendorState extends State<AddVendor> {
                     child: DefaultVendorForm(
                       title: "Business Address",
                       controller: _addressController,
+                      errorText: vendorVM.fieldError('address'),
+                      maxLength: VendorVM.addressMaxLength,
+                      onChanged: (_) => vendorVM.clearError(),
                       icon: Iconsax.location_copy,
                       maxLines: 3,
                     ),
@@ -103,8 +151,11 @@ class _AddVendorState extends State<AddVendor> {
                 child: Column(
                   children: [
                     DefaultVendorForm(
-                      title: "Vendor/Company Name",
+                      title: "Vendor/Company Name *",
                       controller: _nameController,
+                      errorText: vendorVM.fieldError('name'),
+                      maxLength: VendorVM.nameMaxLength,
+                      onChanged: (_) => vendorVM.clearError(),
                       icon: Iconsax.shop_copy,
                     ),
                     const SizedBox(height: 20),
@@ -114,6 +165,9 @@ class _AddVendorState extends State<AddVendor> {
                           child: DefaultVendorForm(
                             title: "Contact Person",
                             controller: _contactPersonController,
+                            errorText: vendorVM.fieldError('contactPerson'),
+                            maxLength: VendorVM.contactPersonMaxLength,
+                            onChanged: (_) => vendorVM.clearError(),
                             icon: Iconsax.user_octagon_copy,
                           ),
                         ),
@@ -122,6 +176,9 @@ class _AddVendorState extends State<AddVendor> {
                           child: DefaultVendorForm(
                             title: "Phone Number",
                             controller: _phoneController,
+                            errorText: vendorVM.fieldError('phone'),
+                            maxLength: VendorVM.phoneMaxLength,
+                            onChanged: (_) => vendorVM.clearError(),
                             icon: Iconsax.call_calling_copy,
                           ),
                         ),
@@ -131,6 +188,9 @@ class _AddVendorState extends State<AddVendor> {
                     DefaultVendorForm(
                       title: "Additional Notes",
                       controller: _notesController,
+                      errorText: vendorVM.fieldError('notes'),
+                      maxLength: VendorVM.notesMaxLength,
+                      onChanged: (_) => vendorVM.clearError(),
                       icon: Iconsax.note_2_copy,
                       maxLines: 4,
                     ),
@@ -156,32 +216,10 @@ class _AddVendorState extends State<AddVendor> {
                         Expanded(
                           flex: 2,
                           child: DefaultButton(
-                            onTap: () async {
-                              Map<String, dynamic> vendorData = {
-                                "name": _nameController.text,
-                                "phone": _phoneController.text,
-                                "email": _emailController.text,
-                                "address": _addressController.text,
-                                "taxNumber": _taxNumberController.text,
-                                "contactPerson": _contactPersonController.text,
-                                "notes": _notesController.text,
-                                "isActive": true,
-                              };
-
-                              String status = await vendorVM.addVendor(vendorData);
-
-                              if (status == "vendor_added") {
-                                if (mounted) {
-                                  Navigator.pop(context);
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text("Vendor added successfully")),
-                                  );
-                                }
-                              }
-                            },
-                            isValid: !vendorVM.isLoading,
-                            isLoading: vendorVM.isLoading,
-                            title: "Save Vendor",
+                            onTap: _save,
+                            isValid: !vendorVM.isSaving,
+                            isLoading: vendorVM.isSaving,
+                            title: _isEdit ? "Save Changes" : "Save Vendor",
                             margin: EdgeInsets.zero,
                           ),
                         ),
@@ -229,6 +267,9 @@ class DefaultVendorForm extends StatelessWidget {
   final TextEditingController controller;
   final IconData icon;
   final int maxLines;
+  final String? errorText;
+  final int? maxLength;
+  final ValueChanged<String>? onChanged;
 
   const DefaultVendorForm({
     super.key,
@@ -236,25 +277,42 @@ class DefaultVendorForm extends StatelessWidget {
     required this.controller,
     required this.icon,
     this.maxLines = 1,
+    this.errorText,
+    this.maxLength,
+    this.onChanged,
   });
 
   @override
   Widget build(BuildContext context) {
+    final radius = BorderRadius.circular(maxLines > 1 ? 15 : 25);
     return TextFormField(
       controller: controller,
       maxLines: maxLines,
+      maxLength: maxLength,
+      onChanged: onChanged,
       decoration: InputDecoration(
         filled: true,
         fillColor: Colors.white,
         labelText: title,
+        errorText: errorText,
+        errorMaxLines: 2,
+        counterText: '',
         labelStyle: TextStyle(fontSize: 14, color: Colors.grey.shade600),
         enabledBorder: OutlineInputBorder(
           borderSide: BorderSide(color: Colors.grey.shade200),
-          borderRadius: BorderRadius.circular(25),
+          borderRadius: radius,
         ),
         focusedBorder: OutlineInputBorder(
           borderSide: BorderSide(color: Theme.of(context).colorScheme.tertiary, width: 1.5),
-          borderRadius: BorderRadius.circular(25),
+          borderRadius: radius,
+        ),
+        errorBorder: OutlineInputBorder(
+          borderSide: BorderSide(color: Theme.of(context).colorScheme.error),
+          borderRadius: radius,
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderSide: BorderSide(color: Theme.of(context).colorScheme.error, width: 1.5),
+          borderRadius: radius,
         ),
         prefixIcon: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 15),

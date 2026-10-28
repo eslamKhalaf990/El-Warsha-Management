@@ -1,12 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
+import 'package:provider/provider.dart';
 import 'package:warsha_app/utils/const_values.dart';
 import 'package:warsha_app/utils/deafualt_form_field.dart';
 import 'package:warsha_app/utils/default_text.dart';
+import 'package:warsha_app/view_models/vendors_v_m.dart';
 import 'package:warsha_app/views/vendors/add_vendor.dart';
 
-class CRUDVendor extends StatelessWidget {
+class CRUDVendor extends StatefulWidget {
   const CRUDVendor({super.key});
+
+  @override
+  State<CRUDVendor> createState() => _CRUDVendorState();
+}
+
+class _CRUDVendorState extends State<CRUDVendor> {
+  late final _searchController = TextEditingController(text: context.read<VendorVM>().query);
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -48,12 +63,10 @@ class CRUDVendor extends StatelessWidget {
 
   Widget _buildSearchField(BuildContext context) {
     return DefaultForm(
-      title: 'Search Vendor by Name or Contact',
-      controller: TextEditingController(),
+      title: 'Search by name, contact, phone or tax number',
+      controller: _searchController,
       numberOfLines: 1,
-      // Adding a listener to update the UI as the user types
-      onChanged: (val) {
-      },
+      onChanged: context.read<VendorVM>().search,
     );
   }
 
