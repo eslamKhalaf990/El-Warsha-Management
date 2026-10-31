@@ -7,7 +7,7 @@ import 'package:warsha_app/views/shell/navigation_v_m.dart';
 import 'package:warsha_app/services/accounting_service.dart';
 import 'package:warsha_app/services/category_service.dart';
 import 'package:warsha_app/services/customers_services.dart';
-import 'package:warsha_app/services/home_service.dart';
+import 'package:warsha_app/services/analytics_service.dart';
 import 'package:warsha_app/services/orders_service.dart';
 import 'package:warsha_app/services/product_images_service.dart';
 import 'package:warsha_app/services/product_variants_service.dart';
@@ -21,7 +21,7 @@ import 'package:warsha_app/view_models/accountings_v_m.dart';
 import 'package:warsha_app/view_models/add_product_v_m.dart';
 import 'package:warsha_app/view_models/category_v_m.dart';
 import 'package:warsha_app/view_models/customers_v_m.dart';
-import 'package:warsha_app/view_models/home_v_m.dart';
+import 'package:warsha_app/view_models/analytics_v_m.dart';
 import 'package:warsha_app/view_models/order_v_m.dart';
 import 'package:warsha_app/view_models/reviews_v_m.dart';
 import 'package:warsha_app/view_models/shipping_zone_v_m.dart';
@@ -89,7 +89,7 @@ class SessionScope extends StatelessWidget {
         Provider(create: (c) => api(c, CategoryService.new)),
         Provider(create: (c) => api(c, ShippingZoneService.new)),
         Provider(create: (c) => api(c, AccountingService.new)),
-        Provider(create: (c) => api(c, HomeService.new)),
+        Provider(create: (c) => api(c, AnalyticsService.new)),
         Provider(create: (c) => api(c, OrdersService.new)),
         Provider(create: (c) => api(c, CustomerService.new)),
         Provider(create: (c) => api(c, ReviewsService.new)),
@@ -102,7 +102,7 @@ class SessionScope extends StatelessWidget {
         ChangeNotifierProvider(create: (c) => _load(signedIn, CategoryVM(c.read()), (vm) => vm.fetch())),
         ChangeNotifierProvider(create: (c) => _load(signedIn, ShippingZoneVM(c.read()), (vm) => vm.fetch())),
         ChangeNotifierProvider(create: (c) => _load(signedIn, CustomerVM(c.read()), (vm) => vm.fetch())),
-        ChangeNotifierProvider(create: (c) => _load(signedIn, HomeVM(c.read()), (vm) => vm.fetch())),
+        ChangeNotifierProvider(create: (c) => _load(signedIn, AnalyticsVM(c.read()), (vm) => vm.fetch())),
         ChangeNotifierProvider(create: (c) => _load(signedIn, AccountingVM(c.read()), (vm) => vm.fetch())),
         ChangeNotifierProvider(create: (c) => _load(signedIn, ReviewsVM(c.read()), (vm) => vm.fetch())),
         ChangeNotifierProvider(create: (c) => _load(signedIn, VouchersVM(c.read()), (vm) => vm.fetch())),

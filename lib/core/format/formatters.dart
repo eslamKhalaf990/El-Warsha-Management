@@ -19,6 +19,15 @@ abstract final class Fmt {
 
   static String number(num? value) => _number.format(value ?? 0);
 
+  /// A fraction as a percentage: `0.256` → `26%` (`25.6%` with one decimal).
+  static String percent(num? fraction, {int decimals = 0}) => '${((fraction ?? 0) * 100).toStringAsFixed(decimals)}%';
+
+  /// A change as `+12%` / `−4%`.
+  static String change(num fraction) {
+    final p = (fraction * 100).round();
+    return p > 0 ? '+$p%' : (p < 0 ? '−${-p}%' : '0%');
+  }
+
   /// `3 products`, `1 product`, `No products`.
   static String count(int n, String singular, {String? plural, String? none}) {
     if (n == 0 && none != null) return none;
