@@ -14,10 +14,12 @@ import 'package:warsha_app/services/product_variants_service.dart';
 import 'package:warsha_app/services/products_service.dart';
 import 'package:warsha_app/services/reviews_service.dart';
 import 'package:warsha_app/services/shipping_zone_service.dart';
+import 'package:warsha_app/services/behavior_service.dart';
 import 'package:warsha_app/services/user_service.dart';
 import 'package:warsha_app/services/vendors_service.dart';
 import 'package:warsha_app/services/vouchers_service.dart';
 import 'package:warsha_app/view_models/accountings_v_m.dart';
+import 'package:warsha_app/view_models/behavior_v_m.dart';
 import 'package:warsha_app/view_models/add_product_v_m.dart';
 import 'package:warsha_app/view_models/category_v_m.dart';
 import 'package:warsha_app/view_models/customers_v_m.dart';
@@ -90,6 +92,7 @@ class SessionScope extends StatelessWidget {
         Provider(create: (c) => api(c, ShippingZoneService.new)),
         Provider(create: (c) => api(c, AccountingService.new)),
         Provider(create: (c) => api(c, AnalyticsService.new)),
+        Provider(create: (c) => api(c, BehaviorService.new)),
         Provider(create: (c) => api(c, OrdersService.new)),
         Provider(create: (c) => api(c, CustomerService.new)),
         Provider(create: (c) => api(c, ReviewsService.new)),
@@ -103,6 +106,7 @@ class SessionScope extends StatelessWidget {
         ChangeNotifierProvider(create: (c) => _load(signedIn, ShippingZoneVM(c.read()), (vm) => vm.fetch())),
         ChangeNotifierProvider(create: (c) => _load(signedIn, CustomerVM(c.read()), (vm) => vm.fetch())),
         ChangeNotifierProvider(create: (c) => _load(signedIn, AnalyticsVM(c.read()), (vm) => vm.fetch())),
+        ChangeNotifierProvider(create: (c) => _load(signedIn, BehaviorVM(c.read()), (vm) => vm.fetch())),
         ChangeNotifierProvider(create: (c) => _load(signedIn, AccountingVM(c.read()), (vm) => vm.fetch())),
         ChangeNotifierProvider(create: (c) => _load(signedIn, ReviewsVM(c.read()), (vm) => vm.fetch())),
         ChangeNotifierProvider(create: (c) => _load(signedIn, VouchersVM(c.read()), (vm) => vm.fetch())),

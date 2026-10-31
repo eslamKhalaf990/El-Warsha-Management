@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:warsha_app/views/accounting/accounting_page.dart';
+import 'package:warsha_app/views/behavior/behavior_page.dart';
 import 'package:warsha_app/views/categories/categories_page.dart';
 import 'package:warsha_app/views/customers/customers_page.dart';
 import 'package:warsha_app/views/dashboard/dashboard_page.dart';
@@ -26,6 +27,7 @@ enum NavGroup {
 /// Every top-level page of the ERP, grouped like the sidebar shows them.
 enum AppDestination {
   dashboard('Dashboard', Iconsax.element_3_copy, Iconsax.element_3, NavGroup.overview),
+  behavior('Customer behavior', Iconsax.activity_copy, Iconsax.activity, NavGroup.overview),
   orders('Orders', Iconsax.receipt_2_copy, Iconsax.receipt_2, NavGroup.sales),
   customers('Customers', Iconsax.profile_2user_copy, Iconsax.profile_2user, NavGroup.sales),
   vouchers('Promo codes', Iconsax.ticket_discount_copy, Iconsax.ticket_discount, NavGroup.sales),
@@ -48,6 +50,7 @@ enum AppDestination {
 
   Widget get page => switch (this) {
         dashboard => const DashboardPage(),
+        behavior => const BehaviorPage(),
         orders => const OrdersPage(),
         customers => const CustomersPage(),
         vouchers => const VouchersPage(),
