@@ -1,10 +1,10 @@
 import 'package:warsha_app/core/network/api_client.dart';
-import 'package:warsha_app/models/analysis_models/analysis.dart';
+import 'package:warsha_app/models/analysis.dart';
 import 'package:warsha_app/models/daily_cash.dart';
 import 'package:warsha_app/models/json_read.dart';
 import 'package:warsha_app/models/revenue_summary.dart';
 import 'package:warsha_app/models/top_products.dart';
-import 'package:warsha_app/utils/date.dart';
+import 'package:intl/intl.dart';
 
 /// Dashboard figures (backend: CashFlowController under `/cashFlow`).
 /// Every failure surfaces as an ApiException from [ApiClient].
@@ -20,7 +20,7 @@ class HomeService {
       RevenueSummary.fromJson(readMap(await _api.get('cashFlow/revenueSummary')) ?? const {});
 
   Future<List<TopProduct>> topSoldProducts() => _list('cashFlow/topSoldProducts', TopProduct.fromJson,
-      query: {'date': DateHelper.formatDateMY(DateTime.now().toString())});
+      query: {'date': DateFormat('yyyy-MM-dd').format(DateTime.now())});
 
   Future<List<DailyCashFlowModel>> dailyCashFlow() => _list('cashFlow/daily', DailyCashFlowModel.fromJson);
 

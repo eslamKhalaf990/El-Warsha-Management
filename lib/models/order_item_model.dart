@@ -39,6 +39,20 @@ class OrderItemModel {
   /// Product name with its size/color, for order lines.
   String get displayName => variantLabel.isEmpty ? productName : '$productName ($variantLabel)';
 
+  /// A copy of this line with [quantity] pieces on the order forms.
+  OrderItemModel withQuantity(int quantity) => OrderItemModel(
+        productId: productId,
+        productName: productName,
+        quantity: this.quantity,
+        unitPrice: unitPrice,
+        variantId: variantId,
+        size: size,
+        color: color,
+      )
+        ..quantityToOrder = quantity
+        ..orderedQuantity = quantity
+        ..unitDiscount = unitDiscount;
+
   /// True when this line is for the same product and size/color.
   bool sameLineAs(OrderItemModel other) => productId == other.productId && variantId == other.variantId;
 

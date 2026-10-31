@@ -38,7 +38,8 @@ void main() {
     final created = await service.create(const CategoryRequest(name: '  Rings ', description: '  '));
 
     expect(seen.method, 'POST');
-    expect(jsonDecode(seen.body), {'name': 'Rings', 'description': null});
+    // imageUrl is always sent: the backend replaces every field on save.
+    expect(jsonDecode(seen.body), {'name': 'Rings', 'description': null, 'imageUrl': null});
     expect(created.categoryId, 9);
   });
 

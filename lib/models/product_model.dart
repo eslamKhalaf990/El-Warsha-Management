@@ -23,6 +23,15 @@ class ProductModel {
 
   bool get hasVariants => variants.isNotEmpty;
 
+  /// The cover [image] on the API host, or null when there is none.
+  String? get imageFullUrl => (image.isEmpty || image == '-') ? null : resolveImageUrl(image);
+
+  double get sellingPriceValue => double.tryParse(sellingPrice) ?? 0;
+  double get discountValue => double.tryParse(discount) ?? 0;
+
+  /// Price after the product discount.
+  double get finalPrice => sellingPriceValue - discountValue;
+
   /// Extra gallery images after the cover [image], in display order.
   List<ProductImage> images = const [];
 

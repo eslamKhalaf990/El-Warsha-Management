@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:warsha_app/models/orderItemModel.dart';
-import 'package:warsha_app/models/orderModel.dart';
+import 'package:warsha_app/models/order_item_model.dart';
+import 'package:warsha_app/models/order_model.dart';
 import 'package:warsha_app/models/order_totals.dart';
 
 OrderItemModel item(double price, int qty, {double unitDiscount = 0}) =>

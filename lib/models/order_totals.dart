@@ -1,5 +1,5 @@
-import 'orderItemModel.dart';
-import 'orderModel.dart';
+import 'order_item_model.dart';
+import 'order_model.dart';
 
 /// The backend's order pricing (OrderPricing) for display:
 ///

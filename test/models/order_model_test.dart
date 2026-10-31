@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:warsha_app/models/orderModel.dart';
+import 'package:warsha_app/models/order_model.dart';
 import 'package:warsha_app/models/order_status.dart';
 
 void main() {

@@ -17,11 +17,11 @@ class ProductImage {
         sortOrder: readInt(json['sortOrder']) ?? 0,
       );
 
-  String get fullUrl => imageFullUrl(imageUrl);
+  String get fullUrl => resolveImageUrl(imageUrl);
 }
 
 /// Turns a server path like `/images/a.jpg` into a full URL on the API host.
-String imageFullUrl(String url) {
+String resolveImageUrl(String url) {
   if (url.startsWith('http://') || url.startsWith('https://')) return url;
   final base = Baseurl.baseURL.endsWith('/')
       ? Baseurl.baseURL.substring(0, Baseurl.baseURL.length - 1)

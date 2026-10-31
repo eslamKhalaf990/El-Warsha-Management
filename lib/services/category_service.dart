@@ -25,6 +25,15 @@ class CategoryService {
     await _api.delete('category/$id');
   }
 
+  /// Uploads a category picture to the shared image library and returns its
+  /// URL (`/images/...`) for [CategoryRequest.imageUrl].
+  Future<String> uploadImage(List<int> bytes, String filename) async {
+    final body = await _api.postFile('products/images', field: 'image', bytes: bytes, filename: filename);
+    final url = body is Map ? body['url'] : null;
+    if (url is! String || url.isEmpty) throw ApiException.badResponse(201);
+    return url;
+  }
+
   static CategoryModel _category(Object? body) {
     if (body is! Map<String, dynamic>) throw ApiException.badResponse(200);
     return CategoryModel.fromJson(body);

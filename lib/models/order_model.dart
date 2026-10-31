@@ -1,6 +1,6 @@
-import 'customerModel.dart';
+import 'customer_model.dart';
 import 'json_read.dart';
-import 'orderItemModel.dart';
+import 'order_item_model.dart';
 import 'order_status.dart';
 
 /// An order as returned by the backend's OrderResponse.

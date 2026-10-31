@@ -1,6 +1,6 @@
 import 'package:warsha_app/core/network/api_client.dart';
 import 'package:warsha_app/core/network/api_exception.dart';
-import 'package:warsha_app/models/customerModel.dart';
+import 'package:warsha_app/models/customer_model.dart';
 
 /// Customers API (backend: CustomerController under `/customers`).
 /// Every failure surfaces as an [ApiException] from [ApiClient].
