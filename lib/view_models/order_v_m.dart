@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:warsha_app/core/network/api_exception.dart';
 import 'package:warsha_app/core/state/async_view_model.dart';
 import 'package:warsha_app/core/validation/validators.dart';
-import 'package:warsha_app/models/customerModel.dart';
-import 'package:warsha_app/models/orderItemModel.dart';
+import 'package:warsha_app/models/customer_model.dart';
+import 'package:warsha_app/models/order_item_model.dart';
 import 'package:warsha_app/models/order_request.dart';
 import 'package:warsha_app/models/order_status.dart';
 import 'package:warsha_app/models/order_totals.dart';
 import 'package:warsha_app/services/orders_service.dart';
-import '../models/orderModel.dart';
+import '../models/order_model.dart';
 
 enum ViewState { idle, loading, error }
 
@@ -96,6 +96,12 @@ class OrderVM extends ChangeNotifier with AsyncViewModel {
   final Map<String, String> _filters = {};
   DateTime? _startDate;
   DateTime? _endDate;
+  OrderStatus? _status;
+  String? _governorate;
+
+  // Paging (the orders table)
+  static const pageSize = 50;
+  int _page = 0;
 
   ViewState get state => isLoading
       ? ViewState.loading
@@ -111,10 +117,63 @@ class OrderVM extends ChangeNotifier with AsyncViewModel {
   @override
   String? fieldError(String field) => (error?.isValidation ?? false) ? error!.messageFor(field) : null;
 
-  List<OrderModel> get orders =>
-      _filteredOrders.isEmpty && _filters.isEmpty && _startDate == null && _endDate == null
-          ? _orders
-          : _filteredOrders;
+  bool get _hasFilters =>
+      _filters.isNotEmpty || _startDate != null || _endDate != null || _status != null || _governorate != null;
+
+  List<OrderModel> get orders => !_hasFilters && _filteredOrders.isEmpty ? _orders : _filteredOrders;
+
+  /// Every loaded order, ignoring filters.
+  List<OrderModel> get allOrders => List.unmodifiable(_orders);
+
+  OrderStatus? get statusFilter => _status;
+  String? get governorateFilter => _governorate;
+  bool get hasFilters => _hasFilters;
+
+  /// Loaded orders per status, for the status chips.
+  Map<OrderStatus, int> get statusCounts {
+    final counts = <OrderStatus, int>{};
+    for (final o in _orders) {
+      if (o.status case final s?) counts[s] = (counts[s] ?? 0) + 1;
+    }
+    return counts;
+  }
+
+  /// Governorates of the loaded orders, most orders first.
+  List<String> get governorates {
+    final counts = <String, int>{};
+    for (final o in _orders) {
+      final g = o.customer?.governorate.trim() ?? '';
+      if (g.isNotEmpty) counts[g] = (counts[g] ?? 0) + 1;
+    }
+    return counts.keys.toList()..sort((a, b) => counts[b]!.compareTo(counts[a]!));
+  }
+
+  int get page => _page.clamp(0, pageCount - 1);
+  int get pageCount => (orders.length / pageSize).ceil().clamp(1, 1 << 30);
+
+  List<OrderModel> get pagedOrders {
+    final all = orders;
+    final start = page * pageSize;
+    return all.sublist(start, (start + pageSize).clamp(0, all.length));
+  }
+
+  void setPage(int page) {
+    if (page == _page) return;
+    _page = page;
+    notify();
+  }
+
+  void setStatusFilter(OrderStatus? status) {
+    if (status == _status) return;
+    _status = status;
+    _filterOrders();
+  }
+
+  void setGovernorateFilter(String? governorate) {
+    if (governorate == _governorate) return;
+    _governorate = governorate;
+    _filterOrders();
+  }
 
   DateTime? get startDate => _startDate;
   DateTime? get endDate => _endDate;
@@ -125,9 +184,16 @@ class OrderVM extends ChangeNotifier with AsyncViewModel {
   // ────────────────────────────
   // FETCH ORDERS
   // ────────────────────────────
+  /// Days loaded when no date range is picked.
+  static const defaultDays = 45;
+
+  /// Loads the picked date range, or the last [defaultDays] days.
   Future<bool> fetchOrders() => load(() async {
         final now = DateTime.now();
-        _orders = await _orderService.list(from: now.subtract(const Duration(days: 45)), to: now);
+        _orders = await _orderService.list(
+          from: _startDate ?? now.subtract(const Duration(days: defaultDays)),
+          to: _endDate ?? now,
+        );
         _filterOrders(notifyNow: false);
       });
 
@@ -251,16 +317,13 @@ class OrderVM extends ChangeNotifier with AsyncViewModel {
   // FILTERING
   // ────────────────────────────
 
-  /// ADDED: Call this from your UI to set the date range
-  void setDateRange(DateTimeRange? range) {
-    if (range != null) {
-      _startDate = range.start;
-      _endDate = range.end;
-    } else {
-      _startDate = null;
-      _endDate = null;
-    }
-    _filterOrders(); // Re-apply all filters
+  /// Loads the orders of [range] from the server (older orders aren't loaded
+  /// by default); null goes back to the last [defaultDays] days.
+  Future<bool> setDateRange(DateTimeRange? range) {
+    _startDate = range?.start;
+    _endDate = range?.end;
+    _filterOrders();
+    return fetchOrders();
   }
 
   void applyFilter(String key, String value) {
@@ -272,18 +335,25 @@ class OrderVM extends ChangeNotifier with AsyncViewModel {
     _filterOrders();
   }
 
-  /// ✨ MODIFIED: Now clears date filters as well
   void clearAllFilters() {
+    final hadRange = _startDate != null || _endDate != null;
     _filters.clear();
     _startDate = null;
     _endDate = null;
+    _status = null;
+    _governorate = null;
+    _page = 0;
     _filteredOrders = List.from(_orders);
     notify();
+    if (hadRange) fetchOrders();
   }
 
   // applies both text and date filters
   void _filterOrders({bool notifyNow = true}) {
+    _page = 0;
     _filteredOrders = _orders.where((order) {
+      if (_status != null && order.status != _status) return false;
+      if (_governorate != null && order.customer?.governorate.trim() != _governorate) return false;
 
       // --- 1. Text Filters (Existing Logic) ---
       bool passesTextFilter = true;

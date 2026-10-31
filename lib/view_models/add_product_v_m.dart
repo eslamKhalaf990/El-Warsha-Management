@@ -7,6 +7,16 @@ import 'package:warsha_app/models/product_variant.dart';
 import 'package:warsha_app/services/product_variants_service.dart';
 import 'package:warsha_app/services/products_service.dart';
 
+/// Stock filter of the Products screen.
+enum StockFilter {
+  all('All'),
+  low('Low stock'),
+  out('Out of stock');
+
+  const StockFilter(this.label);
+  final String label;
+}
+
 /// Products screen (list, search, add, edit, delete) and the product pickers
 /// on the order screens.
 class ProductVM extends ChangeNotifier with AsyncViewModel {
@@ -26,8 +36,13 @@ class ProductVM extends ChangeNotifier with AsyncViewModel {
     'categoryId', 'image',
   ];
 
+  /// At or below this many pieces a product counts as low on stock.
+  static const lowStockThreshold = 5;
+
   List<ProductModel> _all = [];
   String _query = '';
+  int? _categoryId;
+  StockFilter _stock = StockFilter.all;
   String? _deletingId;
   ProductModel? _lastSaved;
   String? _warning;
@@ -35,10 +50,38 @@ class ProductVM extends ChangeNotifier with AsyncViewModel {
   /// Products that are not deleted, best sellers first.
   List<ProductModel> get allProducts => List.unmodifiable(_all);
 
-  /// Products matching the Products screen's search box.
-  List<ProductModel> get products => search(_query);
+  /// Products matching the Products screen's search box and filters.
+  List<ProductModel> get products => search(_query)
+      .where((p) => _categoryId == null || p.categoryId == '$_categoryId')
+      .where((p) => switch (_stock) {
+            StockFilter.all => true,
+            StockFilter.low => stockOf(p) > 0 && stockOf(p) <= lowStockThreshold,
+            StockFilter.out => stockOf(p) <= 0,
+          })
+      .toList();
 
   String get query => _query;
+  int? get categoryId => _categoryId;
+  StockFilter get stockFilter => _stock;
+
+  /// Pieces in stock: the sum of the sizes/colors when it has them.
+  static int stockOf(ProductModel p) =>
+      p.hasVariants ? p.variants.fold(0, (sum, v) => sum + v.quantity) : (int.tryParse(p.quantity) ?? 0);
+
+  int get lowStockCount => _all.where((p) => stockOf(p) > 0 && stockOf(p) <= lowStockThreshold).length;
+  int get outOfStockCount => _all.where((p) => stockOf(p) <= 0).length;
+
+  void setCategory(int? categoryId) {
+    if (categoryId == _categoryId) return;
+    _categoryId = categoryId;
+    notify();
+  }
+
+  void setStockFilter(StockFilter filter) {
+    if (filter == _stock) return;
+    _stock = filter;
+    notify();
+  }
 
   /// Id of the product being deleted, for its spinner.
   String? get deletingId => _deletingId;

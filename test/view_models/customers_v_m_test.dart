@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:warsha_app/core/network/api_exception.dart';
-import 'package:warsha_app/models/customerModel.dart';
+import 'package:warsha_app/models/customer_model.dart';
 import 'package:warsha_app/services/customers_services.dart';
 import 'package:warsha_app/view_models/customers_v_m.dart';
 

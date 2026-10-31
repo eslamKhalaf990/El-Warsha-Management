@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:warsha_app/core/network/api_exception.dart';
 import 'package:warsha_app/core/state/async_view_model.dart';
-import 'package:warsha_app/models/analysis_models/analysis.dart';
+import 'package:warsha_app/models/analysis.dart';
 import 'package:warsha_app/models/daily_cash.dart';
 import 'package:warsha_app/models/revenue_summary.dart';
 import 'package:warsha_app/models/top_products.dart';

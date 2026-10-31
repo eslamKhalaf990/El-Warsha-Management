@@ -64,20 +64,28 @@ class CategoryVM extends ChangeNotifier with AsyncViewModel {
   // ── CRUD ────────────────────────────────────────────────
   // Each returns true on success; on failure [error] / [fieldError] say why.
 
-  Future<bool> add(CategoryRequest request) async {
+  /// [image] is a newly chosen picture; it is uploaded first and replaces
+  /// [CategoryRequest.imageUrl].
+  Future<bool> add(CategoryRequest request, {List<int>? image, String? imageName}) async {
     final errors = validate(request);
     if (errors.isNotEmpty) return fail(ApiException.validation(errors));
-    return run(() async => _all = [..._all, await _service.create(request)]);
+    return run(() async {
+      final withImage = await _withUploadedImage(request, image, imageName);
+      _all = [..._all, await _service.create(withImage)];
+    });
   }
 
-  Future<bool> update(int id, CategoryRequest request) async {
+  Future<bool> update(int id, CategoryRequest request, {List<int>? image, String? imageName}) async {
     final errors = validate(request, editingId: id);
     if (errors.isNotEmpty) return fail(ApiException.validation(errors));
     return run(() async {
-      final updated = await _service.update(id, request);
+      final updated = await _service.update(id, await _withUploadedImage(request, image, imageName));
       _all = [for (final c in _all) c.categoryId == id ? updated : c];
     });
   }
+
+  Future<CategoryRequest> _withUploadedImage(CategoryRequest request, List<int>? image, String? name) async =>
+      image == null ? request : request.withImage(await _service.uploadImage(image, name ?? 'category.jpg'));
 
   Future<bool> delete(CategoryModel category) => run(() async {
         await _service.delete(category.categoryId);

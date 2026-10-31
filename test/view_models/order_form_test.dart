@@ -2,8 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/testing.dart';
 import 'package:http/http.dart' as http;
 import 'package:warsha_app/core/network/api_client.dart';
-import 'package:warsha_app/models/customerModel.dart';
-import 'package:warsha_app/models/orderItemModel.dart';
+import 'package:warsha_app/models/customer_model.dart';
+import 'package:warsha_app/models/order_item_model.dart';
 import 'package:warsha_app/services/orders_service.dart';
 import 'package:warsha_app/view_models/order_v_m.dart';
 

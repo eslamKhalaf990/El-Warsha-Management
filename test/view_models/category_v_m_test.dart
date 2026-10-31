@@ -29,6 +29,9 @@ class FakeCategoryService implements CategoryService {
 
   @override
   Future<void> delete(int id) => _answer(null);
+
+  @override
+  Future<String> uploadImage(List<int> bytes, String filename) => _answer('/images/$filename');
 }
 
 void main() {

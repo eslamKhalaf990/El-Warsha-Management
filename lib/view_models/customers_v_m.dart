@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:warsha_app/core/network/api_exception.dart';
 import 'package:warsha_app/core/state/async_view_model.dart';
 import 'package:warsha_app/core/validation/validators.dart';
-import 'package:warsha_app/models/customerModel.dart';
+import 'package:warsha_app/models/customer_model.dart';
 import 'package:warsha_app/models/governorate_count.dart';
 import 'package:warsha_app/services/customers_services.dart';
 
@@ -22,17 +22,55 @@ class CustomerVM extends ChangeNotifier with AsyncViewModel {
 
   static const formFields = ['fullName', 'phone', 'secondaryPhone', 'governorate', 'city', 'address', 'email'];
 
+  static const pageSize = 50;
+
   List<CustomerModel> _all = [];
   String _query = '';
+  String? _governorate;
+  int _page = 0;
   CustomerModel? _lastSaved;
 
   /// Every customer, newest first.
   List<CustomerModel> get allCustomers => List.unmodifiable(_all);
 
-  /// Customers matching the Customers screen's search box.
-  List<CustomerModel> get customers => search(_query);
+  /// Customers matching the Customers screen's search box and governorate.
+  List<CustomerModel> get customers {
+    final found = search(_query);
+    final g = _governorate;
+    if (g == null) return found;
+    return found.where((c) => _governorateOf(c) == g).toList();
+  }
 
   String get query => _query;
+
+  /// The governorate the list is narrowed to, or null for all.
+  String? get governorate => _governorate;
+
+  /// The current table page (0-based) of [customers].
+  int get page => _page.clamp(0, pageCount - 1);
+
+  int get pageCount => (customers.length / pageSize).ceil().clamp(1, 1 << 30);
+
+  List<CustomerModel> get pagedCustomers {
+    final all = customers;
+    final start = page * pageSize;
+    return all.sublist(start, (start + pageSize).clamp(0, all.length));
+  }
+
+  void setPage(int page) {
+    if (page == _page) return;
+    _page = page;
+    notify();
+  }
+
+  void setGovernorate(String? governorate) {
+    if (governorate == _governorate) return;
+    _governorate = governorate;
+    _page = 0;
+    notify();
+  }
+
+  static String _governorateOf(CustomerModel c) => c.governorate.trim().isEmpty ? 'Unknown' : c.governorate.trim();
 
   /// The customer created or updated by the last successful [add] / [update].
   CustomerModel? get lastSaved => _lastSaved;
@@ -41,7 +79,7 @@ class CustomerVM extends ChangeNotifier with AsyncViewModel {
   List<GovernorateCountPerCustomer> get governorateCounts {
     final counts = <String, int>{};
     for (final c in _all) {
-      final g = c.governorate.trim().isEmpty ? 'Unknown' : c.governorate.trim();
+      final g = _governorateOf(c);
       counts[g] = (counts[g] ?? 0) + 1;
     }
     final list = [for (final e in counts.entries) GovernorateCountPerCustomer(governorate: e.key, count: e.value)];
@@ -54,6 +92,7 @@ class CustomerVM extends ChangeNotifier with AsyncViewModel {
   void setQuery(String query) {
     if (query == _query) return;
     _query = query;
+    _page = 0;
     notify();
   }
 

@@ -24,12 +24,107 @@ class AccountingVM extends ChangeNotifier with AsyncViewModel {
   /// Kept for this session only, so refreshes keep showing the safe.
   String? _ownerPassword;
 
+  // Transaction filters and paging
+  static const pageSize = 50;
+  String _query = '';
+  int? _accountId;
+  String? _type;
+  DateTime? _from;
+  DateTime? _to;
+  int _page = 0;
+
   /// Null until loaded.
   List<BankAccount>? get accountsBalance => _accounts;
   List<BankTransaction>? get allTransactions => _transactions;
   List<TransactionCategory>? get allTransactionCategories => _categories;
 
   bool get isSafeUnlocked => _ownerPassword != null;
+
+  /// Money across the accounts shown (the safe too once unlocked).
+  double get totalBalance => (_accounts ?? const <BankAccount>[]).fold(0, (sum, a) => sum + a.currentBalance);
+
+  String get query => _query;
+  int? get accountFilter => _accountId;
+  String? get typeFilter => _type;
+  DateTime? get from => _from;
+  DateTime? get to => _to;
+  bool get hasFilters => _query.trim().isNotEmpty || _accountId != null || _type != null || _from != null;
+
+  /// Transactions matching the filters, newest first.
+  List<BankTransaction> get transactions {
+    final q = _query.trim().toLowerCase();
+    final end = _to == null ? null : DateTime(_to!.year, _to!.month, _to!.day + 1);
+    final list = (_transactions ?? const <BankTransaction>[]).where((t) {
+      if (_accountId != null && t.bankAccount.id != _accountId) return false;
+      if (_type != null && t.transactionType != _type) return false;
+      if (_from != null && t.createdAt.isBefore(DateTime(_from!.year, _from!.month, _from!.day))) return false;
+      if (end != null && !t.createdAt.isBefore(end)) return false;
+      if (q.isEmpty) return true;
+      return t.description.toLowerCase().contains(q) ||
+          t.category.categoryName.toLowerCase().contains(q) ||
+          t.bankAccount.name.toLowerCase().contains(q) ||
+          (t.referenceId != null && '#${t.referenceId}'.contains(q));
+    }).toList()
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return list;
+  }
+
+  /// Deposits and withdrawals of [transactions].
+  ({double moneyIn, double moneyOut}) get flow {
+    var moneyIn = 0.0, moneyOut = 0.0;
+    for (final t in transactions) {
+      t.transactionType == 'Deposit' ? moneyIn += t.amount : moneyOut += t.amount;
+    }
+    return (moneyIn: moneyIn, moneyOut: moneyOut);
+  }
+
+  int get page => _page.clamp(0, pageCount - 1);
+  int get pageCount => (transactions.length / pageSize).ceil().clamp(1, 1 << 30);
+
+  List<BankTransaction> get pagedTransactions {
+    final all = transactions;
+    final start = page * pageSize;
+    return all.sublist(start, (start + pageSize).clamp(0, all.length));
+  }
+
+  void setPage(int page) {
+    _page = page;
+    notify();
+  }
+
+  void setQuery(String query) {
+    _query = query;
+    _page = 0;
+    notify();
+  }
+
+  void setAccountFilter(int? accountId) {
+    _accountId = accountId;
+    _page = 0;
+    notify();
+  }
+
+  /// "Deposit", "Withdrawal" or null for both.
+  void setTypeFilter(String? type) {
+    _type = type;
+    _page = 0;
+    notify();
+  }
+
+  void setDateRange(DateTime? from, DateTime? to) {
+    _from = from;
+    _to = to;
+    _page = 0;
+    notify();
+  }
+
+  void clearFilters() {
+    _query = '';
+    _accountId = _type = null;
+    _from = _to = null;
+    _page = 0;
+    notify();
+  }
 
   /// Loads balances, transactions and categories together.
   Future<bool> fetch() => load(() async {
