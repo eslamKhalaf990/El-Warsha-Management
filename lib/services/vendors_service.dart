@@ -1,95 +1,33 @@
-import 'dart:async';
-import 'dart:convert';
-import 'package:flutter/cupertino.dart';
-import 'package:http/http.dart' as http;
-import 'package:warsha_app/utils/const_values.dart';
-// Assuming you create a Vendor model based on our backend work
-// import 'package:warsha_app/models/vendor_model.dart';
+import 'package:warsha_app/core/network/api_client.dart';
+import 'package:warsha_app/core/network/api_exception.dart';
+import 'package:warsha_app/models/vendor.dart';
 
-import 'base_url.dart';
-
+/// Suppliers API (backend: VendorController under `/vendors`).
+/// Every failure surfaces as an [ApiException] from [ApiClient].
 class VendorService {
+  VendorService(this._api);
 
-  // Fetch all active vendors
-  Future<http.Response> getAllVendors(String token) async {
-    debugPrint("getAllVendors called");
-    try {
-      final response = await http.get(
-        headers: {
-          'Content-Type': 'application/json',
-          "Authorization": 'Bearer $token',
-        },
-        Uri.parse(Baseurl.getVendorsAPI), // Define this in your Baseurl class
-      ).timeout(const Duration(seconds: Constants.TIMEOUT));
+  final ApiClient _api;
 
-      debugPrint("Response: ${response.body}");
-      return response;
-    } on TimeoutException {
-      throw Exception('The request timed out. Please try again later.');
-    } catch (e) {
-      throw Exception('Failed to get vendors: $e');
-    }
+  /// Active vendors; archived ones too when [includeArchived] is set.
+  Future<List<Vendor>> list({bool includeArchived = false}) async {
+    final body = await _api.get('vendors', query: {if (includeArchived) 'includeArchived': 'true'});
+    if (body is! List) throw ApiException.badResponse(200);
+    return body.whereType<Map<String, dynamic>>().map(Vendor.fromJson).toList();
   }
 
-  // Create a new vendor
-  Future<http.Response> addVendor(String token, Map<String, dynamic> vendorData) async {
-    debugPrint("addVendor called");
-    try {
-      final response = await http.post(
-        Uri.parse(Baseurl.addVendorAPI),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-        body: jsonEncode(vendorData),
-      ).timeout(const Duration(seconds: Constants.TIMEOUT));
+  Future<Vendor> create(VendorRequest request) async => _vendor(await _api.post('vendors', body: request.toJson()));
 
-      return response;
-    } on TimeoutException {
-      throw Exception('The request timed out. Please try again later.');
-    } catch (e) {
-      throw Exception('Failed to add vendor: $e');
-    }
+  Future<Vendor> update(int id, VendorRequest request) async =>
+      _vendor(await _api.put('vendors/$id', body: request.toJson()));
+
+  /// Archives the vendor; it disappears from [list] but its record is kept.
+  Future<void> archive(int id) async {
+    await _api.delete('vendors/$id');
   }
 
-  // Update existing vendor
-  Future<http.Response> updateVendor(String token, int id, Map<String, dynamic> vendorData) async {
-    debugPrint("updateVendor called for ID: $id");
-    try {
-      final response = await http.put(
-        Uri.parse("${Baseurl.updateVendorAPI}/$id"),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-        body: jsonEncode(vendorData),
-      ).timeout(const Duration(seconds: Constants.TIMEOUT));
-
-      return response;
-    } on TimeoutException {
-      throw Exception('The request timed out. Please try again later.');
-    } catch (e) {
-      throw Exception('Failed to update vendor: $e');
-    }
-  }
-
-  // Soft Delete Vendor (This calls your @DeleteMapping in Spring Boot)
-  Future<http.Response> deleteVendor(String token, int id) async {
-    debugPrint("deleteVendor called for ID: $id");
-    try {
-      final response = await http.delete(
-        headers: {
-          'Content-Type': 'application/json',
-          "Authorization": 'Bearer $token',
-        },
-        Uri.parse("${Baseurl.deleteVendorAPI}/$id"),
-      ).timeout(const Duration(seconds: Constants.TIMEOUT));
-
-      return response;
-    } on TimeoutException {
-      throw Exception('The request timed out. Please try again later.');
-    } catch (e) {
-      throw Exception('Failed to delete vendor: $e');
-    }
+  static Vendor _vendor(Object? body) {
+    if (body is! Map<String, dynamic>) throw ApiException.badResponse(200);
+    return Vendor.fromJson(body);
   }
 }

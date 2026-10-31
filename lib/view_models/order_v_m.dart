@@ -1,31 +1,88 @@
 import 'package:flutter/material.dart';
-import 'package:warsha_app/models/create_order_request.dart';
-import 'package:warsha_app/models/orderItemModel.dart';
+import 'package:warsha_app/core/network/api_exception.dart';
+import 'package:warsha_app/core/state/async_view_model.dart';
+import 'package:warsha_app/core/validation/validators.dart';
+import 'package:warsha_app/models/customer_model.dart';
+import 'package:warsha_app/models/order_item_model.dart';
+import 'package:warsha_app/models/order_request.dart';
+import 'package:warsha_app/models/order_status.dart';
+import 'package:warsha_app/models/order_totals.dart';
 import 'package:warsha_app/services/orders_service.dart';
-import 'package:warsha_app/utils/navigator.dart';
-import 'package:warsha_app/view_models/user_v_m.dart';
-import '../models/orderModel.dart';
+import '../models/order_model.dart';
 
 enum ViewState { idle, loading, error }
 
-class OrderVM extends ChangeNotifier {
+/// What the add/edit order screens hold, as typed. [OrderVM] validates it and
+/// turns it into an [OrderRequest].
+class OrderForm {
+  final CustomerModel? customer;
+  final List<OrderItemModel> items;
+
+  /// The quantity field the screen edits (`quantityToOrder` when adding,
+  /// `orderedQuantity` when editing).
+  final int Function(OrderItemModel item) quantityOf;
+  final String paymentMethod;
+  final String orderSource;
+  final String notes;
+  final String downPayment;
+  final String delivery;
+  final String discount;
+
+  const OrderForm({
+    required this.customer,
+    required this.items,
+    required this.quantityOf,
+    required this.paymentMethod,
+    required this.orderSource,
+    this.notes = '',
+    this.downPayment = '',
+    this.delivery = '',
+    this.discount = '',
+  });
+
+  static double amount(String text) => double.tryParse(text.trim().replaceAll(',', '.')) ?? 0;
+
+  OrderTotals get totals => OrderTotals.compute(
+        items: items,
+        quantityOf: quantityOf,
+        extraDiscount: amount(discount),
+        delivery: amount(delivery),
+        downPayment: amount(downPayment),
+      );
+
+  /// A down payment has to land in a bank account the user picks.
+  bool get needsBankAccount => amount(downPayment) > 0;
+
+  OrderRequest toRequest({int? bankAccountId}) => OrderRequest(
+        customerId: customer!.customerId,
+        items: [
+          for (final item in items)
+            OrderLineRequest(
+              productId: item.productId,
+              variantId: item.variantId,
+              quantity: quantityOf(item),
+              unitPrice: item.unitPrice,
+            ),
+        ],
+        paymentMethod: _orEmpty(paymentMethod),
+        orderSource: _orEmpty(orderSource),
+        notes: _orEmpty(notes),
+        downPayment: amount(downPayment),
+        delivery: amount(delivery),
+        discount: amount(discount),
+        bankAccountId: bankAccountId,
+      );
+
+  /// Old orders show "-" for empty fields; send those as empty.
+  static String _orEmpty(String s) => s.trim() == '-' ? '' : s.trim();
+}
+
+/// Orders screen (list, filters, status changes, delete) and saving from the
+/// add/edit order screens.
+class OrderVM extends ChangeNotifier with AsyncViewModel {
   final OrdersService _orderService;
-  final UserViewModel _userViewModel;
 
-  TextEditingController customer = TextEditingController();
-  TextEditingController status = TextEditingController();
-  TextEditingController phone = TextEditingController();
-  TextEditingController governorate = TextEditingController();
-  TextEditingController total = TextEditingController();
-  TextEditingController source = TextEditingController();
-  TextEditingController paymentMethod = TextEditingController();
-
-  OrderVM(this._orderService, this._userViewModel);
-
-  // State
-  ViewState _state = ViewState.idle;
-  bool _isSaving = false;
-  String _errorMessage = '';
+  OrderVM(this._orderService);
 
   // Orders
   List<OrderModel> _orders = [];
@@ -37,246 +94,202 @@ class OrderVM extends ChangeNotifier {
 
   // Filtering
   final Map<String, String> _filters = {};
-  DateTime? _startDate; // ✨ ADDED
-  DateTime? _endDate; // ✨ ADDED
+  DateTime? _startDate;
+  DateTime? _endDate;
+  OrderStatus? _status;
+  String? _governorate;
 
-  // Getters
-  ViewState get state => _state;
-  bool get isSaving => _isSaving;
-  String get errorMessage => _errorMessage;
+  // Paging (the orders table)
+  static const pageSize = 50;
+  int _page = 0;
 
-  // ✨ MODIFIED getter to check all filter types
-  List<OrderModel> get orders =>
-      _filteredOrders.isEmpty &&
-          _filters.isEmpty &&
-          _startDate == null &&
-          _endDate == null
-          ? _orders
-          : _filteredOrders;
+  ViewState get state => isLoading
+      ? ViewState.loading
+      : loadFailed
+          ? ViewState.error
+          : ViewState.idle;
 
-  // ✨ ADDED getters for date range
+  /// The failure of the last load or save, for the screens to show.
+  ApiException? get lastError => error;
+
+  /// Only input mistakes go under a field; stock and status problems are
+  /// shown as a message.
+  @override
+  String? fieldError(String field) => (error?.isValidation ?? false) ? error!.messageFor(field) : null;
+
+  bool get _hasFilters =>
+      _filters.isNotEmpty || _startDate != null || _endDate != null || _status != null || _governorate != null;
+
+  List<OrderModel> get orders => !_hasFilters && _filteredOrders.isEmpty ? _orders : _filteredOrders;
+
+  /// Every loaded order, ignoring filters.
+  List<OrderModel> get allOrders => List.unmodifiable(_orders);
+
+  OrderStatus? get statusFilter => _status;
+  String? get governorateFilter => _governorate;
+  bool get hasFilters => _hasFilters;
+
+  /// Loaded orders per status, for the status chips.
+  Map<OrderStatus, int> get statusCounts {
+    final counts = <OrderStatus, int>{};
+    for (final o in _orders) {
+      if (o.status case final s?) counts[s] = (counts[s] ?? 0) + 1;
+    }
+    return counts;
+  }
+
+  /// Governorates of the loaded orders, most orders first.
+  List<String> get governorates {
+    final counts = <String, int>{};
+    for (final o in _orders) {
+      final g = o.customer?.governorate.trim() ?? '';
+      if (g.isNotEmpty) counts[g] = (counts[g] ?? 0) + 1;
+    }
+    return counts.keys.toList()..sort((a, b) => counts[b]!.compareTo(counts[a]!));
+  }
+
+  int get page => _page.clamp(0, pageCount - 1);
+  int get pageCount => (orders.length / pageSize).ceil().clamp(1, 1 << 30);
+
+  List<OrderModel> get pagedOrders {
+    final all = orders;
+    final start = page * pageSize;
+    return all.sublist(start, (start + pageSize).clamp(0, all.length));
+  }
+
+  void setPage(int page) {
+    if (page == _page) return;
+    _page = page;
+    notify();
+  }
+
+  void setStatusFilter(OrderStatus? status) {
+    if (status == _status) return;
+    _status = status;
+    _filterOrders();
+  }
+
+  void setGovernorateFilter(String? governorate) {
+    if (governorate == _governorate) return;
+    _governorate = governorate;
+    _filterOrders();
+  }
+
   DateTime? get startDate => _startDate;
   DateTime? get endDate => _endDate;
+
+  /// The text typed in the filter for [key], to restore the filter fields.
+  String filterValue(String key) => _filters[key] ?? '';
 
   // ────────────────────────────
   // FETCH ORDERS
   // ────────────────────────────
-  Future<void> fetchOrders() async {
-    _state = ViewState.loading;
-    notifyListeners();
+  /// Days loaded when no date range is picked.
+  static const defaultDays = 45;
 
-    try {
-      _orders = await _orderService.fetchOrders(_userViewModel.token, startDate: DateTime.now().subtract(const Duration(days: 45)), endDate: DateTime.now());
-      _filteredOrders = List.from(_orders);
-      _state = ViewState.idle;
-    } catch (e) {
-      _errorMessage = e.toString();
-      _state = ViewState.error;
+  /// Loads the picked date range, or the last [defaultDays] days.
+  Future<bool> fetchOrders() => load(() async {
+        final now = DateTime.now();
+        _orders = await _orderService.list(
+          from: _startDate ?? now.subtract(const Duration(days: defaultDays)),
+          to: _endDate ?? now,
+        );
+        _filterOrders(notifyNow: false);
+      });
+
+  // ────────────────────────────
+  // VALIDATION
+  // Keys match the backend's field names, so both show the same way.
+  // ────────────────────────────
+  Map<String, String> validateOrder(OrderForm form) {
+    final errors = Validators.collect({
+      'customerId': () => form.customer == null ? 'Choose a customer.' : null,
+      'items': () => form.items.isEmpty ? 'Add at least one product.' : null,
+      'paymentMethod': () => OrderForm._orEmpty(form.paymentMethod).isEmpty ? 'Choose the payment method.' : null,
+      'orderSource': () => OrderForm._orEmpty(form.orderSource).isEmpty ? 'Choose where the order came from.' : null,
+      'downPayment': () => Validators.nonNegativeNumber(form.downPayment, 'Down payment'),
+      'delivery': () => Validators.nonNegativeNumber(form.delivery, 'Delivery'),
+      'discount': () => Validators.nonNegativeNumber(form.discount, 'Discount'),
+    });
+    for (var i = 0; i < form.items.length; i++) {
+      if (form.quantityOf(form.items[i]) < 1) errors['items[$i].quantity'] = 'Quantity must be at least 1.';
     }
-
-    notifyListeners();
+    if (form.items.isNotEmpty && !errors.keys.any((k) => const ['downPayment', 'delivery', 'discount'].contains(k))) {
+      final totals = form.totals;
+      if (totals.grandTotal < 0) {
+        errors['discount'] = "Discount can't be more than the order total.";
+      } else if (totals.downPayment > totals.grandTotal) {
+        errors['downPayment'] = "Down payment can't be more than the order total.";
+      }
+    }
+    return errors;
   }
-  // ────────────────────────────
-  // ADD ORDER
-  // ────────────────────────────
-  Future<bool> addOrder(CreateOrderRequest orderRequest) async {
-    _isSaving = true;
-    _errorMessage = '';
-    _state = ViewState.idle;
-    notifyListeners();
 
-    try {
-      await _orderService.addOrder(orderRequest, _userViewModel.token);
-      await fetchOrders();
-      _isSaving = false;
-      ScaffoldMessenger.of(navigatorKey.currentContext!).showSnackBar(
-        const SnackBar(
-          content: Text("Order added successfully"),
-          backgroundColor: Colors.grey,
-          duration: Duration(seconds: 2),
-        ),
-      );
+  /// Checks [form] before asking for a bank account; true when it can be sent.
+  bool checkOrder(OrderForm form) {
+    final errors = validateOrder(form);
+    if (errors.isEmpty) {
+      clearError();
       return true;
-    } catch (e) {
-      ScaffoldMessenger.of(navigatorKey.currentContext!).showSnackBar(
-        const SnackBar(
-          content: Text("Couldn't add order successfully"),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 2),
-        ),
-      );
-      _isSaving = false;
-      notifyListeners();
-      return false;
     }
+    return fail(ApiException.validation(errors));
   }
 
   // ────────────────────────────
-  // UPDATE ORDER
+  // ADD / UPDATE / STATUS / DELETE
+  // Each returns true (or the order) on success; on failure [lastError] says why.
   // ────────────────────────────
-  Future<String> updateOrder({
-    required String customerID,
-    required String orderID,
-    required String delivery,
-    required String notes,
-    required String discount,
-    required String orderSource,
-    required String paymentMethod,
-    required String downPayment,
-    required List<OrderItemModel> orderItems,
-  }) async {
-    String status = "";
-    _isSaving = true;
-    notifyListeners();
 
-    try {
-      final orderModel = OrderModel(
-        orderId: int.parse(orderID),
-        customerId: customerID,
-        orderItems: orderItems,
-        orderSource: orderSource,
-        downPayment: double.parse(downPayment),
-        paymentMethod: paymentMethod,
-        delivery: double.parse(delivery),
-        discount: double.parse(discount),
-        notes: notes,
-      );
-
-      final state =
-      await _orderService.updateOrder(orderModel, _userViewModel.token);
-
-      if (state.statusCode == 200) {
-        await fetchOrders();
-        status = "order_updated";
-        ScaffoldMessenger.of(navigatorKey.currentContext!).showSnackBar(
-          SnackBar(
-            content: Text("Order #$orderID updated successfully"),
-            backgroundColor: Colors.grey,
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      } else {
-        status = "order_not_updated";
-        ScaffoldMessenger.of(navigatorKey.currentContext!).showSnackBar(
-          SnackBar(
-            content: Text("Couldn't update order #$orderID"),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      }
-    } catch (e) {
-      debugPrint("Update order error: $e");
-      status = "order_not_updated";
-    } finally {
-      _isSaving = false;
-      notifyListeners();
-    }
-
-    return status;
+  /// Validates and creates the order. Returns it, or null on failure.
+  Future<OrderModel?> placeOrder(OrderForm form, {int? bankAccountId}) async {
+    if (!checkOrder(form)) return null;
+    return addOrder(form.toRequest(bankAccountId: bankAccountId));
   }
 
-  // ────────────────────────────
-  // UPDATE STATUS
-  // ────────────────────────────
-  Future<String> updateOrderStatus({
-    required String orderID,
-    required String statusValue,
-    required String bankAccountId,
-  }) async {
-    String status = "";
-    try {
-      _isSaving = true;
-      notifyListeners();
-
-      if (statusValue == "Cancelled") {
-        final response = await _orderService.cancelOrder(
-            orderID, _userViewModel.token);
-
-        if (response.statusCode == 204) {
-
-          status = "order_cancelled";
-
-          ScaffoldMessenger.of(navigatorKey.currentContext!).showSnackBar(
-            SnackBar(
-              content: Text("Order #$orderID cancelled successfully"),
-              backgroundColor: Colors.red,
-              duration: const Duration(seconds: 2),
-            ),
-          );
-          debugPrint("Order cancelled: ${response.body}");
-        } else {
-
-          status = "status_not_canceled";
-          debugPrint("Already canceled: ${response.statusCode}");
-        }
-
-      } else {
-        final response = await _orderService.updateOrderStatus(
-            orderID, statusValue, _userViewModel.token, bankAccountId);
-
-        if (response.statusCode == 200 || response.statusCode == 201) {
-          status = "status_updated";
-          debugPrint("Order status updated");
-        } else {
-          status = "status_not_updated";
-          debugPrint("Update failed: ${response.statusCode} - ${response.body}");
-        }
-      }
-
-    } catch (e) {
-      status = "status_not_updated";
-      debugPrint("Error updating order status: $e");
-    } finally {
-      _isSaving = false;
-      notifyListeners();
-    }
-
-    return status;
+  /// Validates and saves the edited order.
+  Future<bool> saveOrder(int orderId, OrderForm form) async {
+    if (!checkOrder(form)) return false;
+    return updateOrder(orderId, form.toRequest());
   }
 
-  // ────────────────────────────
-  // DELETE ORDER
-  // ────────────────────────────
-  Future<String> deleteOrder(int id) async {
-    String state = "";
-    _isSaving = true;
-    _errorMessage = '';
-    notifyListeners();
-    try {
-      final response = await _orderService.deleteOrder(id, _userViewModel.token);
-      if (response.statusCode == 204) {
-        state = "deleted";
+  /// Returns the created order, or null on failure.
+  Future<OrderModel?> addOrder(OrderRequest request) async {
+    OrderModel? created;
+    await run(() async {
+      created = await _orderService.create(request);
+      _orders.insert(0, created!);
+      _filterOrders(notifyNow: false);
+    });
+    return created;
+  }
+
+  Future<bool> updateOrder(int orderId, OrderRequest request) =>
+      run(() async => _replaceOrder(await _orderService.update(orderId, request)));
+
+  /// Cancelling goes through the cancel endpoint, which also returns the stock
+  /// and refunds the down payment. Completing needs the [bankAccountId] that
+  /// receives the amount due.
+  Future<bool> updateOrderStatus({
+    required int orderId,
+    required OrderStatus status,
+    int? bankAccountId,
+  }) =>
+      run(() async => _replaceOrder(status == OrderStatus.cancelled
+          ? await _orderService.cancel(orderId)
+          : await _orderService.changeStatus(orderId, status, bankAccountId: bankAccountId)));
+
+  Future<bool> deleteOrder(int id) => run(() async {
+        await _orderService.delete(id);
         _orders.removeWhere((order) => order.orderId == id);
         _filteredOrders.removeWhere((order) => order.orderId == id);
+      });
 
-        ScaffoldMessenger.of(navigatorKey.currentContext!).showSnackBar(
-          SnackBar(
-            content: Text("Order #$id deleted successfully"),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      } else {
-        state = "not_deleted";
-        debugPrint("Failed to delete order: ${response.statusCode}");
-      }
-    } catch (e) {
-      _errorMessage = e.toString();
-      ScaffoldMessenger.of(navigatorKey.currentContext!).showSnackBar(
-        SnackBar(
-          content: Text("Order #$id couldn't be deleted. ${e.toString()}"),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 2),
-        ),
-      );
-      _state = ViewState.error;
-    } finally {
-      _isSaving = false;
-      notifyListeners();
-    }
-
-    return state;
+  void _replaceOrder(OrderModel updated) {
+    int indexIn(List<OrderModel> list) => list.indexWhere((o) => o.orderId == updated.orderId);
+    final i = indexIn(_orders);
+    if (i >= 0) _orders[i] = updated;
+    final j = indexIn(_filteredOrders);
+    if (j >= 0) _filteredOrders[j] = updated;
   }
 
   // ────────────────────────────
@@ -297,23 +310,20 @@ class OrderVM extends ChangeNotifier {
 
     sortColumnIndex = columnIndex;
     sortAscending = ascending;
-    notifyListeners();
+    notify();
   }
 
   // ────────────────────────────
   // FILTERING
   // ────────────────────────────
 
-  /// ADDED: Call this from your UI to set the date range
-  void setDateRange(DateTimeRange? range) {
-    if (range != null) {
-      _startDate = range.start;
-      _endDate = range.end;
-    } else {
-      _startDate = null;
-      _endDate = null;
-    }
-    _filterOrders(); // Re-apply all filters
+  /// Loads the orders of [range] from the server (older orders aren't loaded
+  /// by default); null goes back to the last [defaultDays] days.
+  Future<bool> setDateRange(DateTimeRange? range) {
+    _startDate = range?.start;
+    _endDate = range?.end;
+    _filterOrders();
+    return fetchOrders();
   }
 
   void applyFilter(String key, String value) {
@@ -325,18 +335,25 @@ class OrderVM extends ChangeNotifier {
     _filterOrders();
   }
 
-  /// ✨ MODIFIED: Now clears date filters as well
   void clearAllFilters() {
+    final hadRange = _startDate != null || _endDate != null;
     _filters.clear();
     _startDate = null;
     _endDate = null;
+    _status = null;
+    _governorate = null;
+    _page = 0;
     _filteredOrders = List.from(_orders);
-    notifyListeners();
+    notify();
+    if (hadRange) fetchOrders();
   }
 
   // applies both text and date filters
-  void _filterOrders() {
+  void _filterOrders({bool notifyNow = true}) {
+    _page = 0;
     _filteredOrders = _orders.where((order) {
+      if (_status != null && order.status != _status) return false;
+      if (_governorate != null && order.customer?.governorate.trim() != _governorate) return false;
 
       // --- 1. Text Filters (Existing Logic) ---
       bool passesTextFilter = true;
@@ -347,8 +364,12 @@ class OrderVM extends ChangeNotifier {
 
           String target = '';
           switch (key) {
+            case 'search':
+              // Order number, customer name or phone
+              target = '#${order.orderId} ${order.customer?.fullName ?? ''} ${order.customer?.phone ?? ''}'.toLowerCase();
+              break;
             case 'status':
-              target = order.status?.toLowerCase() ?? '';
+              target = order.status?.label.toLowerCase() ?? '';
               break;
             case 'customer':
               target = order.customer?.fullName.toLowerCase() ?? '';
@@ -414,6 +435,6 @@ class OrderVM extends ChangeNotifier {
 
     }).toList();
 
-    notifyListeners();
+    if (notifyNow) notify();
   }
 }

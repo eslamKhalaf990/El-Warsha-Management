@@ -1,3 +1,5 @@
+import 'json_read.dart';
+
 class GovernorateCountPerOrder {
   final String governorate;
   final int count;
@@ -9,15 +11,8 @@ class GovernorateCountPerOrder {
 
   factory GovernorateCountPerOrder.fromJson(Map<String, dynamic> json) {
     return GovernorateCountPerOrder(
-      governorate: json['governorate'] as String,
-      count: json['orderCount'] as int,
+      governorate: readString(json['governorate'], '-'),
+      count: readInt(json['orderCount']) ?? 0,
     );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'governorate': governorate,
-      'orderCount': count,
-    };
   }
 }

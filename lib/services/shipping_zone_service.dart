@@ -1,84 +1,33 @@
-import 'dart:async';
-import 'dart:convert';
-import 'package:flutter/cupertino.dart';
-import 'package:http/http.dart' as http;
-import 'package:warsha_app/utils/const_values.dart';
-import 'base_url.dart';
+import 'package:warsha_app/core/network/api_client.dart';
+import 'package:warsha_app/core/network/api_exception.dart';
+import 'package:warsha_app/models/shipping_zone.dart';
 
+/// Delivery prices API (backend: ShippingZoneController under `/shipping`).
+/// Every failure surfaces as an [ApiException] from [ApiClient].
 class ShippingZoneService {
+  ShippingZoneService(this._api);
 
-  Future<http.Response> getAllShippingZones(String token) async {
-    try {
-      final response = await http.get(
-        headers: {
-          'Content-Type': 'application/json',
-          "Authorization": 'Bearer $token',
-        },
-        Uri.parse(Baseurl.getAllShippingZonesAPI),
-      ).timeout(const Duration(seconds: Constants.TIMEOUT));
-      print(response.body);
-      print(response.statusCode);
+  final ApiClient _api;
 
-      return response;
-    } on TimeoutException {
-      throw Exception('The request timed out. Please try again later.');
-    } catch (e) {
-      throw Exception('Failed to get shipping zones: $e');
-    }
+  /// Every zone, active and inactive.
+  Future<List<ShippingZone>> list() async {
+    final body = await _api.get('shipping');
+    if (body is! List) throw ApiException.badResponse(200);
+    return body.whereType<Map<String, dynamic>>().map(ShippingZone.fromJson).toList();
   }
 
-  Future<http.Response> addShippingZone(String token, Map<String, dynamic> zoneData) async {
-    try {
-      final response = await http.post(
-        Uri.parse(Baseurl.addShippingZoneAPI),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-        body: jsonEncode(zoneData),
-      ).timeout(const Duration(seconds: Constants.TIMEOUT));
+  Future<ShippingZone> create(ShippingZoneRequest request) async =>
+      _zone(await _api.post('shipping', body: request.toJson()));
 
-      return response;
-    } on TimeoutException {
-      throw Exception('The request timed out. Please try again later.');
-    } catch (e) {
-      throw Exception('Failed to add shipping zone: $e');
-    }
+  Future<ShippingZone> update(int id, ShippingZoneRequest request) async =>
+      _zone(await _api.put('shipping/$id', body: request.toJson()));
+
+  Future<void> delete(int id) async {
+    await _api.delete('shipping/$id');
   }
 
-  Future<http.Response> updateShippingZone(String token, int id, double shippingFee) async {
-    try {
-      final response = await http.put(
-        Uri.parse("${Baseurl.updateShippingZoneAPI}/$id?shippingFee=$shippingFee"),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-      ).timeout(const Duration(seconds: Constants.TIMEOUT));
-
-      return response;
-    } on TimeoutException {
-      throw Exception('The request timed out. Please try again later.');
-    } catch (e) {
-      throw Exception('Failed to update shipping zone: $e');
-    }
-  }
-
-  Future<http.Response> deleteShippingZone(String token, int id) async {
-    try {
-      final response = await http.delete(
-        headers: {
-          'Content-Type': 'application/json',
-          "Authorization": 'Bearer $token',
-        },
-        Uri.parse("${Baseurl.deleteShippingZoneAPI}/$id"),
-      ).timeout(const Duration(seconds: Constants.TIMEOUT));
-
-      return response;
-    } on TimeoutException {
-      throw Exception('The request timed out. Please try again later.');
-    } catch (e) {
-      throw Exception('Failed to delete shipping zone: $e');
-    }
+  static ShippingZone _zone(Object? body) {
+    if (body is! Map<String, dynamic>) throw ApiException.badResponse(200);
+    return ShippingZone.fromJson(body);
   }
 }
