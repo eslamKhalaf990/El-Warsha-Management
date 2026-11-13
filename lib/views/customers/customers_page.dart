@@ -6,6 +6,7 @@ import 'package:warsha_app/views/customers/customer_form_page.dart';
 import 'package:warsha_app/views/customers/widgets/customer_views.dart';
 import 'package:warsha_app/models/customer_model.dart';
 import 'package:warsha_app/view_models/customers_v_m.dart';
+import 'package:warsha_app/core/l10n/app_locale.dart';
 
 /// Customers: search, filter by governorate, a paged table on desktop and
 /// cards elsewhere.
@@ -19,25 +20,25 @@ class CustomersPage extends StatelessWidget {
     final counts = vm.governorateCounts;
 
     return ModulePage(
-      title: 'Customers',
+      title: tr('Customers'),
       subtitle: vm.hasLoaded
-          ? '${Fmt.count(vm.allCustomers.length, 'customer')} in ${Fmt.count(counts.length, 'governorate')}'
-          : 'Everyone who ordered from the store or the shop',
-      primaryAction: PageAction(label: 'Add customer', icon: Iconsax.user_add_copy, onPressed: () => openCustomerForm(context)),
+          ? tr('{0} in {1}', [Fmt.count(vm.allCustomers.length, 'customer'), Fmt.count(counts.length, 'governorate')])
+          : tr('Everyone who ordered from the store or the shop'),
+      primaryAction: PageAction(label: tr('Add customer'), icon: Iconsax.user_add_copy, onPressed: () => openCustomerForm(context)),
       actions: [
         ExportExcelButton<CustomerModel>(
           rows: () => context.read<CustomerVM>().customers,
           columns: customerExportColumns,
           fileName: 'customers',
-          sheetName: 'Customers',
+          sheetName: tr('Customers'),
           noun: 'customer',
         ),
-        IconButton(tooltip: 'Refresh', icon: const Icon(Iconsax.refresh_copy), onPressed: vm.fetch),
+        IconButton(tooltip: tr('Refresh'), icon: const Icon(Iconsax.refresh_copy), onPressed: vm.fetch),
       ],
       toolbar: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          AppSearchField(hint: 'Search by name, mobile or #number', initialValue: vm.query, onChanged: vm.setQuery),
+          AppSearchField(hint: tr('Search by name, mobile or #number'), initialValue: vm.query, onChanged: vm.setQuery),
           if (counts.length > 1) ...[
             const SizedBox(height: AppSpacing.s12),
             ChipFilterBar<String>(
@@ -57,9 +58,9 @@ class CustomersPage extends StatelessWidget {
             ? EmptyView.noMatch(vm.query.trim().isEmpty ? vm.governorate! : vm.query)
             : EmptyView(
                 icon: Iconsax.profile_2user_copy,
-                title: 'No customers yet',
-                message: 'Customers from the online store show up here automatically.',
-                actionLabel: 'Add customer',
+                title: tr('No customers yet'),
+                message: tr('Customers from the online store show up here automatically.'),
+                actionLabel: tr('Add customer'),
                 onAction: () => openCustomerForm(context),
               ),
         builder: (context) => context.isExpanded

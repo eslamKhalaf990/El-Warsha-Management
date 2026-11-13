@@ -41,6 +41,14 @@ class FakeCustomerService implements CustomerService {
 
   @override
   Future<void> delete(int id) => _answer(null);
+
+  String? lastPassword;
+
+  @override
+  Future<void> setStorePassword(int id, String password) {
+    lastPassword = password;
+    return _answer(null);
+  }
 }
 
 void main() {
@@ -101,5 +109,14 @@ void main() {
     expect(await vm.delete(vm.allCustomers.last), isFalse);
     expect(vm.allCustomers, hasLength(3));
     expect(vm.errorMessage, contains('2 orders'));
+  });
+
+  test('a short store password is refused before calling the backend', () async {
+    expect(await vm.setStorePassword(1, '123'), isFalse);
+    expect(vm.fieldError('password'), isNotNull);
+    expect(service.calls, 0);
+
+    expect(await vm.setStorePassword(1, 'secret1'), isTrue);
+    expect(service.lastPassword, 'secret1');
   });
 }

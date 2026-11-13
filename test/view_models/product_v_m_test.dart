@@ -4,7 +4,7 @@ import 'package:warsha_app/models/product_model.dart';
 import 'package:warsha_app/models/product_variant.dart';
 import 'package:warsha_app/services/product_variants_service.dart';
 import 'package:warsha_app/services/products_service.dart';
-import 'package:warsha_app/view_models/add_product_v_m.dart';
+import 'package:warsha_app/view_models/product_v_m.dart';
 
 ProductModel product(String id, String name, {String discount = '0', String? sku}) => ProductModel.get(
       name: name,
@@ -34,7 +34,10 @@ class FakeProductService implements ProductService {
   }
 
   @override
-  Future<List<ProductModel>> list() => _answer([product('1', 'Silver ring', discount: '20', sku: 'RNG-001'), product('2', 'Gold chain')]);
+  Future<List<ProductModel>> list() => _answer([
+        product('1', 'Silver ring', discount: '20', sku: 'RNG-001')..vendorId = 4,
+        product('2', 'Gold chain')..vendorId = 4,
+      ]);
 
   @override
   Future<ProductModel> create(Map<String, dynamic> p, {required List<int> image, String? filename}) {
@@ -138,6 +141,7 @@ void main() {
       'discount': 0,
       'quantity': 7,
       'categoryId': 3,
+      'vendorId': null,
     });
     expect(vm.allProducts.first.id, '9');
     expect(vm.warning, isNull);
@@ -178,5 +182,23 @@ void main() {
     service.failWith = null;
     expect(await vm.delete(vm.allProducts.first), isTrue);
     expect(vm.allProducts.map((p) => p.id), ['2']);
+  });
+
+  test('the chosen vendor is sent with the product', () async {
+    const form = ProductForm(name: 'Ring', buyingPrice: '100', sellingPrice: '200', quantity: '1', categoryId: 3, vendorId: 4);
+    expect(await vm.add(form, image: [1]), isTrue);
+    expect(service.lastRequest!['vendorId'], 4);
+  });
+
+  test('a vendor\'s products are the ones linked to it, A–Z', () {
+    expect(vm.productsFromVendor(4).map((p) => p.name), ['Gold chain', 'Silver ring']);
+    expect(vm.productsFromVendor(9), isEmpty);
+  });
+
+  test('vendor id and name are read from the API', () {
+    final p = ProductModel.fromJson({'id': 5, 'name': 'Ring', 'vendorId': 4, 'vendorName': 'Silver Co'});
+    expect(p.vendorId, 4);
+    expect(p.vendorName, 'Silver Co');
+    expect(ProductModel.fromJson({'id': 6, 'name': 'Chain'}).vendorId, isNull);
   });
 }

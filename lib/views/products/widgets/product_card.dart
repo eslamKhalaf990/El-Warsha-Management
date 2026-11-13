@@ -4,7 +4,8 @@ import 'package:provider/provider.dart';
 import 'package:warsha_app/core/widgets/widgets.dart';
 import 'package:warsha_app/views/products/product_form_page.dart';
 import 'package:warsha_app/models/product_model.dart';
-import 'package:warsha_app/view_models/add_product_v_m.dart';
+import 'package:warsha_app/view_models/product_v_m.dart';
+import 'package:warsha_app/core/l10n/app_locale.dart';
 
 /// Stock as a colored pill: out, low, or the count.
 class StockPill extends StatelessWidget {
@@ -14,11 +15,11 @@ class StockPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (stock <= 0) return const StatusPill(label: 'Out of stock', tone: Tone.error);
+    if (stock <= 0) return StatusPill(label: tr('Out of stock'), tone: Tone.error);
     if (stock <= ProductVM.lowStockThreshold) {
-      return StatusPill(label: 'Only $stock left', tone: Tone.warning, icon: Iconsax.warning_2_copy);
+      return StatusPill(label: tr('Only {0} left', [stock]), tone: Tone.warning, icon: Iconsax.warning_2_copy);
     }
-    return StatusPill(label: '$stock in stock', tone: Tone.success);
+    return StatusPill(label: tr('{0} in stock', [stock]), tone: Tone.success);
   }
 }
 
@@ -57,13 +58,13 @@ class ProductCard extends StatelessWidget {
     final vm = context.read<ProductVM>();
     final confirmed = await confirmAction(
       context,
-      title: 'Delete product?',
-      message: '"${product.name}" will be removed from the store. Past orders keep it.',
-      confirmLabel: 'Delete',
+      title: tr('Delete product?'),
+      message: tr('"{0}" will be removed from the store. Past orders keep it.', [product.name]),
+      confirmLabel: tr('Delete'),
     );
     if (!confirmed || !context.mounted) return;
     final ok = await vm.delete(product);
-    if (context.mounted) reportResult(context, ok: ok, errorMessage: vm.errorMessage, success: '"${product.name}" deleted.');
+    if (context.mounted) reportResult(context, ok: ok, errorMessage: vm.errorMessage, success: tr('"{0}" deleted.', [product.name]));
   }
 
   @override
@@ -96,7 +97,7 @@ class ProductCard extends StatelessWidget {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(AppSpacing.s12, AppSpacing.s8, 0, AppSpacing.s8),
+              padding: const EdgeInsetsDirectional.fromSTEB(AppSpacing.s12, AppSpacing.s8, 0, AppSpacing.s8),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -119,8 +120,8 @@ class ProductCard extends StatelessWidget {
                   ),
                   RowActions(
                     [
-                      RowAction(label: 'Edit', icon: Iconsax.edit_2_copy, onPressed: () => openProductForm(context, product: p)),
-                      RowAction(label: 'Delete', icon: Iconsax.trash_copy, destructive: true, onPressed: () => _delete(context)),
+                      RowAction(label: tr('Edit'), icon: Iconsax.edit_2_copy, onPressed: () => openProductForm(context, product: p)),
+                      RowAction(label: tr('Delete'), icon: Iconsax.trash_copy, destructive: true, onPressed: () => _delete(context)),
                     ],
                     busy: deleting,
                     forceMenu: true,

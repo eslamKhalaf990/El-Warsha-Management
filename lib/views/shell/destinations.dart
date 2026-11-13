@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:warsha_app/views/accounting/accounting_page.dart';
+import 'package:warsha_app/views/behavior/behavior_page.dart';
 import 'package:warsha_app/views/categories/categories_page.dart';
 import 'package:warsha_app/views/customers/customers_page.dart';
 import 'package:warsha_app/views/dashboard/dashboard_page.dart';
@@ -10,6 +11,7 @@ import 'package:warsha_app/views/reviews/reviews_page.dart';
 import 'package:warsha_app/views/shipping_zones/shipping_zones_page.dart';
 import 'package:warsha_app/views/vendors/vendors_page.dart';
 import 'package:warsha_app/views/vouchers/vouchers_page.dart';
+import 'package:warsha_app/core/l10n/app_locale.dart';
 
 /// Sidebar groups, in order.
 enum NavGroup {
@@ -19,13 +21,16 @@ enum NavGroup {
   operations('Operations'),
   finance('Finance');
 
-  const NavGroup(this.label);
-  final String label;
+  const NavGroup(this.labelEn);
+  /// English; shown through [label] in the current language.
+  final String labelEn;
+  String get label => tr(labelEn);
 }
 
 /// Every top-level page of the ERP, grouped like the sidebar shows them.
 enum AppDestination {
   dashboard('Dashboard', Iconsax.element_3_copy, Iconsax.element_3, NavGroup.overview),
+  behavior('Customer behavior', Iconsax.activity_copy, Iconsax.activity, NavGroup.overview),
   orders('Orders', Iconsax.receipt_2_copy, Iconsax.receipt_2, NavGroup.sales),
   customers('Customers', Iconsax.profile_2user_copy, Iconsax.profile_2user, NavGroup.sales),
   vouchers('Promo codes', Iconsax.ticket_discount_copy, Iconsax.ticket_discount, NavGroup.sales),
@@ -36,9 +41,11 @@ enum AppDestination {
   shippingZones('Shipping zones', Iconsax.truck_copy, Iconsax.truck, NavGroup.operations),
   accounting('Accounting', Iconsax.wallet_2_copy, Iconsax.wallet_2, NavGroup.finance);
 
-  const AppDestination(this.label, this.icon, this.selectedIcon, this.group);
+  const AppDestination(this.labelEn, this.icon, this.selectedIcon, this.group);
 
-  final String label;
+  /// English; shown through [label] in the current language.
+  final String labelEn;
+  String get label => tr(labelEn);
   final IconData icon;
   final IconData selectedIcon;
   final NavGroup group;
@@ -48,6 +55,7 @@ enum AppDestination {
 
   Widget get page => switch (this) {
         dashboard => const DashboardPage(),
+        behavior => const BehaviorPage(),
         orders => const OrdersPage(),
         customers => const CustomersPage(),
         vouchers => const VouchersPage(),

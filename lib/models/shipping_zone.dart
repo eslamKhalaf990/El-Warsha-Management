@@ -1,3 +1,4 @@
+import 'package:warsha_app/core/format/formatters.dart';
 class ShippingZone {
   final int? id;
   final String cityName;
@@ -24,7 +25,7 @@ class ShippingZone {
 
   /// "80 EGP", or "82.5 EGP" when there are piastres.
   String get priceLabel =>
-      '${shippingPrice == shippingPrice.roundToDouble() ? shippingPrice.toStringAsFixed(0) : shippingPrice.toStringAsFixed(2)} EGP';
+      '${shippingPrice == shippingPrice.roundToDouble() ? shippingPrice.toStringAsFixed(0) : shippingPrice.toStringAsFixed(2)} ${Fmt.currencyLabel}';
 
   @override
   bool operator ==(Object other) =>

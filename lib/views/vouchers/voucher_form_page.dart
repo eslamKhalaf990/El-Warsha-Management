@@ -5,6 +5,7 @@ import 'package:warsha_app/core/state/form_draft.dart';
 import 'package:warsha_app/core/widgets/widgets.dart';
 import 'package:warsha_app/models/voucher.dart';
 import 'package:warsha_app/view_models/vouchers_v_m.dart';
+import 'package:warsha_app/core/l10n/app_locale.dart';
 
 /// Opens the add form, or the edit form for [voucher].
 Future<void> openVoucherForm(BuildContext context, {Voucher? voucher}) {
@@ -60,7 +61,7 @@ class VoucherFormPage extends StatelessWidget {
       ok: ok,
       pop: true,
       errorMessage: vm.errorMessage,
-      success: voucher == null ? 'Promo code created.' : 'Promo code updated.',
+      success: voucher == null ? tr('Promo code created.') : tr('Promo code updated.'),
       fieldError: vm.fieldError,
       fields: VouchersVM.formFields,
     );
@@ -76,23 +77,23 @@ class VoucherFormPage extends StatelessWidget {
     void changed([_]) => vm.clearError();
 
     return FormPage(
-      title: voucher == null ? 'New promo code' : 'Edit ${voucher!.code}',
-      subtitle: voucher == null ? null : 'Used ${Fmt.count(voucher!.usageCount, 'time')}',
+      title: voucher == null ? tr('New promo code') : tr('Edit {0}', [voucher!.code]),
+      subtitle: voucher == null ? null : tr('Used {0}', [Fmt.count(voucher!.usageCount, 'time')]),
       draft: d,
       saving: vm.isSaving,
-      saveLabel: voucher == null ? 'Create code' : 'Save changes',
+      saveLabel: voucher == null ? tr('Create code') : tr('Save changes'),
       onSave: () => _save(context),
       sections: [
         FormSection(
-          title: 'Code & discount',
+          title: tr('Code & discount'),
           icon: Iconsax.ticket_discount_copy,
           children: [
             AppTextField(
-              label: 'Code',
+              label: tr('Code'),
               required: true,
               icon: Iconsax.ticket_copy,
               hintText: 'RAMADAN10',
-              helperText: 'What customers type at checkout. Saved in capitals.',
+              helperText: tr('What customers type at checkout. Saved in capitals.'),
               controller: d.controller('code'),
               errorText: vm.fieldError('code'),
               maxLength: VouchersVM.codeMaxLength,
@@ -100,9 +101,9 @@ class VoucherFormPage extends StatelessWidget {
               onChanged: changed,
             ),
             SegmentedButton<DiscountKind>(
-              segments: const [
-                ButtonSegment(value: DiscountKind.percentage, label: Text('Percentage'), icon: Icon(Iconsax.percentage_circle_copy, size: 18)),
-                ButtonSegment(value: DiscountKind.fixed, label: Text('Fixed amount'), icon: Icon(Iconsax.money_2_copy, size: 18)),
+              segments: [
+                ButtonSegment(value: DiscountKind.percentage, label: Text(tr('Percentage')), icon: const Icon(Iconsax.percentage_circle_copy, size: 18)),
+                ButtonSegment(value: DiscountKind.fixed, label: Text(tr('Fixed amount')), icon: const Icon(Iconsax.money_2_copy, size: 18)),
               ],
               selected: {kind},
               onSelectionChanged: (s) => d.set('kind', s.first),
@@ -110,7 +111,7 @@ class VoucherFormPage extends StatelessWidget {
             FieldRow(children: [
               percent
                   ? AppTextField(
-                      label: 'Discount',
+                      label: tr('Discount'),
                       required: true,
                       icon: Iconsax.percentage_circle_copy,
                       suffixText: '%',
@@ -121,7 +122,7 @@ class VoucherFormPage extends StatelessWidget {
                       onChanged: changed,
                     )
                   : AppTextField.money(
-                      label: 'Discount',
+                      label: tr('Discount'),
                       required: true,
                       controller: d.controller('discountValue'),
                       errorText: vm.fieldError('discountValue'),
@@ -129,8 +130,8 @@ class VoucherFormPage extends StatelessWidget {
                     ),
               if (percent)
                 AppTextField.money(
-                  label: 'Up to',
-                  helperText: 'Largest discount per order. Empty = no cap.',
+                  label: tr('Up to'),
+                  helperText: tr('Largest discount per order. Empty = no cap.'),
                   controller: d.controller('maxDiscountAmount'),
                   errorText: vm.fieldError('maxDiscountAmount'),
                   onChanged: changed,
@@ -139,21 +140,21 @@ class VoucherFormPage extends StatelessWidget {
           ],
         ),
         FormSection(
-          title: 'Rules',
+          title: tr('Rules'),
           icon: Iconsax.setting_4_copy,
           children: [
             FieldRow(children: [
               AppTextField.money(
-                label: 'Minimum order',
-                helperText: 'Empty = any order.',
+                label: tr('Minimum order'),
+                helperText: tr('Empty = any order.'),
                 controller: d.controller('minOrderAmount'),
                 errorText: vm.fieldError('minOrderAmount'),
                 onChanged: changed,
               ),
               AppTextField(
-                label: 'Usage limit',
+                label: tr('Usage limit'),
                 icon: Iconsax.repeat_copy,
-                helperText: 'Times it can be used in total. Empty = unlimited.',
+                helperText: tr('Times it can be used in total. Empty = unlimited.'),
                 keyboardType: TextInputType.number,
                 inputFormatters: intInputFormatters,
                 controller: d.controller('maxUsageLimit'),
@@ -163,7 +164,7 @@ class VoucherFormPage extends StatelessWidget {
             ]),
             FieldRow(children: [
               AppDateField(
-                label: 'Starts',
+                label: tr('Starts'),
                 required: true,
                 value: d.value<DateTime>('startDate'),
                 errorText: vm.fieldError('startDate'),
@@ -172,8 +173,8 @@ class VoucherFormPage extends StatelessWidget {
                   ..touch(),
               ),
               AppDateField(
-                label: 'Ends',
-                hintText: 'Never',
+                label: tr('Ends'),
+                hintText: tr('Never'),
                 clearable: true,
                 value: d.value<DateTime>('endDate'),
                 errorText: vm.fieldError('endDate'),
@@ -181,8 +182,8 @@ class VoucherFormPage extends StatelessWidget {
               ),
             ]),
             AppSwitchTile(
-              title: 'Active',
-              subtitle: d.flag('active') ? 'Customers can use it within the dates.' : 'Paused: customers get “inactive”.',
+              title: tr('Active'),
+              subtitle: d.flag('active') ? tr('Customers can use it within the dates.') : tr('Paused: customers get “inactive”.'),
               value: d.flag('active'),
               onChanged: (v) => d.set('active', v),
             ),

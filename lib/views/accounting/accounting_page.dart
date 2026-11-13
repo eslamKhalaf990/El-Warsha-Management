@@ -8,6 +8,7 @@ import 'package:warsha_app/views/accounting/widgets/transaction_views.dart';
 import 'package:warsha_app/models/account_balance.dart';
 import 'package:warsha_app/models/transaction_model.dart';
 import 'package:warsha_app/view_models/accountings_v_m.dart';
+import 'package:warsha_app/core/l10n/app_locale.dart';
 
 /// Balances per account and every money movement, filterable.
 class AccountingPage extends StatelessWidget {
@@ -17,32 +18,32 @@ class AccountingPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final vm = context.watch<AccountingVM>();
     return ModulePage(
-      title: 'Accounting',
-      subtitle: vm.accountsBalance == null ? 'Balances and money movements' : 'Total balance ${Fmt.money(vm.totalBalance)}',
-      primaryAction: PageAction(label: 'New transaction', icon: Iconsax.add_copy, onPressed: () => openTransactionForm(context)),
+      title: tr('Accounting'),
+      subtitle: vm.accountsBalance == null ? tr('Balances and money movements') : tr('Total balance {0}', [Fmt.money(vm.totalBalance)]),
+      primaryAction: PageAction(label: tr('New transaction'), icon: Iconsax.add_copy, onPressed: () => openTransactionForm(context)),
       actions: [
         vm.isSafeUnlocked
-            ? IconButton(tooltip: 'Lock the safe', icon: const Icon(Iconsax.unlock_copy), onPressed: vm.lockSafe)
-            : IconButton(tooltip: 'Open the safe', icon: const Icon(Iconsax.security_safe_copy), onPressed: () => openSafe(context)),
+            ? IconButton(tooltip: tr('Lock the safe'), icon: const Icon(Iconsax.unlock_copy), onPressed: vm.lockSafe)
+            : IconButton(tooltip: tr('Open the safe'), icon: const Icon(Iconsax.security_safe_copy), onPressed: () => openSafe(context)),
         ExportExcelButton<BankTransaction>(
           rows: () => context.read<AccountingVM>().transactions,
           columns: transactionExportColumns,
           fileName: 'transactions',
-          sheetName: 'Transactions',
+          sheetName: tr('Transactions'),
           noun: 'transaction',
         ),
-        IconButton(tooltip: 'Refresh', icon: const Icon(Iconsax.refresh_copy), onPressed: vm.fetch),
+        IconButton(tooltip: tr('Refresh'), icon: const Icon(Iconsax.refresh_copy), onPressed: vm.fetch),
         PopupMenuButton<int>(
-          tooltip: 'More',
+          tooltip: tr('More'),
           icon: const Icon(Iconsax.more_copy),
           onSelected: (_) => openReset(context),
-          itemBuilder: (_) => const [
+          itemBuilder: (_) => [
             PopupMenuItem(
               value: 0,
               child: Row(children: [
-                Icon(Iconsax.danger_copy, size: 18, color: AppStatusColors.errorText),
-                SizedBox(width: AppSpacing.s12),
-                Text('Reset all transactions', style: TextStyle(color: AppStatusColors.errorText)),
+                const Icon(Iconsax.danger_copy, size: 18, color: AppStatusColors.errorText),
+                const SizedBox(width: AppSpacing.s12),
+                Text(tr('Reset all transactions'), style: const TextStyle(color: AppStatusColors.errorText)),
               ]),
             ),
           ],
@@ -71,7 +72,7 @@ class _Accounts extends StatelessWidget {
       spacing: AppSpacing.s12,
       children: [
         StatCard(
-          label: 'Total balance',
+          label: tr('Total balance'),
           value: Fmt.money(vm.totalBalance),
           icon: Iconsax.wallet_2_copy,
           highlighted: true,
@@ -103,18 +104,18 @@ class _Filters extends StatelessWidget {
     final accounts = vm.accountsBalance ?? const <BankAccount>[];
     final flow = vm.flow;
 
-    final search = AppSearchField(hint: 'Search description, category or #order', initialValue: vm.query, onChanged: vm.setQuery);
+    final search = AppSearchField(hint: tr('Search description, category or #order'), initialValue: vm.query, onChanged: vm.setQuery);
     final account = AppDropdown<int?>(
-      label: 'Account',
+      label: tr('Account'),
       icon: Iconsax.bank_copy,
-      hintText: 'All accounts',
+      hintText: tr('All accounts'),
       items: [null, for (final a in accounts) a.id],
       value: vm.accountFilter,
-      itemLabel: (id) => id == null ? 'All accounts' : accounts.firstWhere((a) => a.id == id).name,
+      itemLabel: (id) => id == null ? tr('All accounts') : accounts.firstWhere((a) => a.id == id).name,
       onChanged: vm.setAccountFilter,
     );
     final dates = vm.from == null
-        ? AppButton.secondary(label: 'Dates', icon: Iconsax.calendar_1_copy, onPressed: () => _pickRange(context))
+        ? AppButton.secondary(label: tr('Dates'), icon: Iconsax.calendar_1_copy, onPressed: () => _pickRange(context))
         : InputChip(
             avatar: const Icon(Iconsax.calendar_1_copy, size: 16),
             label: Text('${Fmt.shortDate(vm.from)} – ${Fmt.shortDate(vm.to)}'),
@@ -127,10 +128,10 @@ class _Filters extends StatelessWidget {
       children: [
         Row(
           children: [
-            const Expanded(child: AppText.titleSmall('Transactions')),
-            StatusPill(label: 'In ${Fmt.money(flow.moneyIn)}', tone: Tone.success, icon: Iconsax.arrow_down_copy),
+            Expanded(child: AppText.titleSmall(tr('Transactions'))),
+            StatusPill(label: tr('In {0}', [Fmt.money(flow.moneyIn)]), tone: Tone.success, icon: Iconsax.arrow_down_copy),
             const SizedBox(width: AppSpacing.s8),
-            StatusPill(label: 'Out ${Fmt.money(flow.moneyOut)}', tone: Tone.error, icon: Iconsax.arrow_up_3_copy),
+            StatusPill(label: tr('Out {0}', [Fmt.money(flow.moneyOut)]), tone: Tone.error, icon: Iconsax.arrow_up_3_copy),
           ],
         ),
         const SizedBox(height: AppSpacing.s12),
@@ -151,7 +152,7 @@ class _Filters extends StatelessWidget {
         ),
         const SizedBox(height: AppSpacing.s12),
         ChipFilterBar<String>(
-          options: const [ChipOption(deposit, 'Money in'), ChipOption(withdrawal, 'Money out')],
+          options: [ChipOption(deposit, tr('Money in')), ChipOption(withdrawal, tr('Money out'))],
           selected: vm.typeFilter,
           onSelected: vm.setTypeFilter,
         ),
@@ -163,15 +164,15 @@ class _Filters extends StatelessWidget {
 Widget _noTransactions(AccountingVM vm) => vm.hasFilters
     ? EmptyView(
         icon: Iconsax.search_normal_1_copy,
-        title: 'No transactions match',
-        message: 'Try other filters.',
-        actionLabel: 'Clear filters',
+        title: tr('No transactions match'),
+        message: tr('Try other filters.'),
+        actionLabel: tr('Clear filters'),
         onAction: vm.clearFilters,
       )
-    : const EmptyView(
+    : EmptyView(
         icon: Iconsax.receipt_2_copy,
-        title: 'No transactions yet',
-        message: 'Orders and the deposits you record show up here.',
+        title: tr('No transactions yet'),
+        message: tr('Orders and the deposits you record show up here.'),
       );
 
 class _WideLayout extends StatelessWidget {

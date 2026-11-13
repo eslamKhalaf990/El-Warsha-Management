@@ -5,8 +5,9 @@ import 'package:warsha_app/core/widgets/widgets.dart';
 import 'package:warsha_app/views/products/product_form_page.dart';
 import 'package:warsha_app/views/products/widgets/product_card.dart';
 import 'package:warsha_app/models/category_model.dart';
-import 'package:warsha_app/view_models/add_product_v_m.dart';
+import 'package:warsha_app/view_models/product_v_m.dart';
 import 'package:warsha_app/view_models/category_v_m.dart';
+import 'package:warsha_app/core/l10n/app_locale.dart';
 
 /// The catalog: a searchable, filterable product grid.
 class ProductsPage extends StatelessWidget {
@@ -19,32 +20,32 @@ class ProductsPage extends StatelessWidget {
     final filtered = vm.query.trim().isNotEmpty || vm.categoryId != null || vm.stockFilter != StockFilter.all;
 
     return ModulePage(
-      title: 'Products',
+      title: tr('Products'),
       subtitle: vm.hasLoaded
           ? [
               Fmt.count(vm.allProducts.length, 'product'),
-              if (vm.lowStockCount > 0) '${vm.lowStockCount} low on stock',
-              if (vm.outOfStockCount > 0) '${vm.outOfStockCount} out of stock',
+              if (vm.lowStockCount > 0) tr('{0} low on stock', [vm.lowStockCount]),
+              if (vm.outOfStockCount > 0) tr('{0} out of stock', [vm.outOfStockCount]),
             ].join(' · ')
-          : 'Everything you sell in the store',
-      primaryAction: PageAction(label: 'Add product', icon: Iconsax.add_copy, onPressed: () => openProductForm(context)),
-      actions: [IconButton(tooltip: 'Refresh', icon: const Icon(Iconsax.refresh_copy), onPressed: vm.fetch)],
+          : tr('Everything you sell in the store'),
+      primaryAction: PageAction(label: tr('Add product'), icon: Iconsax.add_copy, onPressed: () => openProductForm(context)),
+      actions: [IconButton(tooltip: tr('Refresh'), icon: const Icon(Iconsax.refresh_copy), onPressed: vm.fetch)],
       toolbar: const _Filters(),
       body: AsyncView(
         vm: vm,
         onRetry: vm.fetch,
         isEmpty: products.isEmpty,
         empty: filtered
-            ? const EmptyView(
+            ? EmptyView(
                 icon: Iconsax.search_normal_1_copy,
-                title: 'No products match',
-                message: 'Try another word or clear the filters.',
+                title: tr('No products match'),
+                message: tr('Try another word or clear the filters.'),
               )
             : EmptyView(
                 icon: Iconsax.box_1_copy,
-                title: 'No products yet',
-                message: 'Add your first product and it shows up in the store right away.',
-                actionLabel: 'Add product',
+                title: tr('No products yet'),
+                message: tr('Add your first product and it shows up in the store right away.'),
+                actionLabel: tr('Add product'),
                 onAction: () => openProductForm(context),
               ),
         builder: (context) => RefreshIndicator(
@@ -75,25 +76,25 @@ class _Filters extends StatelessWidget {
     final categories = context.watch<CategoryVM>().allCategories;
     final selected = categories.where((c) => c.categoryId == vm.categoryId).firstOrNull;
 
-    final search = AppSearchField(hint: 'Search by name or SKU', initialValue: vm.query, onChanged: vm.setQuery);
+    final search = AppSearchField(hint: tr('Search by name or SKU'), initialValue: vm.query, onChanged: vm.setQuery);
     final category = AppDropdown<CategoryModel?>(
-      label: 'Category',
+      label: tr('Category'),
       icon: Iconsax.category_2_copy,
       items: [null, ...categories],
       value: selected,
-      hintText: 'All categories',
-      itemLabel: (c) => c?.name ?? 'All categories',
+      hintText: tr('All categories'),
+      itemLabel: (c) => c?.name ?? tr('All categories'),
       onChanged: (c) => vm.setCategory(c?.categoryId),
     );
     final stock = AppDropdown<StockFilter>(
-      label: 'Stock',
+      label: tr('Stock'),
       icon: Iconsax.box_1_copy,
       items: StockFilter.values,
       value: vm.stockFilter,
       itemLabel: (f) => switch (f) {
-        StockFilter.all => 'All',
-        StockFilter.low => 'Low (${vm.lowStockCount})',
-        StockFilter.out => 'Out (${vm.outOfStockCount})',
+        StockFilter.all => tr('All'),
+        StockFilter.low => tr('Low ({0})', [vm.lowStockCount]),
+        StockFilter.out => tr('Out ({0})', [vm.outOfStockCount]),
       },
       onChanged: (f) => vm.setStockFilter(f ?? StockFilter.all),
     );

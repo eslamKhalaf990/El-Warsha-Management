@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
+import 'package:warsha_app/core/l10n/app_locale.dart';
 import 'package:warsha_app/core/network/api_client.dart';
 import 'package:warsha_app/core/theme/app_theme.dart';
 import 'package:warsha_app/views/auth/auth_gate.dart';
@@ -7,21 +9,23 @@ import 'package:warsha_app/views/shell/navigation_v_m.dart';
 import 'package:warsha_app/services/accounting_service.dart';
 import 'package:warsha_app/services/category_service.dart';
 import 'package:warsha_app/services/customers_services.dart';
-import 'package:warsha_app/services/home_service.dart';
+import 'package:warsha_app/services/analytics_service.dart';
 import 'package:warsha_app/services/orders_service.dart';
 import 'package:warsha_app/services/product_images_service.dart';
 import 'package:warsha_app/services/product_variants_service.dart';
 import 'package:warsha_app/services/products_service.dart';
 import 'package:warsha_app/services/reviews_service.dart';
 import 'package:warsha_app/services/shipping_zone_service.dart';
+import 'package:warsha_app/services/behavior_service.dart';
 import 'package:warsha_app/services/user_service.dart';
 import 'package:warsha_app/services/vendors_service.dart';
 import 'package:warsha_app/services/vouchers_service.dart';
 import 'package:warsha_app/view_models/accountings_v_m.dart';
-import 'package:warsha_app/view_models/add_product_v_m.dart';
+import 'package:warsha_app/view_models/behavior_v_m.dart';
+import 'package:warsha_app/view_models/product_v_m.dart';
 import 'package:warsha_app/view_models/category_v_m.dart';
 import 'package:warsha_app/view_models/customers_v_m.dart';
-import 'package:warsha_app/view_models/home_v_m.dart';
+import 'package:warsha_app/view_models/analytics_v_m.dart';
 import 'package:warsha_app/view_models/order_v_m.dart';
 import 'package:warsha_app/view_models/reviews_v_m.dart';
 import 'package:warsha_app/view_models/shipping_zone_v_m.dart';
@@ -31,8 +35,9 @@ import 'package:warsha_app/view_models/vouchers_v_m.dart';
 
 final navigatorKey = GlobalKey<NavigatorState>();
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await AppLocale.instance.load();
   // Room for a few product grids' worth of decoded photos (default 100 MB),
   // so images scrolled out of view are still there when scrolled back.
   PaintingBinding.instance.imageCache.maximumSizeBytes = 256 << 20;
@@ -89,7 +94,8 @@ class SessionScope extends StatelessWidget {
         Provider(create: (c) => api(c, CategoryService.new)),
         Provider(create: (c) => api(c, ShippingZoneService.new)),
         Provider(create: (c) => api(c, AccountingService.new)),
-        Provider(create: (c) => api(c, HomeService.new)),
+        Provider(create: (c) => api(c, AnalyticsService.new)),
+        Provider(create: (c) => api(c, BehaviorService.new)),
         Provider(create: (c) => api(c, OrdersService.new)),
         Provider(create: (c) => api(c, CustomerService.new)),
         Provider(create: (c) => api(c, ReviewsService.new)),
@@ -102,7 +108,8 @@ class SessionScope extends StatelessWidget {
         ChangeNotifierProvider(create: (c) => _load(signedIn, CategoryVM(c.read()), (vm) => vm.fetch())),
         ChangeNotifierProvider(create: (c) => _load(signedIn, ShippingZoneVM(c.read()), (vm) => vm.fetch())),
         ChangeNotifierProvider(create: (c) => _load(signedIn, CustomerVM(c.read()), (vm) => vm.fetch())),
-        ChangeNotifierProvider(create: (c) => _load(signedIn, HomeVM(c.read()), (vm) => vm.fetch())),
+        ChangeNotifierProvider(create: (c) => _load(signedIn, AnalyticsVM(c.read()), (vm) => vm.fetch())),
+        ChangeNotifierProvider(create: (c) => _load(signedIn, BehaviorVM(c.read()), (vm) => vm.fetch())),
         ChangeNotifierProvider(create: (c) => _load(signedIn, AccountingVM(c.read()), (vm) => vm.fetch())),
         ChangeNotifierProvider(create: (c) => _load(signedIn, ReviewsVM(c.read()), (vm) => vm.fetch())),
         ChangeNotifierProvider(create: (c) => _load(signedIn, VouchersVM(c.read()), (vm) => vm.fetch())),
@@ -122,15 +129,22 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'El Warsha · Back office',
-      theme: AppTheme.light(),
-      themeMode: ThemeMode.light,
-      navigatorKey: navigatorKey,
-      debugShowCheckedModeBanner: false,
-      // Session providers wrap the navigator so every route can read them.
-      builder: (context, child) => SessionScope(child: child!),
-      home: const AuthGate(),
+    // Rebuilt when the language changes: locale, text direction and title.
+    return ListenableBuilder(
+      listenable: AppLocale.instance,
+      builder: (context, _) => MaterialApp(
+        title: tr('El Warsha · Back office'),
+        locale: AppLocale.instance.locale,
+        supportedLocales: AppLocale.supported,
+        localizationsDelegates: GlobalMaterialLocalizations.delegates,
+        theme: AppTheme.light(),
+        themeMode: ThemeMode.light,
+        navigatorKey: navigatorKey,
+        debugShowCheckedModeBanner: false,
+        // Session providers wrap the navigator so every route can read them.
+        builder: (context, child) => SessionScope(child: child!),
+        home: const AuthGate(),
+      ),
     );
   }
 }

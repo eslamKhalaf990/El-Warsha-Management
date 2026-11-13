@@ -1,3 +1,4 @@
+import 'package:warsha_app/core/l10n/app_locale.dart';
 class GovernoratePerformanceModel {
   final String governorate;
   final int totalOrders;
@@ -13,7 +14,7 @@ class GovernoratePerformanceModel {
 
   factory GovernoratePerformanceModel.fromJson(Map<String, dynamic> json) {
     return GovernoratePerformanceModel(
-      governorate: json['governorate']?.toString().trim() ?? 'Unknown',
+      governorate: json['governorate']?.toString().trim() ?? tr('Unknown'),
       totalOrders: json['totalOrders'] ?? 0,
       totalRevenue: (json['totalRevenue'] ?? 0).toDouble(),
       totalDeliveryCollected: (json['totalDeliveryCollected'] ?? 0).toDouble(),

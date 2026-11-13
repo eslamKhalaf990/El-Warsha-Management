@@ -5,6 +5,7 @@ import 'package:warsha_app/core/theme/app_theme.dart';
 import 'package:warsha_app/core/widgets/app_button.dart';
 import 'package:warsha_app/core/widgets/app_text.dart';
 import 'package:warsha_app/core/widgets/status_pill.dart';
+import 'package:warsha_app/core/l10n/app_locale.dart';
 
 /// A centered icon, title, message and optional action, for empty lists
 /// and searches with no match.
@@ -22,8 +23,8 @@ class EmptyView extends StatelessWidget {
   factory EmptyView.noMatch(String query, {Key? key}) => EmptyView(
         key: key,
         icon: Iconsax.search_normal_1_copy,
-        title: 'No results',
-        message: 'Nothing matches "${query.trim()}". Try another word.',
+        title: tr('No results'),
+        message: tr('Nothing matches "{0}". Try another word.', [query.trim()]),
       );
 
   final String title;
@@ -63,11 +64,12 @@ class EmptyView extends StatelessWidget {
 
 /// Shown instead of content that could not be loaded.
 class ErrorView extends StatelessWidget {
-  const ErrorView({super.key, required this.message, required this.onRetry, this.retryLabel = 'Try again'});
+  const ErrorView({super.key, required this.message, required this.onRetry, this.retryLabel});
 
   final String message;
   final VoidCallback onRetry;
-  final String retryLabel;
+  /// Defaults to "Try again".
+  final String? retryLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -81,11 +83,11 @@ class ErrorView extends StatelessWidget {
             children: [
               const IconBadge(Iconsax.cloud_cross_copy, tone: Tone.error, size: 64),
               const SizedBox(height: AppSpacing.s16),
-              const AppText.titleSmall("Couldn't load this page", align: TextAlign.center),
+              AppText.titleSmall(tr('Couldn\'t load this page'), align: TextAlign.center),
               const SizedBox(height: AppSpacing.s4),
               AppText.bodySmall(message, color: AppColors.muted, align: TextAlign.center),
               const SizedBox(height: AppSpacing.s16),
-              AppButton.secondary(label: retryLabel, icon: Iconsax.refresh_copy, onPressed: onRetry),
+              AppButton.secondary(label: retryLabel ?? tr('Try again'), icon: Iconsax.refresh_copy, onPressed: onRetry),
             ],
           ),
         ),

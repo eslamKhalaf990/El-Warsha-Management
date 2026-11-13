@@ -6,6 +6,7 @@ import 'package:warsha_app/views/vendors/vendor_form_page.dart';
 import 'package:warsha_app/views/vendors/widgets/vendor_views.dart';
 import 'package:warsha_app/models/vendor.dart';
 import 'package:warsha_app/view_models/vendors_v_m.dart';
+import 'package:warsha_app/core/l10n/app_locale.dart';
 
 /// Suppliers: a table on desktop, cards elsewhere.
 class VendorsPage extends StatelessWidget {
@@ -17,21 +18,21 @@ class VendorsPage extends StatelessWidget {
     final vendors = vm.vendors;
 
     return ModulePage(
-      title: 'Vendors',
-      subtitle: vm.hasLoaded ? Fmt.count(vm.allVendors.length, 'active vendor') : 'Who you buy materials from',
-      primaryAction: PageAction(label: 'Add vendor', icon: Iconsax.add_copy, onPressed: () => openVendorForm(context)),
+      title: tr('Vendors'),
+      subtitle: vm.hasLoaded ? Fmt.count(vm.allVendors.length, 'active vendor') : tr('Who you buy materials from'),
+      primaryAction: PageAction(label: tr('Add vendor'), icon: Iconsax.add_copy, onPressed: () => openVendorForm(context)),
       actions: [
         ExportExcelButton<Vendor>(
           rows: () => context.read<VendorVM>().vendors,
           columns: vendorExportColumns,
           fileName: 'vendors',
-          sheetName: 'Vendors',
+          sheetName: tr('Vendors'),
           noun: 'vendor',
         ),
-        IconButton(tooltip: 'Refresh', icon: const Icon(Iconsax.refresh_copy), onPressed: vm.fetch),
+        IconButton(tooltip: tr('Refresh'), icon: const Icon(Iconsax.refresh_copy), onPressed: vm.fetch),
       ],
       toolbar: AppSearchField(
-        hint: 'Search by name, contact, phone or tax number',
+        hint: tr('Search by name, contact, phone or tax number'),
         initialValue: vm.query,
         onChanged: vm.search,
       ),
@@ -43,9 +44,9 @@ class VendorsPage extends StatelessWidget {
             ? EmptyView.noMatch(vm.query)
             : EmptyView(
                 icon: Iconsax.shop_copy,
-                title: 'No vendors yet',
-                message: 'Keep your suppliers’ contacts and tax numbers in one place.',
-                actionLabel: 'Add vendor',
+                title: tr('No vendors yet'),
+                message: tr('Keep your suppliers’ contacts and tax numbers in one place.'),
+                actionLabel: tr('Add vendor'),
                 onAction: () => openVendorForm(context),
               ),
         builder: (context) => context.isExpanded

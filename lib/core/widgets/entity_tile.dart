@@ -3,6 +3,7 @@ import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:warsha_app/core/theme/app_theme.dart';
 import 'package:warsha_app/core/widgets/app_card.dart';
 import 'package:warsha_app/core/widgets/app_text.dart';
+import 'package:warsha_app/core/l10n/app_locale.dart';
 
 /// An action on a row: edit, delete, archive...
 class RowAction {
@@ -31,7 +32,7 @@ class RowActions extends StatelessWidget {
     if (actions.isEmpty) return const SizedBox.shrink();
     if (forceMenu || context.isCompact) {
       return PopupMenuButton<RowAction>(
-        tooltip: 'More actions',
+        tooltip: tr('More actions'),
         icon: const Icon(Iconsax.more_copy, size: 20),
         onSelected: (a) => a.onPressed?.call(),
         itemBuilder: (_) => [

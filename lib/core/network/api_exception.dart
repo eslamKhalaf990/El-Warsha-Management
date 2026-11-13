@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:warsha_app/core/l10n/app_locale.dart';
 
 /// One invalid input field returned by the backend, e.g. `items[0].quantity`.
 class FieldViolation {
@@ -54,27 +55,27 @@ class ApiException implements Exception {
     return null;
   }
 
-  factory ApiException.network() => const ApiException(
+  factory ApiException.network() => ApiException(
         code: codeNetwork,
-        message: "Can't reach the server. Check your internet connection and try again.",
+        message: tr('Can\'t reach the server. Check your internet connection and try again.'),
       );
 
-  factory ApiException.timeout() => const ApiException(
+  factory ApiException.timeout() => ApiException(
         code: codeTimeout,
-        message: 'The server is taking too long to respond. Please try again.',
+        message: tr('The server is taking too long to respond. Please try again.'),
       );
 
   factory ApiException.badResponse(int statusCode) => ApiException(
         code: codeBadResponse,
         statusCode: statusCode,
-        message: 'The server sent a response the app could not read.',
+        message: tr('The server sent a response the app could not read.'),
       );
 
   /// A bug or malformed data on the app's side. The details go to the debug
   /// log, never to the screen.
-  factory ApiException.unexpected() => const ApiException(
+  factory ApiException.unexpected() => ApiException(
         code: codeUnexpected,
-        message: 'Something went wrong. Please try again.',
+        message: tr('Something went wrong. Please try again.'),
       );
 
   /// Input rejected by the app before it reached the server, keyed by field.
@@ -82,7 +83,7 @@ class ApiException implements Exception {
   /// screens show both the same way.
   factory ApiException.validation(Map<String, String> fieldErrors) => ApiException(
         code: codeValidation,
-        message: fieldErrors.length == 1 ? fieldErrors.values.first : 'Please fix the highlighted fields.',
+        message: fieldErrors.length == 1 ? fieldErrors.values.first : tr('Please fix the highlighted fields.'),
         details: [for (final e in fieldErrors.entries) FieldViolation(e.key, e.value)],
       );
 
@@ -133,14 +134,14 @@ class ApiException implements Exception {
       };
 
   static String _fallbackMessage(int status) => switch (status) {
-        400 => 'The request was not valid. Please check the data and try again.',
-        401 => 'Your session has expired. Please log in again.',
-        403 => "You don't have permission to do this.",
-        404 => 'The requested item was not found.',
-        409 => 'This change conflicts with existing data.',
-        413 => 'The uploaded file is too large.',
-        422 => 'This action is not allowed in the current state.',
-        _ => 'Something went wrong on the server. Please try again.',
+        400 => tr('The request was not valid. Please check the data and try again.'),
+        401 => tr('Your session has expired. Please log in again.'),
+        403 => tr('You don\'t have permission to do this.'),
+        404 => tr('The requested item was not found.'),
+        409 => tr('This change conflicts with existing data.'),
+        413 => tr('The uploaded file is too large.'),
+        422 => tr('This action is not allowed in the current state.'),
+        _ => tr('Something went wrong on the server. Please try again.'),
       };
 
   @override

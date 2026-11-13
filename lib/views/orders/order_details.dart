@@ -11,6 +11,7 @@ import 'package:warsha_app/models/order_options.dart';
 import 'package:warsha_app/models/order_status.dart';
 import 'package:warsha_app/models/order_totals.dart';
 import 'package:warsha_app/view_models/order_v_m.dart';
+import 'package:warsha_app/core/l10n/app_locale.dart';
 
 /// Opens [order]'s details: a side panel on desktop, a bottom sheet on phones.
 void showOrderDetails(BuildContext context, OrderModel order) {
@@ -18,7 +19,7 @@ void showOrderDetails(BuildContext context, OrderModel order) {
     showGeneralDialog(
       context: context,
       barrierDismissible: true,
-      barrierLabel: 'Close',
+      barrierLabel: tr('Close'),
       transitionDuration: const Duration(milliseconds: 200),
       pageBuilder: (_, __, ___) => Align(
         alignment: AlignmentDirectional.centerEnd,
@@ -64,7 +65,7 @@ class _OrderDetails extends StatelessWidget {
     final order = context.select<OrderVM, OrderModel?>(
       (vm) => vm.allOrders.where((o) => o.orderId == orderId).firstOrNull,
     );
-    if (order == null) return const EmptyView(title: 'This order is gone', icon: Iconsax.receipt_2_copy);
+    if (order == null) return EmptyView(title: tr('This order is gone'), icon: Iconsax.receipt_2_copy);
     final c = order.customer;
     final status = order.status;
     final canEdit = status?.isEditable ?? false;
@@ -81,13 +82,13 @@ class _OrderDetails extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    AppText.title('Order #${order.orderId}'),
+                    AppText.title(tr('Order #{0}', [order.orderId])),
                     AppText.caption(Fmt.dateTime(order.orderDate)),
                   ],
                 ),
               ),
               OrderStatusControl(order: order),
-              IconButton(tooltip: 'Close', icon: const Icon(Iconsax.close_circle_copy), onPressed: () => Navigator.pop(context)),
+              IconButton(tooltip: tr('Close'), icon: const Icon(Iconsax.close_circle_copy), onPressed: () => Navigator.pop(context)),
             ],
           ),
         ),
@@ -99,9 +100,9 @@ class _OrderDetails extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const SectionHeader('Customer'),
+                    SectionHeader(tr('Customer')),
                     if (c == null)
-                      const AppText.bodySmall('No customer on this order.', color: AppColors.muted)
+                      AppText.bodySmall(tr('No customer on this order.'), color: AppColors.muted)
                     else ...[
                       Row(children: [
                         InitialsAvatar(Fmt.initials(c.fullName)),
@@ -114,12 +115,12 @@ class _OrderDetails extends StatelessWidget {
                         ),
                       ]),
                       const SizedBox(height: AppSpacing.s12),
-                      InfoRow(icon: Iconsax.call_copy, label: 'Mobile', value: c.phone),
+                      InfoRow(icon: Iconsax.call_copy, label: tr('Mobile'), value: c.phone),
                       if (c.secondaryPhone.trim().isNotEmpty)
-                        InfoRow(icon: Iconsax.call_add_copy, label: 'Second phone', value: c.secondaryPhone),
+                        InfoRow(icon: Iconsax.call_add_copy, label: tr('Second phone'), value: c.secondaryPhone),
                       InfoRow(
                         icon: Iconsax.location_copy,
-                        label: 'Deliver to',
+                        label: tr('Deliver to'),
                         value: [c.address, c.city, c.governorate].where((s) => s.trim().isNotEmpty).join(', '),
                       ),
                     ],
@@ -131,7 +132,7 @@ class _OrderDetails extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    SectionHeader('Items', subtitle: Fmt.count(order.orderItems.length, 'line')),
+                    SectionHeader(tr('Items'), subtitle: Fmt.count(order.orderItems.length, 'line')),
                     for (final item in order.orderItems)
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: AppSpacing.s4),
@@ -158,9 +159,9 @@ class _OrderDetails extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const SectionHeader('Payment'),
-                    InfoRow(label: 'Method', value: optionLabel(paymentMethods, order.paymentMethod)),
-                    InfoRow(label: 'Came from', value: optionLabel(orderSources, order.orderSource)),
+                    SectionHeader(tr('Payment')),
+                    InfoRow(label: tr('Method'), value: optionLabel(paymentMethods, order.paymentMethod)),
+                    InfoRow(label: tr('Came from'), value: optionLabel(orderSources, order.orderSource)),
                     const SizedBox(height: AppSpacing.s8),
                     OrderTotalsView(OrderTotals.ofOrder(order)),
                   ],
@@ -195,16 +196,16 @@ class _OrderDetails extends StatelessWidget {
               children: [
                 if (canDelete)
                   AppButton.text(
-                    label: 'Delete',
+                    label: tr('Delete'),
                     icon: Iconsax.trash_copy,
                     onPressed: () async {
                       if (await deleteOrder(context, order) && context.mounted) Navigator.pop(context);
                     },
                   ),
-                AppButton.secondary(label: 'Invoice', icon: Iconsax.printer_copy, onPressed: () => openInvoice(context, order)),
+                AppButton.secondary(label: tr('Invoice'), icon: Iconsax.printer_copy, onPressed: () => openInvoice(context, order)),
                 if (canEdit)
                   AppButton.primary(
-                    label: 'Edit order',
+                    label: tr('Edit order'),
                     icon: Iconsax.edit_2_copy,
                     onPressed: () {
                       Navigator.pop(context);

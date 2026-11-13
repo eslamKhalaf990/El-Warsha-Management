@@ -5,6 +5,7 @@ import 'package:warsha_app/core/state/form_draft.dart';
 import 'package:warsha_app/core/widgets/widgets.dart';
 import 'package:warsha_app/models/shipping_zone.dart';
 import 'package:warsha_app/view_models/shipping_zone_v_m.dart';
+import 'package:warsha_app/core/l10n/app_locale.dart';
 
 /// Opens the add form, or the edit form for [zone].
 Future<void> openShippingZoneForm(BuildContext context, {ShippingZone? zone}) {
@@ -42,7 +43,7 @@ class _ShippingZoneFormDialog extends StatelessWidget {
       ok: ok,
       pop: true,
       errorMessage: vm.errorMessage,
-      success: zone == null ? 'Shipping zone added.' : 'Shipping zone updated.',
+      success: zone == null ? tr('Shipping zone added.') : tr('Shipping zone updated.'),
       fieldError: vm.fieldError,
       fields: const ['cityName', 'shippingFee'],
     );
@@ -53,17 +54,17 @@ class _ShippingZoneFormDialog extends StatelessWidget {
     final vm = context.watch<ShippingZoneVM>();
     final d = context.watch<FormDraft>();
     return FormDialog(
-      title: zone == null ? 'New shipping zone' : 'Edit shipping zone',
+      title: zone == null ? tr('New shipping zone') : tr('Edit shipping zone'),
       icon: Iconsax.truck_copy,
-      saveLabel: zone == null ? 'Add zone' : 'Save changes',
+      saveLabel: zone == null ? tr('Add zone') : tr('Save changes'),
       saving: vm.isSaving,
       onSave: () => _save(context),
       children: [
         AppTextField(
-          label: 'Governorate',
+          label: tr('Governorate'),
           required: true,
           icon: Iconsax.map_1_copy,
-          hintText: 'e.g. الإسكندرية',
+          hintText: tr('e.g. الإسكندرية'),
           controller: d.controller('cityName'),
           errorText: vm.fieldError('cityName'),
           maxLength: ShippingZoneVM.nameMaxLength,
@@ -71,7 +72,7 @@ class _ShippingZoneFormDialog extends StatelessWidget {
           onChanged: (_) => vm.clearError(),
         ),
         AppTextField.money(
-          label: 'Delivery price',
+          label: tr('Delivery price'),
           required: true,
           icon: Iconsax.truck_fast_copy,
           controller: d.controller('shippingFee'),
@@ -80,10 +81,10 @@ class _ShippingZoneFormDialog extends StatelessWidget {
           onSubmitted: (_) => _save(context),
         ),
         AppSwitchTile(
-          title: 'Deliver here',
+          title: tr('Deliver here'),
           subtitle: d.flag('isActive')
-              ? 'Customers can choose this governorate.'
-              : 'Hidden from the store and the order forms.',
+              ? tr('Customers can choose this governorate.')
+              : tr('Hidden from the store and the order forms.'),
           value: d.flag('isActive'),
           onChanged: (v) => d.set('isActive', v),
         ),

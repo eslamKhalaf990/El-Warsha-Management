@@ -6,6 +6,7 @@ import 'package:warsha_app/core/widgets/widgets.dart';
 import 'package:warsha_app/models/customer_model.dart';
 import 'package:warsha_app/view_models/customers_v_m.dart';
 import 'package:warsha_app/view_models/shipping_zone_v_m.dart';
+import 'package:warsha_app/core/l10n/app_locale.dart';
 
 /// Opens the add form, or the edit form for [customer]. Resolves to the
 /// saved customer (so the order form can pick a customer it just created).
@@ -49,7 +50,7 @@ class CustomerFormPage extends StatelessWidget {
     if (!context.mounted) return;
     if (ok) {
       Navigator.pop(context, vm.lastSaved);
-      showSuccess(context, customer == null ? 'Customer added.' : 'Customer updated.');
+      showSuccess(context, customer == null ? tr('Customer added.') : tr('Customer updated.'));
     } else if (CustomerVM.formFields.every((f) => vm.fieldError(f) == null)) {
       showError(context, vm.errorMessage!);
     }
@@ -77,30 +78,52 @@ class CustomerFormPage extends StatelessWidget {
         );
 
     return FormPage(
-      title: customer == null ? 'New customer' : 'Edit customer',
+      title: customer == null ? tr('New customer') : tr('Edit customer'),
       subtitle: customer == null ? null : '#${customer!.customerId} · ${customer!.fullName}',
       draft: d,
       saving: vm.isSaving,
-      saveLabel: customer == null ? 'Add customer' : 'Save changes',
+      saveLabel: customer == null ? tr('Add customer') : tr('Save changes'),
       onSave: () => _save(context),
       sections: [
         FormSection(
-          title: 'Contact',
+          title: tr('Contact'),
           icon: Iconsax.user_copy,
           children: [
-            field('fullName', 'Full name', Iconsax.user_copy, CustomerVM.nameMaxLength, required: true),
+            field('fullName', tr('Full name'), Iconsax.user_copy, CustomerVM.nameMaxLength, required: true),
             FieldRow(children: [
-              field('phone', 'Mobile', Iconsax.call_copy, CustomerVM.phoneMaxLength,
-                  required: true, keyboard: TextInputType.phone, helper: 'e.g. 01012345678', dir: TextDirection.ltr),
-              field('secondaryPhone', 'Second phone', Iconsax.call_add_copy, CustomerVM.phoneMaxLength,
+              field('phone', tr('Mobile'), Iconsax.call_copy, CustomerVM.phoneMaxLength,
+                  required: true, keyboard: TextInputType.phone, helper: tr('e.g. 01012345678'), dir: TextDirection.ltr),
+              field('secondaryPhone', tr('Second phone'), Iconsax.call_add_copy, CustomerVM.phoneMaxLength,
                   keyboard: TextInputType.phone, dir: TextDirection.ltr),
             ]),
-            field('email', 'Email', Iconsax.sms_copy, CustomerVM.emailMaxLength,
+            field('email', tr('Email'), Iconsax.sms_copy, CustomerVM.emailMaxLength,
                 keyboard: TextInputType.emailAddress, dir: TextDirection.ltr),
           ],
         ),
+        if (customer != null)
+          FormSection(
+            title: tr('Store login'),
+            icon: Iconsax.lock_copy,
+            subtitle: tr('The customer logs in to the store with their mobile number and this password.'),
+            children: [
+              Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: AppButton.secondary(
+                  label: tr('Set store password'),
+                  icon: Iconsax.key_copy,
+                  onPressed: () => showDialog<void>(
+                    context: context,
+                    builder: (_) => ChangeNotifierProvider.value(
+                      value: vm,
+                      child: _StorePasswordDialog(customer: customer!),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         FormSection(
-          title: 'Delivery address',
+          title: tr('Delivery address'),
           icon: Iconsax.location_copy,
           children: [
             FieldRow(children: [
@@ -112,11 +135,71 @@ class CustomerFormPage extends StatelessWidget {
                   vm.clearError();
                 },
               ),
-              field('city', 'City / area', Iconsax.buildings_copy, CustomerVM.cityMaxLength),
+              field('city', tr('City / area'), Iconsax.buildings_copy, CustomerVM.cityMaxLength),
             ]),
-            field('address', 'Street address', Iconsax.location_copy, CustomerVM.addressMaxLength,
-                maxLines: 2, helper: 'Building, street and a landmark help the courier.'),
+            field('address', tr('Street address'), Iconsax.location_copy, CustomerVM.addressMaxLength,
+                maxLines: 2, helper: tr('Building, street and a landmark help the courier.')),
           ],
+        ),
+      ],
+    );
+  }
+}
+
+/// Staff type a new store password for a customer, e.g. one who signed up with
+/// only a phone and forgot it (the store can only email reset codes).
+class _StorePasswordDialog extends StatefulWidget {
+  const _StorePasswordDialog({required this.customer});
+
+  final CustomerModel customer;
+
+  @override
+  State<_StorePasswordDialog> createState() => _StorePasswordDialogState();
+}
+
+class _StorePasswordDialogState extends State<_StorePasswordDialog> {
+  final _password = TextEditingController();
+
+  @override
+  void dispose() {
+    _password.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    final vm = context.read<CustomerVM>();
+    final ok = await vm.setStorePassword(widget.customer.customerId, _password.text);
+    if (!mounted) return;
+    if (ok) {
+      Navigator.pop(context);
+      showSuccess(context, tr('Store password set. Share it with {0}.', [widget.customer.fullName]));
+    } else if (vm.fieldError('password') == null) {
+      showError(context, vm.errorMessage!);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final vm = context.watch<CustomerVM>();
+    return FormDialog(
+      title: tr('Set store password'),
+      icon: Iconsax.key_copy,
+      saving: vm.isSaving,
+      saveLabel: tr('Set password'),
+      onSave: _save,
+      children: [
+        Text('${widget.customer.fullName} · ${widget.customer.phone}'),
+        AppTextField(
+          label: tr('New password'),
+          icon: Iconsax.lock_copy,
+          controller: _password,
+          autofocus: true,
+          required: true,
+          errorText: vm.fieldError('password'),
+          helperText: tr('At least {0} characters.', [CustomerVM.storePasswordMinLength]),
+          textDirection: TextDirection.ltr,
+          onChanged: (_) => vm.clearError(),
+          onSubmitted: (_) => _save(),
         ),
       ],
     );
@@ -142,14 +225,14 @@ class GovernoratePicker extends StatelessWidget {
     final price = {for (final z in zones) z.cityName: z};
 
     return AppDropdown<String>(
-      label: 'Governorate',
+      label: tr('Governorate'),
       required: true,
       icon: Iconsax.map_1_copy,
       items: [...names, if (orphan) current],
       value: current,
-      itemLabel: (n) => price[n] == null ? '$n (no shipping zone)' : '$n · ${price[n]!.priceLabel}',
-      helperText: zones.isEmpty ? 'Add shipping zones first.' : null,
-      errorText: errorText ?? (orphan ? 'No delivery to $current any more. Pick another governorate.' : null),
+      itemLabel: (n) => price[n] == null ? tr('{0} (no shipping zone)', [n]) : '$n · ${price[n]!.priceLabel}',
+      helperText: zones.isEmpty ? tr('Add shipping zones first.') : null,
+      errorText: errorText ?? (orphan ? tr('No delivery to {0} any more. Pick another governorate.', [current]) : null),
       onChanged: onChanged,
     );
   }

@@ -4,8 +4,9 @@ import 'package:provider/provider.dart';
 import 'package:warsha_app/core/state/form_draft.dart';
 import 'package:warsha_app/core/widgets/widgets.dart';
 import 'package:warsha_app/models/product_variant.dart';
-import 'package:warsha_app/view_models/add_product_v_m.dart';
+import 'package:warsha_app/view_models/product_v_m.dart';
 import 'package:warsha_app/view_models/product_variants_v_m.dart';
+import 'package:warsha_app/core/l10n/app_locale.dart';
 
 /// Sizes / colors of the product being edited, each with its own stock.
 class VariantsSection extends StatelessWidget {
@@ -15,14 +16,14 @@ class VariantsSection extends StatelessWidget {
     final vm = context.read<ProductVariantsVM>();
     final confirmed = await confirmAction(
       context,
-      title: 'Remove ${v.label}?',
-      message: 'Customers will no longer be able to order ${v.label}.',
-      confirmLabel: 'Remove',
+      title: tr('Remove {0}?', [v.label]),
+      message: tr('Customers will no longer be able to order {0}.', [v.label]),
+      confirmLabel: tr('Remove'),
     );
     if (!confirmed || !context.mounted) return;
     final ok = await vm.delete(v);
     if (!context.mounted) return;
-    reportResult(context, ok: ok, errorMessage: vm.errorMessage, success: '${v.label} removed.');
+    reportResult(context, ok: ok, errorMessage: vm.errorMessage, success: tr('{0} removed.', [v.label]));
     if (ok) context.read<ProductVM>().fetch();
   }
 
@@ -32,22 +33,22 @@ class VariantsSection extends StatelessWidget {
     final variants = vm.variants;
 
     return FormSection(
-      title: 'Sizes & colors',
-      subtitle: variants.isEmpty ? 'Optional. Each option gets its own stock.' : 'Total stock: ${vm.totalStock}',
+      title: tr('Sizes & colors'),
+      subtitle: variants.isEmpty ? tr('Optional. Each option gets its own stock.') : tr('Total stock: {0}', [vm.totalStock]),
       icon: Iconsax.color_swatch_copy,
       trailing: AppButton.secondary(
-        label: 'Add option',
+        label: tr('Add option'),
         icon: Iconsax.add_copy,
         compact: true,
         onPressed: vm.hasLoaded ? () => openVariantForm(context) : null,
       ),
       children: [
         if (vm.loadFailed)
-          InlineBanner(message: vm.errorMessage!, tone: Tone.error, actionLabel: 'Retry', onAction: vm.fetch)
+          InlineBanner(message: vm.errorMessage!, tone: Tone.error, actionLabel: tr('Retry'), onAction: vm.fetch)
         else if (!vm.hasLoaded)
           const LinearProgressIndicator(minHeight: 2)
         else if (variants.isEmpty)
-          const AppText.bodySmall('No options. The product uses the stock above.', color: AppColors.muted)
+          AppText.bodySmall(tr('No options. The product uses the stock above.'), color: AppColors.muted)
         else
           Column(
             children: [
@@ -57,16 +58,16 @@ class VariantsSection extends StatelessWidget {
                   leading: _Swatch(hex: v.colorHex),
                   title: Text(v.label),
                   subtitle: Text([
-                    v.sellingPrice != null ? Fmt.money(v.sellingPrice) : 'Product price',
-                    if (v.sku != null) 'SKU ${v.sku}',
+                    v.sellingPrice != null ? Fmt.money(v.sellingPrice) : tr('Product price'),
+                    if (v.sku != null) tr('SKU {0}', [v.sku]),
                   ].join(' · ')),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      StatusPill(label: '${v.quantity} pcs', tone: v.inStock ? Tone.success : Tone.error),
+                      StatusPill(label: tr('{0} pcs', [v.quantity]), tone: v.inStock ? Tone.success : Tone.error),
                       RowActions([
-                        RowAction(label: 'Edit', icon: Iconsax.edit_2_copy, onPressed: () => openVariantForm(context, variant: v)),
-                        RowAction(label: 'Remove', icon: Iconsax.trash_copy, destructive: true, onPressed: () => _delete(context, v)),
+                        RowAction(label: tr('Edit'), icon: Iconsax.edit_2_copy, onPressed: () => openVariantForm(context, variant: v)),
+                        RowAction(label: tr('Remove'), icon: Iconsax.trash_copy, destructive: true, onPressed: () => _delete(context, v)),
                       ]),
                     ],
                   ),
@@ -154,7 +155,7 @@ class _VariantFormDialog extends StatelessWidget {
       ok: ok,
       pop: true,
       errorMessage: vm.errorMessage,
-      success: variant == null ? 'Option added.' : 'Option updated.',
+      success: variant == null ? tr('Option added.') : tr('Option updated.'),
       fieldError: vm.fieldError,
       fields: ProductVariantsVM.formFields,
     );
@@ -180,24 +181,24 @@ class _VariantFormDialog extends StatelessWidget {
         );
 
     return FormDialog(
-      title: variant == null ? 'New size / color' : 'Edit ${variant!.label}',
+      title: variant == null ? tr('New size / color') : tr('Edit {0}', [variant!.label]),
       icon: Iconsax.color_swatch_copy,
       maxWidth: 520,
-      saveLabel: variant == null ? 'Add option' : 'Save changes',
+      saveLabel: variant == null ? tr('Add option') : tr('Save changes'),
       saving: vm.isSaving,
       onSave: () => _save(context),
       children: [
         FieldRow(children: [
-          field('size', 'Size', Iconsax.ruler_copy, hint: 'M, 42, 30×40'),
-          field('color', 'Color', Iconsax.color_swatch_copy, hint: 'Black'),
+          field('size', tr('Size'), Iconsax.ruler_copy, hint: tr('M, 42, 30×40')),
+          field('color', tr('Color'), Iconsax.color_swatch_copy, hint: tr('Black')),
         ]),
         FieldRow(children: [
-          field('colorAr', 'Color in Arabic', Iconsax.translate_copy, hint: 'أسود', dir: TextDirection.rtl),
-          field('colorHex', 'Color code', Iconsax.brush_2_copy, hint: '#1A1A1A', dir: TextDirection.ltr),
+          field('colorAr', tr('Color in Arabic'), Iconsax.translate_copy, hint: 'أسود', dir: TextDirection.rtl),
+          field('colorHex', tr('Color code'), Iconsax.brush_2_copy, hint: '#1A1A1A', dir: TextDirection.ltr),
         ]),
         FieldRow(children: [
           AppTextField(
-            label: 'Stock',
+            label: tr('Stock'),
             required: true,
             icon: Iconsax.box_1_copy,
             controller: d.controller('quantity'),
@@ -207,8 +208,8 @@ class _VariantFormDialog extends StatelessWidget {
             onChanged: (_) => vm.clearError(),
           ),
           AppTextField.money(
-            label: 'Own price',
-            helperText: 'Empty = product price',
+            label: tr('Own price'),
+            helperText: tr('Empty = product price'),
             controller: d.controller('sellingPrice'),
             errorText: vm.fieldError('sellingPrice'),
             onChanged: (_) => vm.clearError(),

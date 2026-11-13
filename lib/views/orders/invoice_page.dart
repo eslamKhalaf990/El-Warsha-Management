@@ -9,6 +9,7 @@ import 'package:warsha_app/core/network/api_client.dart';
 import 'package:warsha_app/core/network/api_exception.dart';
 import 'package:warsha_app/core/widgets/widgets.dart';
 import 'package:warsha_app/models/order_model.dart';
+import 'package:warsha_app/core/l10n/app_locale.dart';
 
 /// Opens the printable invoice of [order].
 void openInvoice(BuildContext context, OrderModel order) {
@@ -40,16 +41,16 @@ class InvoicePage extends StatelessWidget {
         return Scaffold(
           appBar: AppBar(
             leading: IconButton(
-                icon: const Icon(Iconsax.arrow_left_copy),
-                tooltip: 'Back',
+                icon: const DirectionalIcon(Iconsax.arrow_left_copy),
+                tooltip: tr('Back'),
                 onPressed: () => Navigator.pop(context)),
-            title: Text('Invoice #$orderId'),
+            title: Text(tr('Invoice #{0}', [orderId])),
             actions: [
               if (bytes != null)
                 Padding(
-                  padding: const EdgeInsets.only(right: AppSpacing.s16),
+                  padding: const EdgeInsetsDirectional.only(end: AppSpacing.s16),
                   child: AppButton.primary(
-                    label: 'Print or save',
+                    label: tr('Print or save'),
                     icon: Iconsax.printer_copy,
                     compact: true,
                     onPressed: () => Printing.layoutPdf(
@@ -63,9 +64,9 @@ class InvoicePage extends StatelessWidget {
             AsyncSnapshot(hasError: true, :final error) => ErrorView(
                 message: error is ApiException
                     ? error.message
-                    : "The invoice couldn't be created.",
+                    : tr('The invoice couldn\'t be created.'),
                 onRetry: () => Navigator.pop(context),
-                retryLabel: 'Go back',
+                retryLabel: tr('Go back'),
               ),
             AsyncSnapshot(:final data?) =>
               PdfViewer.data(data, sourceName: 'invoice-$orderId.pdf'),

@@ -6,7 +6,9 @@ import 'package:warsha_app/core/widgets/widgets.dart';
 import 'package:warsha_app/models/account_balance.dart';
 import 'package:warsha_app/models/transaction_cateogry.dart';
 import 'package:warsha_app/view_models/accountings_v_m.dart';
+import 'package:warsha_app/core/l10n/app_locale.dart';
 
+// Transaction types as the API stores them (shown through their own labels).
 const deposit = 'Deposit';
 const withdrawal = 'Withdrawal';
 
@@ -31,7 +33,7 @@ class _TransactionDialog extends StatelessWidget {
     final vm = context.read<AccountingVM>();
     final d = context.read<FormDraft>();
     final account = d.value<BankAccount>('account');
-    if (account == null) return showError(context, 'Choose an account.');
+    if (account == null) return showError(context, tr('Choose an account.'));
     final type = d.value<String>('type')!;
     final ok = await vm.addTransaction(
       account: account,
@@ -46,7 +48,7 @@ class _TransactionDialog extends StatelessWidget {
       ok: ok,
       pop: true,
       errorMessage: vm.errorMessage,
-      success: type == deposit ? 'Deposit saved.' : 'Withdrawal saved.',
+      success: type == deposit ? tr('Deposit saved.') : tr('Withdrawal saved.'),
       fieldError: vm.fieldError,
       fields: const ['amount', 'description'],
     );
@@ -62,16 +64,16 @@ class _TransactionDialog extends StatelessWidget {
     final account = d.value<BankAccount>('account');
 
     return FormDialog(
-      title: 'New transaction',
+      title: tr('New transaction'),
       icon: type == deposit ? Iconsax.money_recive_copy : Iconsax.money_send_copy,
-      saveLabel: type == deposit ? 'Save deposit' : 'Save withdrawal',
+      saveLabel: type == deposit ? tr('Save deposit') : tr('Save withdrawal'),
       saving: vm.isSaving,
       onSave: () => _save(context),
       children: [
         SegmentedButton<String>(
-          segments: const [
-            ButtonSegment(value: deposit, label: Text('Money in'), icon: Icon(Iconsax.money_recive_copy, size: 18)),
-            ButtonSegment(value: withdrawal, label: Text('Money out'), icon: Icon(Iconsax.money_send_copy, size: 18)),
+          segments: [
+            ButtonSegment(value: deposit, label: Text(tr('Money in')), icon: const Icon(Iconsax.money_recive_copy, size: 18)),
+            ButtonSegment(value: withdrawal, label: Text(tr('Money out')), icon: const Icon(Iconsax.money_send_copy, size: 18)),
           ],
           selected: {type},
           onSelectionChanged: (s) {
@@ -80,7 +82,7 @@ class _TransactionDialog extends StatelessWidget {
           },
         ),
         AppDropdown<BankAccount>(
-          label: 'Account',
+          label: tr('Account'),
           required: true,
           icon: Iconsax.bank_copy,
           items: accounts,
@@ -92,16 +94,16 @@ class _TransactionDialog extends StatelessWidget {
           },
         ),
         AppTextField.money(
-          label: 'Amount',
+          label: tr('Amount'),
           required: true,
           autofocus: true,
           controller: d.controller('amount'),
           errorText: vm.fieldError('amount'),
-          helperText: type == withdrawal && account != null ? 'Available: ${Fmt.money(account.currentBalance)}' : null,
+          helperText: type == withdrawal && account != null ? tr('Available: {0}', [Fmt.money(account.currentBalance)]) : null,
           onChanged: (_) => vm.clearError(),
         ),
         AppDropdown<int>(
-          label: 'Category',
+          label: tr('Category'),
           icon: Iconsax.category_2_copy,
           items: [for (final c in categories) c.categoryID],
           value: d.value<int>('categoryId'),
@@ -109,9 +111,9 @@ class _TransactionDialog extends StatelessWidget {
           onChanged: (id) => d.set('categoryId', id),
         ),
         AppTextField(
-          label: 'Description',
+          label: tr('Description'),
           icon: Iconsax.note_1_copy,
-          hintText: 'What was it for?',
+          hintText: tr('What was it for?'),
           controller: d.controller('description'),
           errorText: vm.fieldError('description'),
           maxLength: AccountingVM.descriptionMaxLength,
@@ -137,7 +139,7 @@ class _UnlockDialog extends StatelessWidget {
     final ok = await vm.unlockSafe(context.read<FormDraft>().text('password'));
     if (ok && context.mounted) {
       Navigator.pop(context);
-      showSuccess(context, 'Safe opened for this session.');
+      showSuccess(context, tr('Safe opened for this session.'));
     }
   }
 
@@ -147,19 +149,18 @@ class _UnlockDialog extends StatelessWidget {
     final d = context.read<FormDraft>();
     final error = vm.fieldError('password') ?? (vm.error != null && !vm.loadFailed ? vm.errorMessage : null);
     return FormDialog(
-      title: 'Open the safe',
+      title: tr('Open the safe'),
       icon: Iconsax.security_safe_copy,
-      saveLabel: 'Open',
+      saveLabel: tr('Open'),
       saving: vm.isSaving,
       onSave: () => _open(context),
       children: [
-        const AppText.bodySmall(
-          'The owner’s safe stays hidden until the owner password is entered. '
-          'The first password ever entered becomes the safe’s password.',
+        AppText.bodySmall(
+          tr('The owner’s safe stays hidden until the owner password is entered. The first password ever entered becomes the safe’s password.'),
           color: AppColors.muted,
         ),
         AppTextField(
-          label: 'Owner password',
+          label: tr('Owner password'),
           icon: Iconsax.key_copy,
           obscureText: true,
           autofocus: true,
@@ -187,11 +188,11 @@ class _ResetDialog extends StatelessWidget {
   Future<void> _reset(BuildContext context) async {
     final d = context.read<FormDraft>();
     if (d.text('confirm').trim().toUpperCase() != 'RESET') {
-      return showError(context, 'Type RESET to confirm.');
+      return showError(context, tr('Type RESET to confirm.'));
     }
     final vm = context.read<AccountingVM>();
     final ok = await vm.resetAll(ownerPassword: d.text('password'));
-    if (context.mounted) reportResult(context, ok: ok, pop: true, errorMessage: vm.errorMessage, success: 'All transactions were reset.');
+    if (context.mounted) reportResult(context, ok: ok, pop: true, errorMessage: vm.errorMessage, success: tr('All transactions were reset.'));
   }
 
   @override
@@ -199,30 +200,30 @@ class _ResetDialog extends StatelessWidget {
     final vm = context.watch<AccountingVM>();
     final d = context.read<FormDraft>();
     return FormDialog(
-      title: 'Reset all transactions?',
+      title: tr('Reset all transactions?'),
       icon: Iconsax.danger_copy,
-      saveLabel: 'Reset everything',
+      saveLabel: tr('Reset everything'),
       danger: true,
       saving: vm.isSaving,
       onSave: () => _reset(context),
       children: [
-        const InlineBanner(
-          message: 'Every transaction is deleted and every balance goes back to 0. This can’t be undone.',
+        InlineBanner(
+          message: tr('Every transaction is deleted and every balance goes back to 0. This can’t be undone.'),
           tone: Tone.error,
           icon: Iconsax.warning_2_copy,
         ),
         AppTextField(
-          label: 'Type RESET to confirm',
+          label: tr('Type RESET to confirm'),
           icon: Iconsax.edit_2_copy,
           controller: d.controller('confirm'),
           autofocus: true,
         ),
         if (!vm.isSafeUnlocked)
           AppTextField(
-            label: 'Owner password',
+            label: tr('Owner password'),
             icon: Iconsax.key_copy,
             obscureText: true,
-            helperText: 'Needed once the safe has a password.',
+            helperText: tr('Needed once the safe has a password.'),
             controller: d.controller('password'),
           ),
       ],

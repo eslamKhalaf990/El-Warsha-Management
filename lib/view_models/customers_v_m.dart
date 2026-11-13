@@ -5,6 +5,7 @@ import 'package:warsha_app/core/validation/validators.dart';
 import 'package:warsha_app/models/customer_model.dart';
 import 'package:warsha_app/models/governorate_count.dart';
 import 'package:warsha_app/services/customers_services.dart';
+import 'package:warsha_app/core/l10n/app_locale.dart';
 
 /// Customers screen (list, search, add, edit, delete) and the customer
 /// pickers on the order screens.
@@ -70,7 +71,7 @@ class CustomerVM extends ChangeNotifier with AsyncViewModel {
     notify();
   }
 
-  static String _governorateOf(CustomerModel c) => c.governorate.trim().isEmpty ? 'Unknown' : c.governorate.trim();
+  static String _governorateOf(CustomerModel c) => c.governorate.trim().isEmpty ? tr('Unknown') : c.governorate.trim();
 
   /// The customer created or updated by the last successful [add] / [update].
   CustomerModel? get lastSaved => _lastSaved;
@@ -127,22 +128,22 @@ class CustomerVM extends ChangeNotifier with AsyncViewModel {
   Map<String, String> validate(CustomerRequest r, {int? editingId}) {
     final errors = Validators.collect({
       'fullName': () => Validators.firstOf([
-            () => Validators.required(r.fullName, "Enter the customer's name."),
-            () => Validators.maxLength(r.fullName, nameMaxLength, 'Name'),
+            () => Validators.required(r.fullName, tr('Enter the customer\'s name.')),
+            () => Validators.maxLength(r.fullName, nameMaxLength, tr('Name')),
           ]),
       'phone': () => Validators.firstOf([
-            () => Validators.required(r.phone, "Enter the customer's mobile number."),
+            () => Validators.required(r.phone, tr('Enter the customer\'s mobile number.')),
             () => Validators.egyptianMobile(normalizePhone(r.phone)),
           ]),
       'secondaryPhone': () => Validators.firstOf([
-            () => Validators.maxLength(r.secondaryPhone, phoneMaxLength, 'Second phone'),
+            () => Validators.maxLength(r.secondaryPhone, phoneMaxLength, tr('Second phone')),
             () => Validators.phone(r.secondaryPhone),
           ]),
-      'governorate': () => Validators.required(r.governorate, 'Choose the governorate.'),
-      'city': () => Validators.maxLength(r.city, cityMaxLength, 'City'),
-      'address': () => Validators.maxLength(r.address, addressMaxLength, 'Address'),
+      'governorate': () => Validators.required(r.governorate, tr('Choose the governorate.')),
+      'city': () => Validators.maxLength(r.city, cityMaxLength, tr('City')),
+      'address': () => Validators.maxLength(r.address, addressMaxLength, tr('Address')),
       'email': () => Validators.firstOf([
-            () => Validators.maxLength(r.email, emailMaxLength, 'Email'),
+            () => Validators.maxLength(r.email, emailMaxLength, tr('Email')),
             () => Validators.email(r.email),
           ]),
     });
@@ -150,7 +151,7 @@ class CustomerVM extends ChangeNotifier with AsyncViewModel {
       final phone = normalizePhone(r.phone);
       final owner = _all.where((c) => c.customerId != editingId && normalizePhone(c.phone) == phone);
       if (owner.isNotEmpty) {
-        errors['phone'] = 'This number belongs to ${owner.first.fullName} (customer #${owner.first.customerId}).';
+        errors['phone'] = tr('This number belongs to {0} (customer #{1}).', [owner.first.fullName, owner.first.customerId]);
       }
     }
     return errors;
@@ -177,6 +178,17 @@ class CustomerVM extends ChangeNotifier with AsyncViewModel {
       _lastSaved = updated;
       _all = [for (final c in _all) c.customerId == id ? updated : c];
     });
+  }
+
+  /// Minimum store password length (backend CustomerService.MIN_PASSWORD_LENGTH).
+  static const storePasswordMinLength = 6;
+
+  Future<bool> setStorePassword(int id, String password) async {
+    if (password.length < storePasswordMinLength) {
+      return fail(ApiException.validation(
+          {'password': tr('At least {0} characters.', [storePasswordMinLength])}));
+    }
+    return run(() => _service.setStorePassword(id, password));
   }
 
   Future<bool> delete(CustomerModel customer) => run(() async {

@@ -18,6 +18,10 @@ class ProductModel {
   String image;
   String? sku;
 
+  /// The vendor this product is bought from; null when none is linked.
+  int? vendorId;
+  String vendorName = '';
+
   /// Active sizes/colors; empty for products without variants.
   List<ProductVariant> variants = const [];
 
@@ -81,6 +85,8 @@ class ProductModel {
     );
     product.nameAr = readString(json['nameAr']);
     product.descriptionAr = readString(json['descriptionAr']);
+    product.vendorId = readInt(json['vendorId']);
+    product.vendorName = readString(json['vendorName']);
     product.variants = readList(json['variants']).map(ProductVariant.fromJson).toList();
     product.images = readList(json['images']).map(ProductImage.fromJson).toList();
     return product;
@@ -112,6 +118,9 @@ class ProductForm {
   final String quantity;
   final int? categoryId;
 
+  /// Null for no vendor.
+  final int? vendorId;
+
   const ProductForm({
     required this.name,
     this.nameAr = '',
@@ -122,5 +131,6 @@ class ProductForm {
     this.discount = '',
     this.quantity = '',
     this.categoryId,
+    this.vendorId,
   });
 }

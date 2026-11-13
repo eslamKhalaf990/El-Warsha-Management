@@ -12,10 +12,11 @@ import 'package:warsha_app/models/order_item_model.dart';
 import 'package:warsha_app/models/order_model.dart';
 import 'package:warsha_app/models/order_options.dart';
 import 'package:warsha_app/view_models/accountings_v_m.dart';
-import 'package:warsha_app/view_models/add_product_v_m.dart';
+import 'package:warsha_app/view_models/product_v_m.dart';
 import 'package:warsha_app/view_models/order_draft.dart';
 import 'package:warsha_app/view_models/order_v_m.dart';
 import 'package:warsha_app/view_models/shipping_zone_v_m.dart';
+import 'package:warsha_app/core/l10n/app_locale.dart';
 
 /// Fields the order form shows next to their input.
 bool _isFormField(String field) =>
@@ -55,11 +56,11 @@ class OrderFormPage extends StatelessWidget {
       if (!ok) return showOrderError(context, vm.lastError, isShownField: _isFormField);
       refreshAfterOrderChange(context);
       Navigator.pop(context);
-      return showSuccess(context, 'Order #${d.editingId} updated.');
+      return showSuccess(context, tr('Order #{0} updated.', [d.editingId]));
     }
 
     if (form.needsBankAccount && d.bankAccountId == null) {
-      vm.fail(ApiException.validation({'bankAccountId': 'Choose the account that received the down payment.'}));
+      vm.fail(ApiException.validation({'bankAccountId': tr('Choose the account that received the down payment.')}));
       return;
     }
     final created = await vm.placeOrder(form, bankAccountId: form.needsBankAccount ? d.bankAccountId : null);
@@ -67,7 +68,7 @@ class OrderFormPage extends StatelessWidget {
     if (created == null) return showOrderError(context, vm.lastError, isShownField: _isFormField);
     refreshAfterOrderChange(context);
     Navigator.pop(context);
-    showSuccess(context, 'Order #${created.orderId} added.');
+    showSuccess(context, tr('Order #{0} added.', [created.orderId]));
   }
 
   @override
@@ -76,11 +77,11 @@ class OrderFormPage extends StatelessWidget {
     final d = context.watch<OrderDraft>();
 
     return FormPage(
-      title: d.isEdit ? 'Edit order #${d.editingId}' : 'New order',
-      subtitle: d.isEdit ? 'Items, prices and payment can change until the order ships.' : null,
+      title: d.isEdit ? tr('Edit order #{0}', [d.editingId]) : tr('New order'),
+      subtitle: d.isEdit ? tr('Items, prices and payment can change until the order ships.') : null,
       draft: d,
       saving: vm.isSaving,
-      saveLabel: d.isEdit ? 'Save changes' : 'Place order',
+      saveLabel: d.isEdit ? tr('Save changes') : tr('Place order'),
       onSave: () => _save(context),
       sections: const [_CustomerSection(), _ItemsSection()],
       aside: const [_PaymentSection(), _SummarySection()],
@@ -103,9 +104,9 @@ class _CustomerSection extends StatelessWidget {
     final error = context.watch<OrderVM>().fieldError('customerId');
     final c = d.customer;
     return FormSection(
-      title: 'Customer',
+      title: tr('Customer'),
       icon: Iconsax.user_copy,
-      trailing: c == null ? null : AppButton.text(label: 'Change', compact: true, onPressed: () => d.set('customer', null)),
+      trailing: c == null ? null : AppButton.text(label: tr('Change'), compact: true, onPressed: () => d.set('customer', null)),
       children: [
         if (c == null)
           CustomerPicker(errorText: error, onSelected: (c) => _select(context, c))
@@ -149,7 +150,7 @@ class _ItemsSection extends StatelessWidget {
     final pieces = items.fold<int>(0, (n, i) => n + i.quantityToOrder);
 
     return FormSection(
-      title: 'Items',
+      title: tr('Items'),
       icon: Iconsax.box_1_copy,
       subtitle: items.isEmpty ? null : '${Fmt.count(items.length, 'line')} · ${Fmt.count(pieces, 'piece')}',
       children: [
@@ -161,12 +162,12 @@ class _ItemsSection extends StatelessWidget {
           },
         ),
         if (items.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: AppSpacing.s24),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.s24),
             child: EmptyView(
               icon: Iconsax.shopping_cart_copy,
-              title: 'No items yet',
-              message: 'Search above to add the first product.',
+              title: tr('No items yet'),
+              message: tr('Search above to add the first product.'),
             ),
           )
         else
@@ -197,14 +198,14 @@ class _LineRow extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           IconButton(
-            tooltip: q == 1 ? 'Remove' : 'One less',
+            tooltip: q == 1 ? tr('Remove') : tr('One less'),
             visualDensity: VisualDensity.compact,
             icon: Icon(q == 1 ? Iconsax.trash_copy : Iconsax.minus_copy, size: 16),
             onPressed: () => d.setQuantity(index, q - 1),
           ),
           SizedBox(width: 28, child: AppText.label('$q', align: TextAlign.center)),
           IconButton(
-            tooltip: 'One more',
+            tooltip: tr('One more'),
             visualDensity: VisualDensity.compact,
             icon: const Icon(Iconsax.add_copy, size: 16),
             onPressed: () => d.setQuantity(index, q + 1),
@@ -219,8 +220,8 @@ class _LineRow extends StatelessWidget {
         AppText.label(item.displayName, maxLines: 2),
         AppText.caption(
           item.unitDiscount > 0
-              ? '${Fmt.money(unit)} each (−${Fmt.money(item.unitDiscount)})'
-              : '${Fmt.money(unit)} each',
+              ? tr('{0} each (−{1})', [Fmt.money(unit), Fmt.money(item.unitDiscount)])
+              : tr('{0} each', [Fmt.money(unit)]),
         ),
         FieldError(error),
       ],
@@ -244,7 +245,7 @@ class _LineRow extends StatelessWidget {
                 stepper,
                 SizedBox(width: 120, child: AppText.price(Fmt.money(unit * q), align: TextAlign.end)),
                 IconButton(
-                  tooltip: 'Remove',
+                  tooltip: tr('Remove'),
                   icon: const Icon(Iconsax.close_circle_copy, size: 18, color: AppColors.muted),
                   onPressed: () => d.removeLine(index),
                 ),
@@ -283,11 +284,11 @@ class _PaymentSection extends StatelessWidget {
         ];
 
     return FormSection(
-      title: 'Payment',
+      title: tr('Payment'),
       icon: Iconsax.wallet_2_copy,
       children: [
         AppDropdown<String>(
-          label: 'Came from',
+          label: tr('Came from'),
           required: true,
           icon: Iconsax.global_copy,
           items: withCurrent(orderSources, d.value<String>('orderSource')),
@@ -300,7 +301,7 @@ class _PaymentSection extends StatelessWidget {
           },
         ),
         AppDropdown<String>(
-          label: 'Payment method',
+          label: tr('Payment method'),
           required: true,
           icon: Iconsax.card_copy,
           items: withCurrent(paymentMethods, d.value<String>('paymentMethod')),
@@ -313,14 +314,14 @@ class _PaymentSection extends StatelessWidget {
           },
         ),
         FieldRow(children: [
-          money('delivery', 'Delivery', Iconsax.truck_fast_copy,
-              helper: d.value<bool>('deliveryAuto') == true ? 'From the shipping zone' : null),
-          money('discount', 'Extra discount', Iconsax.discount_shape_copy, helper: 'On top of product discounts'),
+          money('delivery', tr('Delivery'), Iconsax.truck_fast_copy,
+              helper: d.value<bool>('deliveryAuto') == true ? tr('From the shipping zone') : null),
+          money('discount', tr('Extra discount'), Iconsax.discount_shape_copy, helper: tr('On top of product discounts')),
         ]),
-        money('downPayment', 'Paid upfront', Iconsax.money_recive_copy),
+        money('downPayment', tr('Paid upfront'), Iconsax.money_recive_copy),
         if (needsAccount)
           AppDropdown<BankAccount>(
-            label: 'Received in',
+            label: tr('Received in'),
             required: true,
             icon: Iconsax.bank_copy,
             items: accounts,
@@ -333,9 +334,9 @@ class _PaymentSection extends StatelessWidget {
             },
           ),
         AppTextField(
-          label: 'Notes',
+          label: tr('Notes'),
           icon: Iconsax.note_1_copy,
-          hintText: 'Gift wrap, delivery time…',
+          hintText: tr('Gift wrap, delivery time…'),
           controller: d.controller('notes'),
           errorText: vm.fieldError('notes'),
           maxLength: 1000,
@@ -352,6 +353,6 @@ class _SummarySection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final totals = context.watch<OrderDraft>().totals;
-    return FormSection(title: 'Summary', icon: Iconsax.receipt_2_copy, children: [OrderTotalsView(totals)]);
+    return FormSection(title: tr('Summary'), icon: Iconsax.receipt_2_copy, children: [OrderTotalsView(totals)]);
   }
 }

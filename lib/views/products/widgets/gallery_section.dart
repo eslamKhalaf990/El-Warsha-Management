@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:warsha_app/core/widgets/widgets.dart';
 import 'package:warsha_app/models/product_image.dart';
 import 'package:warsha_app/view_models/product_gallery_v_m.dart';
+import 'package:warsha_app/core/l10n/app_locale.dart';
 
 /// The extra images shown after the cover in the store, on the edit page.
 class GallerySection extends StatelessWidget {
@@ -14,7 +15,7 @@ class GallerySection extends StatelessWidget {
     final files = await pickImages();
     if (files.isEmpty) return;
     final ok = await vm.upload([for (final f in files) (bytes: f.bytes, name: f.name)]);
-    if (context.mounted) reportResult(context, ok: ok, errorMessage: vm.errorMessage, success: '${Fmt.count(files.length, 'image')} added.');
+    if (context.mounted) reportResult(context, ok: ok, errorMessage: vm.errorMessage, success: tr('{0} added.', [Fmt.count(files.length, 'image')]));
   }
 
   Future<void> _fromLibrary(BuildContext context) async {
@@ -29,7 +30,7 @@ class GallerySection extends StatelessWidget {
     );
     if (filename == null) return;
     final ok = await vm.addFromLibrary(filename);
-    if (context.mounted) reportResult(context, ok: ok, errorMessage: vm.errorMessage, success: 'Image added.');
+    if (context.mounted) reportResult(context, ok: ok, errorMessage: vm.errorMessage, success: tr('Image added.'));
   }
 
   Future<void> _remove(BuildContext context, ProductImage image) async {
@@ -50,24 +51,24 @@ class GallerySection extends StatelessWidget {
     final images = vm.images;
 
     return FormSection(
-      title: 'Gallery',
-      subtitle: 'Shown after the cover, in this order.',
+      title: tr('Gallery'),
+      subtitle: tr('Shown after the cover, in this order.'),
       icon: Iconsax.gallery_copy,
       trailing: MenuAnchor(
         menuChildren: [
           MenuItemButton(
             leadingIcon: const Icon(Iconsax.document_upload_copy, size: 18),
             onPressed: () => _upload(context),
-            child: const Text('Upload images'),
+            child: Text(tr('Upload images')),
           ),
           MenuItemButton(
             leadingIcon: const Icon(Iconsax.gallery_copy, size: 18),
             onPressed: () => _fromLibrary(context),
-            child: const Text('From library'),
+            child: Text(tr('From library')),
           ),
         ],
         builder: (context, menu, _) => AppButton.secondary(
-          label: 'Add',
+          label: tr('Add'),
           icon: Iconsax.add_copy,
           compact: true,
           onPressed: vm.isBusy ? null : () => menu.isOpen ? menu.close() : menu.open(),
@@ -76,9 +77,9 @@ class GallerySection extends StatelessWidget {
       children: [
         if (vm.isBusy) const LinearProgressIndicator(minHeight: 2),
         if (vm.loadFailed)
-          InlineBanner(message: vm.errorMessage!, tone: Tone.error, actionLabel: 'Retry', onAction: vm.fetch)
+          InlineBanner(message: vm.errorMessage!, tone: Tone.error, actionLabel: tr('Retry'), onAction: vm.fetch)
         else if (vm.hasLoaded && images.isEmpty)
-          const AppText.bodySmall('No extra images. The store shows the cover only.', color: AppColors.muted)
+          AppText.bodySmall(tr('No extra images. The store shows the cover only.'), color: AppColors.muted)
         else
           Wrap(
             spacing: AppSpacing.s12,
@@ -114,7 +115,8 @@ class _Thumb extends StatelessWidget {
           tooltip: tip,
           visualDensity: VisualDensity.compact,
           iconSize: 16,
-          icon: Icon(icon, color: color),
+          // Earlier/later arrows follow the reading direction.
+          icon: DirectionalIcon(icon, color: color),
           onPressed: onTap,
         );
     return SizedBox(
@@ -130,9 +132,9 @@ class _Thumb extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              action(Iconsax.arrow_left_2_copy, 'Move earlier', onEarlier),
-              action(Iconsax.trash_copy, 'Remove', onRemove, color: AppStatusColors.errorText),
-              action(Iconsax.arrow_right_3_copy, 'Move later', onLater),
+              action(Iconsax.arrow_left_2_copy, tr('Move earlier'), onEarlier),
+              action(Iconsax.trash_copy, tr('Remove'), onRemove, color: AppStatusColors.errorText),
+              action(Iconsax.arrow_right_3_copy, tr('Move later'), onLater),
             ],
           ),
         ],
@@ -149,11 +151,11 @@ class _LibraryPicker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppDialog(
-      title: 'Choose from library',
+      title: tr('Choose from library'),
       icon: Iconsax.gallery_copy,
       maxWidth: 640,
       content: filenames.isEmpty
-          ? const AppText.body('The library is empty. Upload images instead.', color: AppColors.muted)
+          ? AppText.body(tr('The library is empty. Upload images instead.'), color: AppColors.muted)
           : SizedBox(
               width: 640,
               height: 420,
@@ -171,7 +173,7 @@ class _LibraryPicker extends StatelessWidget {
                 ),
               ),
             ),
-      actions: [AppButton.text(label: 'Cancel', onPressed: () => Navigator.pop(context))],
+      actions: [AppButton.text(label: tr('Cancel'), onPressed: () => Navigator.pop(context))],
     );
   }
 }

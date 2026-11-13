@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:warsha_app/core/widgets/widgets.dart';
+import 'package:warsha_app/core/l10n/app_locale.dart';
 
 /// Live price, profit and margin from what is typed in the pricing fields.
 class PricingSummary extends StatelessWidget {
@@ -24,16 +25,16 @@ class PricingSummary extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s16, vertical: AppSpacing.s8),
       child: Column(
         children: [
-          InfoRow(label: 'Customer pays', value: Fmt.money(price), bold: true),
+          InfoRow(label: tr('Customer pays'), value: Fmt.money(price), bold: true),
           InfoRow(
-            label: 'Profit per piece',
+            label: tr('Profit per piece'),
             value: '${Fmt.money(profit)}  (${margin.toStringAsFixed(0)}%)',
             valueColor: loss ? AppStatusColors.errorText : AppStatusColors.successText,
           ),
           if (loss)
-            const Padding(
-              padding: EdgeInsets.only(bottom: AppSpacing.s4),
-              child: InlineBanner(message: 'This price is below cost: every sale loses money.', tone: Tone.error),
+            Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.s4),
+              child: InlineBanner(message: tr('This price is below cost: every sale loses money.'), tone: Tone.error),
             ),
         ],
       ),
