@@ -11,6 +11,7 @@ import 'package:warsha_app/views/dashboard/widgets/ranked_bars.dart';
 import 'package:warsha_app/views/dashboard/widgets/trend_chart.dart';
 import 'package:warsha_app/views/shell/destinations.dart';
 import 'package:warsha_app/views/shell/navigation_v_m.dart';
+import 'package:warsha_app/core/l10n/app_locale.dart';
 
 /// The business in numbers for a chosen range: KPIs against the previous
 /// period, the sales trend, products and stock, channels and regions,
@@ -22,9 +23,9 @@ class DashboardPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final vm = context.watch<AnalyticsVM>();
     return ModulePage(
-      title: 'Dashboard',
+      title: tr('Dashboard'),
       subtitle: _rangeText(vm),
-      actions: [IconButton(tooltip: 'Refresh', icon: const Icon(Iconsax.refresh_copy), onPressed: vm.fetch)],
+      actions: [IconButton(tooltip: tr('Refresh'), icon: const Icon(Iconsax.refresh_copy), onPressed: vm.fetch)],
       toolbar: const _RangeBar(),
       scrollable: vm.hasLoaded,
       body: AsyncView(
@@ -41,8 +42,8 @@ class DashboardPage extends StatelessWidget {
   static String _rangeText(AnalyticsVM vm) {
     final p = vm.overview?.period;
     final from = p?.from ?? vm.from;
-    final range = from == null ? 'All time' : '${Fmt.date(from)} – ${Fmt.date(p?.to ?? vm.to)}';
-    return p?.previousFrom == null ? range : '$range · compared with the ${Fmt.count(p!.days, 'day')} before';
+    final range = from == null ? tr('All time') : '${Fmt.date(from)} – ${Fmt.date(p?.to ?? vm.to)}';
+    return p?.previousFrom == null ? range : tr('{0} · compared with the {1} before', [range, Fmt.count(p!.days, 'day')]);
   }
 }
 
@@ -80,7 +81,7 @@ class _RangeBar extends StatelessWidget {
         children: [
           for (final p in RangePreset.values.where((p) => p != RangePreset.custom))
             chip(p.label, vm.preset == p, () => vm.setPreset(p)),
-          chip(vm.preset == RangePreset.custom ? '${Fmt.shortDate(vm.from)} – ${Fmt.shortDate(vm.to)}' : 'Custom…',
+          chip(vm.preset == RangePreset.custom ? '${Fmt.shortDate(vm.from)} – ${Fmt.shortDate(vm.to)}' : tr('Custom…'),
               vm.preset == RangePreset.custom, () => _pickCustom(context)),
         ],
       ),
@@ -102,8 +103,8 @@ class _Content extends StatelessWidget {
         if (vm.isLoading) const Padding(padding: EdgeInsets.only(bottom: AppSpacing.s12), child: LinearProgressIndicator(minHeight: 2)),
         if (vm.failedSections.isNotEmpty) ...[
           InlineBanner(
-            message: "Some figures couldn't be loaded: ${vm.failedSections.join(', ')}.",
-            actionLabel: 'Retry',
+            message: tr('Some figures couldn\'t be loaded: {0}.', [vm.failedSections.join(', ')]),
+            actionLabel: tr('Retry'),
             onAction: vm.fetch,
           ),
           gap,
@@ -157,7 +158,7 @@ class _Delta extends StatelessWidget {
     if (change == null) return const SizedBox.shrink();
     final good = higherIsBetter ? change >= 0 : change <= 0;
     return Tooltip(
-      message: 'Previous period: ${Fmt.number(previous)}',
+      message: tr('Previous period: {0}', [Fmt.number(previous)]),
       child: StatusPill(label: Fmt.change(change), tone: change.abs() < 0.005 ? Tone.neutral : (good ? Tone.success : Tone.error)),
     );
   }
@@ -176,59 +177,59 @@ class _Kpis extends StatelessWidget {
       spacing: AppSpacing.s12,
       children: [
         StatCard(
-          label: 'Net sales',
+          label: tr('Net sales'),
           value: Fmt.money(k.netSales),
           icon: Iconsax.money_recive_copy,
           highlighted: true,
-          caption: k.discounts > 0 ? 'After ${Fmt.money(k.discounts)} discounts' : 'Items sold, after discounts',
+          caption: k.discounts > 0 ? tr('After {0} discounts', [Fmt.money(k.discounts)]) : tr('Items sold, after discounts'),
           trailing: _Delta(k.netSales, p?.netSales),
         ),
         StatCard(
-          label: 'Gross profit',
+          label: tr('Gross profit'),
           value: Fmt.money(k.grossProfit),
           icon: Iconsax.chart_success_copy,
           tone: Tone.success,
-          caption: '${Fmt.percent(k.grossMargin)} margin',
+          caption: tr('{0} margin', [Fmt.percent(k.grossMargin)]),
           trailing: _Delta(k.grossProfit, p?.grossProfit),
         ),
         StatCard(
-          label: 'Orders',
+          label: tr('Orders'),
           value: Fmt.number(k.orders),
           icon: Iconsax.receipt_2_copy,
-          caption: '${Fmt.count(k.units, 'piece')} · ${Fmt.number(k.itemsPerOrder)} per order',
+          caption: tr('{0} · {1} per order', [Fmt.count(k.units, 'piece'), Fmt.number(k.itemsPerOrder)]),
           trailing: _Delta(k.orders, p?.orders),
         ),
         StatCard(
-          label: 'Average order',
+          label: tr('Average order'),
           value: Fmt.money(k.averageOrderValue),
           icon: Iconsax.shopping_bag_copy,
-          caption: 'Incl. ${Fmt.money(k.deliveryFees)} delivery in total',
+          caption: tr('Incl. {0} delivery in total', [Fmt.money(k.deliveryFees)]),
           trailing: _Delta(k.averageOrderValue, p?.averageOrderValue),
         ),
         StatCard(
-          label: 'Customers',
+          label: tr('Customers'),
           value: Fmt.number(k.customers),
           icon: Iconsax.profile_2user_copy,
           tone: Tone.info,
-          caption: '${k.newCustomers} new · ${k.returningCustomers} returning',
+          caption: tr('{0} new · {1} returning', [k.newCustomers, k.returningCustomers]),
           trailing: _Delta(k.customers, p?.customers),
         ),
         StatCard(
-          label: 'Collected',
+          label: tr('Collected'),
           value: Fmt.money(k.collected),
           icon: Iconsax.wallet_check_copy,
           tone: Tone.success,
-          caption: 'Down payments + completed orders',
+          caption: tr('Down payments + completed orders'),
         ),
         StatCard(
-          label: 'Still to collect',
+          label: tr('Still to collect'),
           value: Fmt.money(k.outstanding),
           icon: Iconsax.wallet_minus_copy,
           tone: Tone.warning,
-          caption: 'On orders not completed yet',
+          caption: tr('On orders not completed yet'),
         ),
         StatCard(
-          label: 'Cancelled',
+          label: tr('Cancelled'),
           value: Fmt.percent(k.cancellationRate, decimals: 1),
           icon: Iconsax.close_circle_copy,
           tone: Tone.error,
@@ -261,7 +262,7 @@ class _Attention extends StatelessWidget {
           if (pending > 0)
             ActionChip(
               avatar: const Icon(Iconsax.clock_copy, size: 16, color: AppStatusColors.warningText),
-              label: Text('${Fmt.count(pending, 'order')} waiting to be processed'),
+              label: Text(tr('{0} waiting to be processed', [Fmt.count(pending, 'order')])),
               onPressed: () {
                 context.read<OrderVM>().setStatusFilter(OrderStatus.pending);
                 nav.go(AppDestination.orders);
@@ -270,7 +271,7 @@ class _Attention extends StatelessWidget {
           if (low > 0)
             ActionChip(
               avatar: const Icon(Iconsax.box_remove_copy, size: 16, color: AppStatusColors.errorText),
-              label: Text('${Fmt.count(low, 'product')} low or out of stock'),
+              label: Text(tr('{0} low or out of stock', [Fmt.count(low, 'product')])),
               onPressed: () {
                 products.setStockFilter(products.outOfStockCount > 0 ? StockFilter.out : StockFilter.low);
                 nav.go(AppDestination.products);
@@ -295,9 +296,9 @@ class _TrendState extends State<_Trend> {
   @override
   Widget build(BuildContext context) {
     final trend = context.watch<AnalyticsVM>().trend;
-    final per = switch (trend?.granularity) { 'week' => 'Per week (from Saturday)', 'month' => 'Per month', _ => 'Per day' };
+    final per = switch (trend?.granularity) { 'week' => tr('Per week (from Saturday)'), 'month' => tr('Per month'), _ => tr('Per day') };
     return DashboardPanel(
-      title: 'Sales over time',
+      title: tr('Sales over time'),
       subtitle: per,
       icon: Iconsax.chart_2_copy,
       child: Column(
@@ -327,19 +328,18 @@ class _Channels extends StatelessWidget {
   Widget build(BuildContext context) {
     final channels = context.watch<AnalyticsVM>().channels ?? const [];
     return DashboardPanel(
-      title: 'Sales channels',
-      subtitle: 'Net sales by where the order came from',
+      title: tr('Sales channels'),
+      subtitle: tr('Net sales by where the order came from'),
       icon: Iconsax.global_copy,
       child: RankedBars(
-        emptyText: 'No orders in this period.',
+        emptyText: tr('No orders in this period.'),
         items: [
           for (final c in channels)
             RankedItem(
               label: '${c.channel} · ${Fmt.percent(c.share)}',
               value: c.netSales,
               valueLabel: Fmt.money(c.netSales),
-              caption: '${Fmt.count(c.orders, 'order')} · avg ${Fmt.money(c.averageOrderValue)}'
-                  '${c.cancelled > 0 ? ' · ${Fmt.percent(c.cancellationRate)} cancelled' : ''}',
+              caption: tr('{0} · avg {1}{2}', [Fmt.count(c.orders, 'order'), Fmt.money(c.averageOrderValue), c.cancelled > 0 ? tr(' · {0} cancelled', [Fmt.percent(c.cancellationRate)]) : '']),
             ),
         ],
       ),
@@ -355,18 +355,18 @@ class _Regions extends StatelessWidget {
     final regions = context.watch<AnalyticsVM>().regions ?? const [];
     final rest = regions.skip(8).fold<double>(0, (s, r) => s + r.share);
     return DashboardPanel(
-      title: 'Top governorates',
-      subtitle: rest > 0 ? 'Top 8 · the other ${regions.length - 8} make ${Fmt.percent(rest)}' : 'Net sales by delivery area',
+      title: tr('Top governorates'),
+      subtitle: rest > 0 ? tr('Top 8 · the other {0} make {1}', [regions.length - 8, Fmt.percent(rest)]) : tr('Net sales by delivery area'),
       icon: Iconsax.map_1_copy,
       child: RankedBars(
-        emptyText: 'No orders in this period.',
+        emptyText: tr('No orders in this period.'),
         items: [
           for (final r in regions.take(8))
             RankedItem(
               label: '${r.governorate} · ${Fmt.percent(r.share)}',
               value: r.netSales,
               valueLabel: Fmt.money(r.netSales),
-              caption: '${Fmt.count(r.orders, 'order')} · ${Fmt.count(r.customers, 'customer')} · avg ${Fmt.money(r.averageOrderValue)}',
+              caption: tr('{0} · {1} · avg {2}', [Fmt.count(r.orders, 'order'), Fmt.count(r.customers, 'customer'), Fmt.money(r.averageOrderValue)]),
             ),
         ],
       ),
@@ -381,18 +381,18 @@ class _Categories extends StatelessWidget {
   Widget build(BuildContext context) {
     final categories = context.watch<AnalyticsVM>().products?.categories ?? const [];
     return DashboardPanel(
-      title: 'Categories',
-      subtitle: 'Net sales and margin',
+      title: tr('Categories'),
+      subtitle: tr('Net sales and margin'),
       icon: Iconsax.category_copy,
       child: RankedBars(
-        emptyText: 'Nothing sold in this period.',
+        emptyText: tr('Nothing sold in this period.'),
         items: [
           for (final c in categories)
             RankedItem(
               label: '${c.category} · ${Fmt.percent(c.share)}',
               value: c.netSales,
               valueLabel: Fmt.money(c.netSales),
-              caption: '${Fmt.count(c.units, 'piece')} · profit ${Fmt.money(c.grossProfit)} (${Fmt.percent(c.grossMargin)})',
+              caption: tr('{0} · profit {1} ({2})', [Fmt.count(c.units, 'piece'), Fmt.money(c.grossProfit), Fmt.percent(c.grossMargin)]),
             ),
         ],
       ),
@@ -407,19 +407,18 @@ class _TopProducts extends StatelessWidget {
   Widget build(BuildContext context) {
     final products = context.watch<AnalyticsVM>().products?.topProducts ?? const [];
     return DashboardPanel(
-      title: 'Best sellers',
-      subtitle: 'Top 10 by net sales',
+      title: tr('Best sellers'),
+      subtitle: tr('Top 10 by net sales'),
       icon: Iconsax.crown_1_copy,
       child: RankedBars(
-        emptyText: 'Nothing sold in this period.',
+        emptyText: tr('Nothing sold in this period.'),
         items: [
           for (final p in products.take(10))
             RankedItem(
               label: p.name,
               value: p.netSales,
               valueLabel: Fmt.money(p.netSales),
-              caption: '${Fmt.count(p.units, 'piece')} · ${Fmt.percent(p.grossMargin)} margin'
-                  '${p.stock == null ? '' : ' · ${p.stock} left'}',
+              caption: tr('{0} · {1} margin{2}', [Fmt.count(p.units, 'piece'), Fmt.percent(p.grossMargin), p.stock == null ? '' : tr(' · {0} left', [p.stock])]),
             ),
         ],
       ),
@@ -477,17 +476,17 @@ class _RunningLow extends StatelessWidget {
   Widget build(BuildContext context) {
     final low = context.watch<AnalyticsVM>().products?.runningLow ?? const [];
     return DashboardPanel(
-      title: 'Running low',
-      subtitle: 'Stock lasts under 3 weeks at this period’s pace',
+      title: tr('Running low'),
+      subtitle: tr('Stock lasts under 3 weeks at this period’s pace'),
       icon: Iconsax.box_remove_copy,
       child: _Rows(
-        emptyText: 'Nothing is running low.',
+        emptyText: tr('Nothing is running low.'),
         rows: [
           for (final p in low.take(8))
             (
               p.name,
-              (p.stock ?? 0) <= 0 ? 'Out of stock' : '~${p.daysOfCover!.round()} days',
-              '${p.stock ?? 0} left · ${Fmt.count(p.units, 'piece')} sold',
+              (p.stock ?? 0) <= 0 ? tr('Out of stock') : tr('~{0} days', [p.daysOfCover!.round()]),
+              tr('{0} left · {1} sold', [p.stock ?? 0, Fmt.count(p.units, 'piece')]),
             ),
         ],
       ),
@@ -503,14 +502,14 @@ class _SlowMovers extends StatelessWidget {
     final slow = context.watch<AnalyticsVM>().products?.slowMovers ?? const [];
     final tied = slow.fold<double>(0, (s, p) => s + p.stockValue);
     return DashboardPanel(
-      title: 'Not selling',
-      subtitle: slow.isEmpty ? 'In stock but no sales in this period' : '${Fmt.money(tied)} of stock at cost with no sales in this period',
+      title: tr('Not selling'),
+      subtitle: slow.isEmpty ? tr('In stock but no sales in this period') : tr('{0} of stock at cost with no sales in this period', [Fmt.money(tied)]),
       icon: Iconsax.timer_pause_copy,
       child: _Rows(
-        emptyText: 'Every product in stock sold something.',
+        emptyText: tr('Every product in stock sold something.'),
         rows: [
           for (final p in slow)
-            (p.name, Fmt.money(p.stockValue), '${p.stock} in stock · last sold ${p.lastSold == null ? 'never' : Fmt.date(p.lastSold)}'),
+            (p.name, Fmt.money(p.stockValue), tr('{0} in stock · last sold {1}', [p.stock, p.lastSold == null ? tr('never') : Fmt.date(p.lastSold)])),
         ],
       ),
     );
@@ -524,17 +523,17 @@ class _Customers extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.watch<AnalyticsVM>().customers ?? const CustomerInsights();
     return DashboardPanel(
-      title: 'Customers',
-      subtitle: '${c.newCustomers} new · ${c.returningCustomers} returning · ${Fmt.percent(c.repeatRate)} have ordered more than once',
+      title: tr('Customers'),
+      subtitle: tr('{0} new · {1} returning · {2} have ordered more than once', [c.newCustomers, c.returningCustomers, Fmt.percent(c.repeatRate)]),
       icon: Iconsax.profile_2user_copy,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          InfoRow(label: 'Average spend per customer', value: Fmt.money(c.averageSpend)),
+          InfoRow(label: tr('Average spend per customer'), value: Fmt.money(c.averageSpend)),
           const SizedBox(height: AppSpacing.s8),
-          const AppText.label('Top spenders'),
+          AppText.label(tr('Top spenders')),
           _Rows(
-            emptyText: 'No customers in this period.',
+            emptyText: tr('No customers in this period.'),
             rows: [
               for (final t in c.topCustomers)
                 (
@@ -558,18 +557,18 @@ class _Cash extends StatelessWidget {
     final cash = context.watch<AnalyticsVM>().cash ?? const CashInsights();
     final total = cash.collected + cash.outstanding;
     return DashboardPanel(
-      title: 'Cash',
-      subtitle: total == 0 ? 'Collected and still to collect' : '${Fmt.percent(cash.collected / total)} of the order value is collected',
+      title: tr('Cash'),
+      subtitle: total == 0 ? tr('Collected and still to collect') : tr('{0} of the order value is collected', [Fmt.percent(cash.collected / total)]),
       icon: Iconsax.wallet_money_copy,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          InfoRow(label: 'Collected', value: Fmt.money(cash.collected), valueColor: AppStatusColors.successText),
-          InfoRow(label: 'Still to collect', value: Fmt.money(cash.outstanding), valueColor: AppStatusColors.warningText),
+          InfoRow(label: tr('Collected'), value: Fmt.money(cash.collected), valueColor: AppStatusColors.successText),
+          InfoRow(label: tr('Still to collect'), value: Fmt.money(cash.outstanding), valueColor: AppStatusColors.warningText),
           const SizedBox(height: AppSpacing.s12),
-          const AppText.label('How down payments were made'),
+          AppText.label(tr('How down payments were made')),
           RankedBars(
-            emptyText: 'No down payments in this period.',
+            emptyText: tr('No down payments in this period.'),
             items: [
               for (final m in cash.paymentMethods)
                 RankedItem(
@@ -594,8 +593,8 @@ class _Weekdays extends StatelessWidget {
     final days = context.watch<AnalyticsVM>().cash?.weekdays ?? const [];
     final busiest = days.isEmpty ? null : days.reduce((a, b) => b.orders > a.orders ? b : a);
     return DashboardPanel(
-      title: 'Busiest days',
-      subtitle: busiest == null || busiest.orders == 0 ? 'Orders per weekday' : '${busiest.weekday} brings the most orders',
+      title: tr('Busiest days'),
+      subtitle: busiest == null || busiest.orders == 0 ? tr('Orders per weekday') : tr('{0} brings the most orders', [tr(busiest.weekday)]),
       icon: Iconsax.calendar_1_copy,
       child: WeekdayChart(days: days),
     );
@@ -609,17 +608,19 @@ class _Statuses extends StatelessWidget {
   Widget build(BuildContext context) {
     final statuses = context.watch<AnalyticsVM>().cash?.statuses ?? const <StatusTotal>[];
     return DashboardPanel(
-      title: 'Order pipeline',
-      subtitle: 'Orders placed in this period, by where they are now',
+      title: tr('Order pipeline'),
+      subtitle: tr('Orders placed in this period, by where they are now'),
       icon: Iconsax.task_square_copy,
       child: _Rows(
-        emptyText: 'No orders in this period.',
+        emptyText: tr('No orders in this period.'),
         rows: [
           for (final s in statuses)
             (
-              s.status,
+              tr(s.status),
               Fmt.count(s.orders, 'order'),
-              '${Fmt.money(s.orderValue)}${s.outstanding > 0 ? ' · ${Fmt.money(s.outstanding)} to collect' : ''}',
+              s.outstanding > 0
+                  ? tr('{0} · {1} to collect', [Fmt.money(s.orderValue), Fmt.money(s.outstanding)])
+                  : Fmt.money(s.orderValue),
             ),
         ],
       ),

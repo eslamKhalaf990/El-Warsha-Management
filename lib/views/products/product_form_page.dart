@@ -17,6 +17,7 @@ import 'package:warsha_app/view_models/category_v_m.dart';
 import 'package:warsha_app/view_models/product_gallery_v_m.dart';
 import 'package:warsha_app/view_models/product_variants_v_m.dart';
 import 'package:warsha_app/view_models/vendors_v_m.dart';
+import 'package:warsha_app/core/l10n/app_locale.dart';
 
 /// Opens the add form, or the edit form for [product] (which also manages
 /// its gallery and sizes / colors).
@@ -95,7 +96,7 @@ class ProductFormPage extends StatelessWidget {
     if (!context.mounted) return;
     if (ok) {
       Navigator.pop(context);
-      vm.warning != null ? showInfo(context, vm.warning!) : showSuccess(context, _isNew ? 'Product added.' : 'Product updated.');
+      vm.warning != null ? showInfo(context, vm.warning!) : showSuccess(context, _isNew ? tr('Product added.') : tr('Product updated.'));
     } else if (ProductVM.formFields.every((f) => vm.fieldError(f) == null)) {
       showError(context, vm.errorMessage!);
     }
@@ -136,20 +137,20 @@ class ProductFormPage extends StatelessWidget {
         );
 
     return FormPage(
-      title: _isNew ? 'New product' : 'Edit product',
+      title: _isNew ? tr('New product') : tr('Edit product'),
       subtitle: product?.name,
       draft: d,
       saving: vm.isSaving,
-      saveLabel: _isNew ? 'Add product' : 'Save changes',
+      saveLabel: _isNew ? tr('Add product') : tr('Save changes'),
       onSave: () => _save(context),
       sections: [
         FormSection(
-          title: 'Basics',
+          title: tr('Basics'),
           icon: Iconsax.box_1_copy,
           children: [
             FieldRow(children: [
-              field('name', 'Name in English', Iconsax.text_copy, ProductVM.nameMaxLength, required: true),
-              field('nameAr', 'Name in Arabic', Iconsax.translate_copy, ProductVM.nameArMaxLength, dir: TextDirection.rtl),
+              field('name', tr('Name in English'), Iconsax.text_copy, ProductVM.nameMaxLength, required: true),
+              field('nameAr', tr('Name in Arabic'), Iconsax.translate_copy, ProductVM.nameArMaxLength, dir: TextDirection.rtl),
             ]),
             _CategoryField(
               value: d.value<int>('categoryId'),
@@ -172,35 +173,35 @@ class ProductFormPage extends StatelessWidget {
           ],
         ),
         FormSection(
-          title: 'Description',
+          title: tr('Description'),
           icon: Iconsax.note_text_copy,
-          subtitle: 'Shown on the product page in the store.',
+          subtitle: tr('Shown on the product page in the store.'),
           children: [
-            field('description', 'In English', Iconsax.text_copy, ProductVM.descriptionMaxLength, maxLines: 4),
-            field('descriptionAr', 'In Arabic', Iconsax.translate_copy, ProductVM.descriptionArMaxLength,
+            field('description', tr('In English'), Iconsax.text_copy, ProductVM.descriptionMaxLength, maxLines: 4),
+            field('descriptionAr', tr('In Arabic'), Iconsax.translate_copy, ProductVM.descriptionArMaxLength,
                 maxLines: 4, dir: TextDirection.rtl),
           ],
         ),
         FormSection(
-          title: 'Pricing',
+          title: tr('Pricing'),
           icon: Iconsax.money_2_copy,
           children: [
             FieldRow(children: [
-              money('buyingPrice', 'Cost', required: true, helper: 'What one piece costs you.'),
-              money('sellingPrice', 'Selling price', required: true),
+              money('buyingPrice', tr('Cost'), required: true, helper: tr('What one piece costs you.')),
+              money('sellingPrice', tr('Selling price'), required: true),
             ]),
-            money('discount', 'Discount per piece', helper: 'Taken off the selling price in the store and in orders.'),
+            money('discount', tr('Discount per piece'), helper: tr('Taken off the selling price in the store and in orders.')),
             PricingSummary(buying: d.text('buyingPrice'), selling: d.text('sellingPrice'), discount: d.text('discount')),
           ],
         ),
         FormSection(
-          title: 'Stock',
+          title: tr('Stock'),
           icon: Iconsax.box_tick_copy,
-          subtitle: hasVariants ? 'Stock is kept per size / color below.' : null,
+          subtitle: hasVariants ? tr('Stock is kept per size / color below.') : null,
           children: [
             if (!hasVariants)
               AppTextField(
-                label: _isNew ? 'Pieces in stock' : 'Stock',
+                label: _isNew ? tr('Pieces in stock') : tr('Stock'),
                 required: true,
                 icon: Iconsax.box_1_copy,
                 controller: d.controller('quantity'),
@@ -211,16 +212,16 @@ class ProductFormPage extends StatelessWidget {
               ),
             if (_isNew) ...[
               OptionChipsInput(
-                label: 'Sizes',
-                hint: 'S, M, L',
+                label: tr('Sizes'),
+                hint: tr('S, M, L'),
                 icon: Iconsax.ruler_copy,
                 controller: d.controller('sizeEntry'),
                 values: d.value<List<String>>('sizes') ?? const [],
                 onChanged: (v) => d.set('sizes', v),
               ),
               OptionChipsInput(
-                label: 'Colors',
-                hint: 'Black, White',
+                label: tr('Colors'),
+                hint: tr('Black, White'),
                 icon: Iconsax.color_swatch_copy,
                 controller: d.controller('colorEntry'),
                 values: d.value<List<String>>('colors') ?? const [],
@@ -228,12 +229,12 @@ class ProductFormPage extends StatelessWidget {
               ),
               if ((d.value<List<String>>('sizes') ?? const []).isNotEmpty ||
                   (d.value<List<String>>('colors') ?? const []).isNotEmpty)
-                const InlineBanner(
-                  message: 'Each size × color is created with 0 stock. Set their stock after saving.',
+                InlineBanner(
+                  message: tr('Each size × color is created with 0 stock. Set their stock after saving.'),
                   tone: Tone.info,
                 ),
             ] else if (hasVariants)
-              AppText.bodySmall('Total: ${context.select<ProductVariantsVM, int>((v) => v.totalStock)} pieces',
+              AppText.bodySmall(tr('Total: {0} pieces', [context.select<ProductVariantsVM, int>((v) => v.totalStock)]),
                   color: AppColors.muted),
           ],
         ),
@@ -241,12 +242,12 @@ class ProductFormPage extends StatelessWidget {
       ],
       aside: [
         FormSection(
-          title: 'Cover image',
+          title: tr('Cover image'),
           icon: Iconsax.image_copy,
-          subtitle: 'The first picture customers see.',
+          subtitle: tr('The first picture customers see.'),
           children: [
             ImagePickerField(
-              label: 'cover image',
+              label: tr('cover image'),
               height: 280,
               picked: d.value<PickedImage>('image'),
               url: product?.imageFullUrl,
@@ -289,15 +290,15 @@ class _VendorField extends StatelessWidget {
     final vendors = context.watch<VendorVM>().allVendors;
     final names = {for (final v in vendors) v.vendorId: v.name};
     if (linkedId != null && !names.containsKey(linkedId)) {
-      names[linkedId!] = '${linkedName ?? 'Vendor #$linkedId'} (archived)';
+      names[linkedId!] = tr('{0} (archived)', [linkedName ?? tr('Vendor #{0}', [linkedId])]);
     }
     return AppDropdown<int>(
-      label: 'Vendor',
+      label: tr('Vendor'),
       icon: Iconsax.shop_copy,
       items: [_none, ...names.keys],
       value: value ?? _none,
-      itemLabel: (id) => id == _none ? 'No vendor' : names[id]!,
-      helperText: vendors.isEmpty ? 'Add vendors on the Vendors page.' : 'Who you buy this product from.',
+      itemLabel: (id) => id == _none ? tr('No vendor') : names[id]!,
+      helperText: vendors.isEmpty ? tr('Add vendors on the Vendors page.') : tr('Who you buy this product from.'),
       errorText: errorText,
       onChanged: (id) => onChanged(id == null || id == _none ? null : id),
     );
@@ -329,13 +330,13 @@ class _CategoryField extends StatelessWidget {
       children: [
         Expanded(
           child: AppDropdown<CategoryModel>(
-            label: 'Category',
+            label: tr('Category'),
             required: true,
             icon: Iconsax.category_2_copy,
             items: categories,
             value: selected,
             itemLabel: (c) => c.name,
-            hintText: categories.isEmpty ? 'Add a category first' : null,
+            hintText: categories.isEmpty ? tr('Add a category first') : null,
             errorText: errorText,
             onChanged: (c) => onChanged(c?.categoryId),
           ),
@@ -344,7 +345,7 @@ class _CategoryField extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.only(top: 4),
           child: IconButton.outlined(
-            tooltip: 'New category',
+            tooltip: tr('New category'),
             icon: const Icon(Iconsax.add_copy),
             onPressed: () => _addCategory(context),
           ),

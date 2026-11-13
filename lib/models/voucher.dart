@@ -1,12 +1,15 @@
 import 'json_read.dart';
+import 'package:warsha_app/core/l10n/app_locale.dart';
 
 enum DiscountKind {
   percentage('PERCENTAGE', '% off'),
   fixed('FIXED', 'EGP off');
 
-  const DiscountKind(this.api, this.label);
+  const DiscountKind(this.api, this.labelEn);
   final String api;
-  final String label;
+  /// English; shown through [label] in the current language.
+  final String labelEn;
+  String get label => tr(labelEn);
 
   static DiscountKind parse(Object? v) => '$v'.toUpperCase() == 'FIXED' ? fixed : percentage;
 }

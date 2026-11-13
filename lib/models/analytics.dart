@@ -7,6 +7,7 @@
 library;
 
 import 'package:warsha_app/models/json_read.dart';
+import 'package:warsha_app/core/l10n/app_locale.dart';
 
 int _int(Object? v) => readInt(v) ?? 0;
 
@@ -157,7 +158,7 @@ class CategorySales {
   final double share;
 
   factory CategorySales.fromJson(Map<String, dynamic> j) => CategorySales(
-        category: readString(j['category'], 'Unknown'),
+        category: readString(j['category'], tr('Unknown')),
         units: _int(j['units']),
         netSales: readDouble(j['netSales']),
         grossProfit: readDouble(j['grossProfit']),
@@ -261,7 +262,7 @@ class ChannelSales {
   final double share;
 
   factory ChannelSales.fromJson(Map<String, dynamic> j) => ChannelSales(
-        channel: readString(j['channel'], 'Unknown'),
+        channel: readString(j['channel'], tr('Unknown')),
         orders: _int(j['orders']),
         cancelled: _int(j['cancelled']),
         cancellationRate: readDouble(j['cancellationRate']),
@@ -291,7 +292,7 @@ class RegionSales {
   final double share;
 
   factory RegionSales.fromJson(Map<String, dynamic> j) => RegionSales(
-        governorate: readString(j['governorate'], 'Unknown'),
+        governorate: readString(j['governorate'], tr('Unknown')),
         orders: _int(j['orders']),
         customers: _int(j['customers']),
         netSales: readDouble(j['netSales']),
@@ -361,7 +362,7 @@ class MethodShare {
   final double share;
 
   factory MethodShare.fromJson(Map<String, dynamic> j) => MethodShare(
-        method: readString(j['method'], 'Not recorded'),
+        method: readString(j['method'], tr('Not recorded')),
         orders: _int(j['orders']),
         amount: readDouble(j['amount']),
         share: readDouble(j['share']),
@@ -377,7 +378,7 @@ class StatusTotal {
   final double outstanding;
 
   factory StatusTotal.fromJson(Map<String, dynamic> j) => StatusTotal(
-        status: readString(j['status'], 'Unknown'),
+        status: readString(j['status'], tr('Unknown')),
         orders: _int(j['orders']),
         orderValue: readDouble(j['orderValue']),
         outstanding: readDouble(j['outstanding']),

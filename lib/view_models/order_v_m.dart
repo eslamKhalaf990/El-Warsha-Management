@@ -9,6 +9,7 @@ import 'package:warsha_app/models/order_status.dart';
 import 'package:warsha_app/models/order_totals.dart';
 import 'package:warsha_app/services/orders_service.dart';
 import '../models/order_model.dart';
+import 'package:warsha_app/core/l10n/app_locale.dart';
 
 enum ViewState { idle, loading, error }
 
@@ -203,23 +204,23 @@ class OrderVM extends ChangeNotifier with AsyncViewModel {
   // ────────────────────────────
   Map<String, String> validateOrder(OrderForm form) {
     final errors = Validators.collect({
-      'customerId': () => form.customer == null ? 'Choose a customer.' : null,
-      'items': () => form.items.isEmpty ? 'Add at least one product.' : null,
-      'paymentMethod': () => OrderForm._orEmpty(form.paymentMethod).isEmpty ? 'Choose the payment method.' : null,
-      'orderSource': () => OrderForm._orEmpty(form.orderSource).isEmpty ? 'Choose where the order came from.' : null,
-      'downPayment': () => Validators.nonNegativeNumber(form.downPayment, 'Down payment'),
-      'delivery': () => Validators.nonNegativeNumber(form.delivery, 'Delivery'),
-      'discount': () => Validators.nonNegativeNumber(form.discount, 'Discount'),
+      'customerId': () => form.customer == null ? tr('Choose a customer.') : null,
+      'items': () => form.items.isEmpty ? tr('Add at least one product.') : null,
+      'paymentMethod': () => OrderForm._orEmpty(form.paymentMethod).isEmpty ? tr('Choose the payment method.') : null,
+      'orderSource': () => OrderForm._orEmpty(form.orderSource).isEmpty ? tr('Choose where the order came from.') : null,
+      'downPayment': () => Validators.nonNegativeNumber(form.downPayment, tr('Down payment')),
+      'delivery': () => Validators.nonNegativeNumber(form.delivery, tr('Delivery')),
+      'discount': () => Validators.nonNegativeNumber(form.discount, tr('Discount')),
     });
     for (var i = 0; i < form.items.length; i++) {
-      if (form.quantityOf(form.items[i]) < 1) errors['items[$i].quantity'] = 'Quantity must be at least 1.';
+      if (form.quantityOf(form.items[i]) < 1) errors['items[$i].quantity'] = tr('Quantity must be at least 1.');
     }
     if (form.items.isNotEmpty && !errors.keys.any((k) => const ['downPayment', 'delivery', 'discount'].contains(k))) {
       final totals = form.totals;
       if (totals.grandTotal < 0) {
-        errors['discount'] = "Discount can't be more than the order total.";
+        errors['discount'] = tr('Discount can\'t be more than the order total.');
       } else if (totals.downPayment > totals.grandTotal) {
-        errors['downPayment'] = "Down payment can't be more than the order total.";
+        errors['downPayment'] = tr('Down payment can\'t be more than the order total.');
       }
     }
     return errors;

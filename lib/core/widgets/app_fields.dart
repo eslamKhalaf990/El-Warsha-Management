@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:warsha_app/core/theme/app_theme.dart';
+import 'package:warsha_app/core/l10n/app_locale.dart';
+import 'package:warsha_app/core/format/formatters.dart';
 
 /// Digits with one optional decimal point or comma, for money and prices.
 final moneyInputFormatters = [FilteringTextInputFormatter.allow(RegExp(r'^\d*[.,]?\d{0,2}'))];
@@ -65,7 +67,7 @@ class AppTextField extends StatelessWidget {
         textDirection = TextDirection.ltr,
         obscureText = false,
         prefixText = null,
-        suffixText = 'EGP',
+        suffixText = null,
         suffix = null,
         autofillHints = null,
         _isMoney = true;
@@ -125,7 +127,8 @@ class AppTextField extends StatelessWidget {
         alignLabelWithHint: maxLines > 1,
         prefixIcon: icon == null ? null : Icon(icon, size: 20),
         prefixText: prefixText,
-        suffixText: suffixText,
+        // Money fields show the currency in the current language.
+        suffixText: suffixText ?? (_isMoney ? Fmt.currencyLabel : null),
         suffixIcon: suffix,
       ),
     );
@@ -286,7 +289,7 @@ class AppDateField extends StatelessWidget {
     this.icon = Iconsax.calendar_1_copy,
     this.errorText,
     this.helperText,
-    this.hintText = 'Choose a date',
+    this.hintText,
     this.required = false,
     this.clearable = false,
   });
@@ -297,7 +300,8 @@ class AppDateField extends StatelessWidget {
   final IconData icon;
   final String? errorText;
   final String? helperText;
-  final String hintText;
+  /// Defaults to "Choose a date".
+  final String? hintText;
   final bool required;
   final bool clearable;
 
@@ -322,12 +326,12 @@ class AppDateField extends StatelessWidget {
         isEmpty: v == null,
         decoration: InputDecoration(
           labelText: required ? '$label *' : label,
-          hintText: hintText,
+          hintText: hintText ?? tr('Choose a date'),
           helperText: helperText,
           errorText: errorText,
           prefixIcon: Icon(icon, size: 20),
           suffixIcon: clearable && v != null
-              ? IconButton(tooltip: 'Clear', icon: const Icon(Iconsax.close_circle_copy, size: 18), onPressed: () => onChanged(null))
+              ? IconButton(tooltip: tr('Clear'), icon: const Icon(Iconsax.close_circle_copy, size: 18), onPressed: () => onChanged(null))
               : null,
         ),
         child: v == null ? null : Text('${v.day}/${v.month}/${v.year}'),

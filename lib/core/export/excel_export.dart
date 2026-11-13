@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:file_saver/file_saver.dart';
 import 'package:intl/intl.dart';
+import 'package:warsha_app/core/l10n/app_locale.dart';
 import 'package:syncfusion_flutter_xlsio/xlsio.dart';
 
 /// One column of an Excel export: its header and how to read a row's value.
@@ -48,7 +49,7 @@ Uint8List buildExcel<T>({
     final sheet = workbook.worksheets[0]..name = sheetName;
 
     for (var c = 0; c < columns.length; c++) {
-      sheet.getRangeByIndex(1, c + 1).setText(columns[c].header);
+      sheet.getRangeByIndex(1, c + 1).setText(tr(columns[c].header));
     }
     sheet.getRangeByIndex(1, 1, 1, columns.length).cellStyle
       ..bold = true

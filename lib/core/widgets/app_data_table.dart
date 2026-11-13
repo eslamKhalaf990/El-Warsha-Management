@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:warsha_app/core/theme/app_theme.dart';
 import 'package:warsha_app/core/widgets/app_card.dart';
+import 'package:warsha_app/core/l10n/app_locale.dart';
+import 'package:warsha_app/core/widgets/directional_icon.dart';
 
 /// A [DataTable] in a card that fills the width and scrolls sideways when
 /// there are more columns than room.
@@ -82,16 +84,16 @@ class TablePager extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
-          Text('$from–$to of $total', style: Theme.of(context).textTheme.labelSmall),
+          Text(tr('{0}–{1} of {2}', [from, to, total]), style: Theme.of(context).textTheme.labelSmall),
           const SizedBox(width: AppSpacing.s8),
           IconButton(
-            tooltip: 'Previous page',
-            icon: const Icon(Iconsax.arrow_left_2_copy, size: 18),
+            tooltip: tr('Previous page'),
+            icon: const DirectionalIcon(Iconsax.arrow_left_2_copy, size: 18),
             onPressed: page > 0 ? () => onPage(page - 1) : null,
           ),
           IconButton(
-            tooltip: 'Next page',
-            icon: const Icon(Iconsax.arrow_right_3_copy, size: 18),
+            tooltip: tr('Next page'),
+            icon: const DirectionalIcon(Iconsax.arrow_right_3_copy, size: 18),
             onPressed: page < pages - 1 ? () => onPage(page + 1) : null,
           ),
         ],
@@ -116,14 +118,15 @@ class ChipFilterBar<T> extends StatelessWidget {
     required this.options,
     required this.selected,
     required this.onSelected,
-    this.allLabel = 'All',
+    this.allLabel,
     this.allCount,
   });
 
   final List<ChipOption<T>> options;
   final T? selected;
   final ValueChanged<T?> onSelected;
-  final String allLabel;
+  /// Defaults to "All".
+  final String? allLabel;
   final int? allCount;
 
   @override
@@ -143,7 +146,7 @@ class ChipFilterBar<T> extends StatelessWidget {
       child: ListView(
         scrollDirection: Axis.horizontal,
         children: [
-          chip(allLabel, allCount, selected == null, () => onSelected(null)),
+          chip(allLabel ?? tr('All'), allCount, selected == null, () => onSelected(null)),
           for (final o in options) chip(o.label, o.count, selected == o.value, () => onSelected(selected == o.value ? null : o.value)),
         ],
       ),

@@ -4,6 +4,7 @@ import 'package:warsha_app/core/state/async_view_model.dart';
 import 'package:warsha_app/core/validation/validators.dart';
 import 'package:warsha_app/models/category_model.dart';
 import 'package:warsha_app/services/category_service.dart';
+import 'package:warsha_app/core/l10n/app_locale.dart';
 
 /// Categories screen: list, search, add, edit and delete.
 class CategoryVM extends ChangeNotifier with AsyncViewModel {
@@ -40,11 +41,11 @@ class CategoryVM extends ChangeNotifier with AsyncViewModel {
   // ── Validation ──────────────────────────────────────────
 
   static String? validateName(String? value) => Validators.firstOf([
-        () => Validators.required(value, 'Enter the category name.'),
-        () => Validators.maxLength(value, nameMaxLength, 'Category name'),
+        () => Validators.required(value, tr('Enter the category name.')),
+        () => Validators.maxLength(value, nameMaxLength, tr('Category name')),
       ]);
 
-  static String? validateDescription(String? value) => Validators.maxLength(value, descriptionMaxLength, 'Description');
+  static String? validateDescription(String? value) => Validators.maxLength(value, descriptionMaxLength, tr('Description'));
 
   /// Checks [request] the way the backend does, plus duplicate names, so most
   /// mistakes are caught without a round trip.
@@ -56,7 +57,7 @@ class CategoryVM extends ChangeNotifier with AsyncViewModel {
     if (!errors.containsKey('name')) {
       final key = _key(request.name);
       final clash = _all.where((c) => c.categoryId != editingId && _key(c.name) == key);
-      if (clash.isNotEmpty) errors['name'] = 'A category named "${clash.first.name}" already exists.';
+      if (clash.isNotEmpty) errors['name'] = tr('A category named "{0}" already exists.', [clash.first.name]);
     }
     return errors;
   }

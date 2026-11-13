@@ -3,6 +3,7 @@ import 'package:warsha_app/core/network/api_exception.dart';
 import 'package:warsha_app/core/state/async_view_model.dart';
 import 'package:warsha_app/models/analytics.dart';
 import 'package:warsha_app/services/analytics_service.dart';
+import 'package:warsha_app/core/l10n/app_locale.dart';
 
 /// The ranges the dashboard offers. [custom] is whatever was picked last.
 enum RangePreset {
@@ -14,9 +15,11 @@ enum RangePreset {
   allTime('All time'),
   custom('Custom');
 
-  const RangePreset(this.label);
+  const RangePreset(this.labelEn);
 
-  final String label;
+  /// English; shown through [label] in the current language.
+  final String labelEn;
+  String get label => tr(labelEn);
 }
 
 /// The analytics dashboard for one date range. Each section loads on its own:

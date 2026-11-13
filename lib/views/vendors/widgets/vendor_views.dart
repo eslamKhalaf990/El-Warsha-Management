@@ -5,24 +5,25 @@ import 'package:warsha_app/core/widgets/widgets.dart';
 import 'package:warsha_app/views/vendors/vendor_form_page.dart';
 import 'package:warsha_app/models/vendor.dart';
 import 'package:warsha_app/view_models/vendors_v_m.dart';
+import 'package:warsha_app/core/l10n/app_locale.dart';
 
 List<RowAction> _actions(BuildContext context, Vendor v) => [
-      RowAction(label: 'Edit', icon: Iconsax.edit_2_copy, onPressed: () => openVendorForm(context, vendor: v)),
-      RowAction(label: 'Archive', icon: Iconsax.archive_1_copy, destructive: true, onPressed: () => _archive(context, v)),
+      RowAction(label: tr('Edit'), icon: Iconsax.edit_2_copy, onPressed: () => openVendorForm(context, vendor: v)),
+      RowAction(label: tr('Archive'), icon: Iconsax.archive_1_copy, destructive: true, onPressed: () => _archive(context, v)),
     ];
 
 Future<void> _archive(BuildContext context, Vendor v) async {
   final vm = context.read<VendorVM>();
   final confirmed = await confirmAction(
     context,
-    title: 'Archive vendor?',
-    message: '"${v.name}" will be hidden from the list. Past purchases keep their vendor.',
-    confirmLabel: 'Archive',
+    title: tr('Archive vendor?'),
+    message: tr('"{0}" will be hidden from the list. Past purchases keep their vendor.', [v.name]),
+    confirmLabel: tr('Archive'),
     icon: Iconsax.archive_1_copy,
   );
   if (!confirmed || !context.mounted) return;
   final ok = await vm.archive(v);
-  if (context.mounted) reportResult(context, ok: ok, errorMessage: vm.errorMessage, success: '"${v.name}" archived.');
+  if (context.mounted) reportResult(context, ok: ok, errorMessage: vm.errorMessage, success: tr('"{0}" archived.', [v.name]));
 }
 
 String? _blank(String? s) => (s == null || s.trim().isEmpty) ? null : s.trim();
@@ -55,7 +56,7 @@ class VendorTile extends StatelessWidget {
       meta: [
         if (_blank(v.phone) case final phone?) StatusPill(label: phone, icon: Iconsax.call_copy, tone: Tone.brand),
         if (_blank(v.email) case final email?) StatusPill(label: email, icon: Iconsax.sms_copy),
-        if (_blank(v.taxNumber) case final tax?) StatusPill(label: 'Tax $tax', icon: Iconsax.document_text_copy),
+        if (_blank(v.taxNumber) case final tax?) StatusPill(label: tr('Tax {0}', [tax]), icon: Iconsax.document_text_copy),
       ],
       actions: _actions(context, v),
       onTap: () => openVendorForm(context, vendor: v),
@@ -73,14 +74,14 @@ class VendorTable extends StatelessWidget {
   Widget build(BuildContext context) {
     DataCell text(String? s) => DataCell(Text(_blank(s) ?? '—'));
     return AppDataTable(
-      columns: const [
-        DataColumn(label: Text('Vendor')),
-        DataColumn(label: Text('Contact person')),
-        DataColumn(label: Text('Phone')),
-        DataColumn(label: Text('Email')),
-        DataColumn(label: Text('Tax number')),
-        DataColumn(label: Text('Added')),
-        DataColumn(label: Text('')),
+      columns: [
+        DataColumn(label: Text(tr('Vendor'))),
+        DataColumn(label: Text(tr('Contact person'))),
+        DataColumn(label: Text(tr('Phone'))),
+        DataColumn(label: Text(tr('Email'))),
+        DataColumn(label: Text(tr('Tax number'))),
+        DataColumn(label: Text(tr('Added'))),
+        const DataColumn(label: Text('')),
       ],
       rows: [
         for (final v in vendors)

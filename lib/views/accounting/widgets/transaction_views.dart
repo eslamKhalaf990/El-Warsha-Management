@@ -5,13 +5,14 @@ import 'package:warsha_app/core/widgets/widgets.dart';
 import 'package:warsha_app/views/accounting/accounting_dialogs.dart';
 import 'package:warsha_app/models/transaction_model.dart';
 import 'package:warsha_app/view_models/accountings_v_m.dart';
+import 'package:warsha_app/core/l10n/app_locale.dart';
 
 bool _isIn(BankTransaction t) => t.transactionType == deposit;
 
 String _signed(BankTransaction t) => '${_isIn(t) ? '+' : '−'} ${Fmt.money(t.amount)}';
 
 String? _reference(BankTransaction t) =>
-    t.referenceId == null ? null : '${(t.referenceType ?? 'Ref').trim()} #${t.referenceId}';
+    t.referenceId == null ? null : '${tr((t.referenceType ?? 'Ref').trim())} #${t.referenceId}';
 
 /// The Transactions sheet of the Excel export; withdrawals are negative so
 /// the Amount column sums to the net movement.
@@ -55,13 +56,13 @@ class TransactionTable extends StatelessWidget {
   Widget build(BuildContext context) {
     final vm = context.watch<AccountingVM>();
     return AppDataTable(
-      columns: const [
-        DataColumn(label: Text('Date')),
-        DataColumn(label: Text('Account')),
-        DataColumn(label: Text('Description')),
-        DataColumn(label: Text('Category')),
-        DataColumn(label: Text('Reference')),
-        DataColumn(label: Text('Amount'), numeric: true),
+      columns: [
+        DataColumn(label: Text(tr('Date'))),
+        DataColumn(label: Text(tr('Account'))),
+        DataColumn(label: Text(tr('Description'))),
+        DataColumn(label: Text(tr('Category'))),
+        DataColumn(label: Text(tr('Reference'))),
+        DataColumn(label: Text(tr('Amount')), numeric: true),
       ],
       rows: [
         for (final t in vm.pagedTransactions)

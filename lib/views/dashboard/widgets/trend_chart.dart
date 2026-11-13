@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 import 'package:warsha_app/core/widgets/widgets.dart';
 import 'package:warsha_app/models/analytics.dart';
+import 'package:warsha_app/core/l10n/app_locale.dart';
 
 /// What the trend chart plots. One measure at a time: money and order counts
 /// never share an axis.
@@ -11,9 +11,11 @@ enum TrendMeasure {
   grossProfit('Gross profit'),
   orders('Orders');
 
-  const TrendMeasure(this.label);
+  const TrendMeasure(this.labelEn);
 
-  final String label;
+  /// English; shown through [label] in the current language.
+  final String labelEn;
+  String get label => tr(labelEn);
 
   double of(TrendPoint p) => switch (this) {
         TrendMeasure.netSales => p.netSales,
@@ -37,14 +39,14 @@ class TrendChart extends StatelessWidget {
   Widget build(BuildContext context) {
     final points = trend?.points ?? const [];
     if (points.every((p) => p.orders == 0)) {
-      return const SizedBox(height: 240, child: Center(child: AppText.bodySmall('No sales in this period.', color: AppColors.muted)));
+      return SizedBox(height: 240, child: Center(child: AppText.bodySmall(tr('No sales in this period.'), color: AppColors.muted)));
     }
     final axisText = Theme.of(context).textTheme.labelSmall;
     final granularity = trend!.granularity;
-    final label = granularity == 'month' ? DateFormat('MMM yy') : DateFormat('d MMM');
+    final label = granularity == 'month' ? Fmt.dateFormat('MMM yy') : Fmt.dateFormat('d MMM');
     String pointLabel(DateTime d) => switch (granularity) {
-          'week' => 'Week of ${Fmt.shortDate(d)}',
-          'month' => DateFormat('MMMM yyyy').format(d),
+          'week' => tr('Week of {0}', [Fmt.shortDate(d)]),
+          'month' => Fmt.dateFormat('MMMM yyyy').format(d),
           _ => Fmt.date(d),
         };
     return SizedBox(
@@ -69,7 +71,7 @@ class TrendChart extends StatelessWidget {
           majorTickLines: const MajorTickLines(size: 0),
           majorGridLines: const MajorGridLines(width: 1, color: AppColors.line),
           axisLabelFormatter: (a) => ChartAxisLabel(
-            measure == TrendMeasure.orders ? Fmt.number(a.value) : Fmt.moneyCompact(a.value).replaceAll(' EGP', ''),
+            measure == TrendMeasure.orders ? Fmt.number(a.value) : Fmt.moneyCompact(a.value).replaceAll(' ${Fmt.currencyLabel}', ''),
             axisText,
           ),
         ),
@@ -132,7 +134,7 @@ class WeekdayChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (days.every((d) => d.orders == 0)) {
-      return const SizedBox(height: 200, child: Center(child: AppText.bodySmall('No orders in this period.', color: AppColors.muted)));
+      return SizedBox(height: 200, child: Center(child: AppText.bodySmall(tr('No orders in this period.'), color: AppColors.muted)));
     }
     final axisText = Theme.of(context).textTheme.labelSmall;
     return SizedBox(
@@ -147,12 +149,14 @@ class WeekdayChart extends StatelessWidget {
           majorTickLines: const MajorTickLines(size: 0),
         ),
         primaryYAxis: const NumericAxis(isVisible: false, majorGridLines: MajorGridLines(width: 0)),
-        tooltipBehavior: TooltipBehavior(enable: true, color: AppColors.ink, format: 'point.x · point.y orders'),
+        tooltipBehavior: TooltipBehavior(enable: true, color: AppColors.ink, format: tr('point.x · point.y orders')),
         series: <CartesianSeries<WeekdaySales, String>>[
           ColumnSeries<WeekdaySales, String>(
-            name: 'Orders',
+            name: tr('Orders'),
             dataSource: days,
-            xValueMapper: (d, _) => d.weekday.length > 3 ? d.weekday.substring(0, 3) : d.weekday,
+            xValueMapper: (d, _) => AppLocale.instance.isArabic
+                ? tr(d.weekday)
+                : (d.weekday.length > 3 ? d.weekday.substring(0, 3) : d.weekday),
             yValueMapper: (d, _) => d.orders,
             color: AppChartColors.single,
             width: 0.6,

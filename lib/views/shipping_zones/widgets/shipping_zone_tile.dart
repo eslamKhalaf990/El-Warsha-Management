@@ -5,6 +5,7 @@ import 'package:warsha_app/core/widgets/widgets.dart';
 import 'package:warsha_app/views/shipping_zones/shipping_zone_form_dialog.dart';
 import 'package:warsha_app/models/shipping_zone.dart';
 import 'package:warsha_app/view_models/shipping_zone_v_m.dart';
+import 'package:warsha_app/core/l10n/app_locale.dart';
 
 /// A governorate with its delivery price and an on/off switch.
 class ShippingZoneTile extends StatelessWidget {
@@ -20,7 +21,7 @@ class ShippingZoneTile extends StatelessWidget {
       context,
       ok: ok,
       errorMessage: vm.errorMessage,
-      success: active ? 'Delivering to ${zone.cityName} again.' : '${zone.cityName} is off for now.',
+      success: active ? tr('Delivering to {0} again.', [zone.cityName]) : tr('{0} is off for now.', [zone.cityName]),
     );
   }
 
@@ -28,14 +29,13 @@ class ShippingZoneTile extends StatelessWidget {
     final vm = context.read<ShippingZoneVM>();
     final confirmed = await confirmAction(
       context,
-      title: 'Delete shipping zone?',
-      message: 'Customers in ${zone.cityName} can no longer be delivered to. '
-          'To pause it instead, switch it off.',
-      confirmLabel: 'Delete',
+      title: tr('Delete shipping zone?'),
+      message: tr('Customers in {0} can no longer be delivered to. To pause it instead, switch it off.', [zone.cityName]),
+      confirmLabel: tr('Delete'),
     );
     if (!confirmed || !context.mounted) return;
     final ok = await vm.delete(zone);
-    if (context.mounted) reportResult(context, ok: ok, errorMessage: vm.errorMessage, success: '${zone.cityName} deleted.');
+    if (context.mounted) reportResult(context, ok: ok, errorMessage: vm.errorMessage, success: tr('{0} deleted.', [zone.cityName]));
   }
 
   @override
@@ -47,15 +47,15 @@ class ShippingZoneTile extends StatelessWidget {
       title: zone.cityName,
       meta: [
         StatusPill(label: zone.priceLabel, icon: Iconsax.truck_fast_copy, tone: Tone.brand),
-        if (!zone.isActive) const StatusPill(label: 'Off', tone: Tone.neutral),
+        if (!zone.isActive) StatusPill(label: tr('Off'), tone: Tone.neutral),
       ],
       trailing: Tooltip(
-        message: zone.isActive ? 'Stop delivering here' : 'Deliver here',
+        message: zone.isActive ? tr('Stop delivering here') : tr('Deliver here'),
         child: Switch(value: zone.isActive, onChanged: saving ? null : (v) => _toggle(context, v)),
       ),
       actions: [
-        RowAction(label: 'Edit', icon: Iconsax.edit_2_copy, onPressed: () => openShippingZoneForm(context, zone: zone)),
-        RowAction(label: 'Delete', icon: Iconsax.trash_copy, destructive: true, onPressed: () => _delete(context)),
+        RowAction(label: tr('Edit'), icon: Iconsax.edit_2_copy, onPressed: () => openShippingZoneForm(context, zone: zone)),
+        RowAction(label: tr('Delete'), icon: Iconsax.trash_copy, destructive: true, onPressed: () => _delete(context)),
       ],
       onTap: () => openShippingZoneForm(context, zone: zone),
     );

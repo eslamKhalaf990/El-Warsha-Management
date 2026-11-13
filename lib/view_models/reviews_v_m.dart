@@ -3,6 +3,7 @@ import 'package:warsha_app/core/network/api_exception.dart';
 import 'package:warsha_app/core/state/async_view_model.dart';
 import 'package:warsha_app/models/review.dart';
 import 'package:warsha_app/services/reviews_service.dart';
+import 'package:warsha_app/core/l10n/app_locale.dart';
 
 /// Reviews screen: moderate what customers wrote in the store (approve,
 /// publish, feature, reply, delete).
@@ -84,9 +85,9 @@ class ReviewsVM extends ChangeNotifier with AsyncViewModel {
 
   Future<bool> reply(Review r, String text) {
     final t = text.trim();
-    if (t.isEmpty) return Future.value(fail(ApiException.validation({'reply': 'Write a reply first.'})));
+    if (t.isEmpty) return Future.value(fail(ApiException.validation({'reply': tr('Write a reply first.')})));
     if (t.length > replyMaxLength) {
-      return Future.value(fail(ApiException.validation({'reply': 'A reply can be at most $replyMaxLength characters.'})));
+      return Future.value(fail(ApiException.validation({'reply': tr('A reply can be at most {0} characters.', [replyMaxLength])})));
     }
     return _replace(r, () => _service.reply(r.id, t));
   }

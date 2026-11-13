@@ -9,6 +9,8 @@ import 'package:warsha_app/core/widgets/app_card.dart';
 import 'package:warsha_app/core/widgets/app_text.dart';
 import 'package:warsha_app/core/widgets/feedback.dart';
 import 'package:warsha_app/core/widgets/status_pill.dart';
+import 'package:warsha_app/core/l10n/app_locale.dart';
+import 'package:warsha_app/core/widgets/directional_icon.dart';
 
 /// Pushes a full-page form with its own [FormDraft] (disposed with the page).
 Future<T?> pushFormPage<T>(BuildContext context, {required FormDraft Function() draft, required Widget page}) =>
@@ -96,9 +98,9 @@ class FormPage extends StatelessWidget {
           final leave = !draft!.isDirty ||
               await confirmAction(
                 context,
-                title: 'Discard changes?',
-                message: "You have changes that aren't saved yet.",
-                confirmLabel: 'Discard',
+                title: tr('Discard changes?'),
+                message: tr('You have changes that aren\'t saved yet.'),
+                confirmLabel: tr('Discard'),
                 icon: Iconsax.warning_2_copy,
               );
           if (leave && context.mounted) Navigator.pop(context);
@@ -106,8 +108,8 @@ class FormPage extends StatelessWidget {
         child: Scaffold(
           appBar: AppBar(
             leading: IconButton(
-              icon: const Icon(Iconsax.arrow_left_copy),
-              tooltip: 'Back',
+              icon: const DirectionalIcon(Iconsax.arrow_left_copy),
+              tooltip: tr('Back'),
               onPressed: () => Navigator.maybePop(context),
             ),
             titleSpacing: 0,
@@ -161,10 +163,10 @@ class _ActionBar extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
               if (!compact) ...[
-                const AppText.caption('Ctrl + S to save'),
+                AppText.caption(tr('Ctrl + S to save')),
                 const Spacer(),
               ],
-              AppButton.secondary(label: 'Cancel', onPressed: () => Navigator.maybePop(context)),
+              AppButton.secondary(label: tr('Cancel'), onPressed: () => Navigator.maybePop(context)),
               const SizedBox(width: AppSpacing.s12),
               compact
                   ? Expanded(

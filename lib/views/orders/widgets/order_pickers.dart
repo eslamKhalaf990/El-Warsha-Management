@@ -9,6 +9,7 @@ import 'package:warsha_app/models/product_model.dart';
 import 'package:warsha_app/models/product_variant.dart';
 import 'package:warsha_app/view_models/product_v_m.dart';
 import 'package:warsha_app/view_models/customers_v_m.dart';
+import 'package:warsha_app/core/l10n/app_locale.dart';
 
 /// Search-as-you-type for a customer, with "New customer" always offered.
 class CustomerPicker extends StatelessWidget {
@@ -24,11 +25,11 @@ class CustomerPicker extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         SearchAnchor(
-          viewHintText: 'Name, mobile or #number',
+          viewHintText: tr('Name, mobile or #number'),
           isFullScreen: context.isCompact,
           viewBackgroundColor: AppColors.white,
           builder: (_, controller) => _SearchBox(
-            hint: vm.hasLoaded ? 'Find a customer by name or mobile' : 'Loading customers…',
+            hint: vm.hasLoaded ? tr('Find a customer by name or mobile') : tr('Loading customers…'),
             icon: Iconsax.user_search_copy,
             errorText: errorText,
             onTap: controller.openView,
@@ -39,8 +40,8 @@ class CustomerPicker extends StatelessWidget {
             return [
               ListTile(
                 leading: const IconBadge(Iconsax.user_add_copy, size: 36),
-                title: const Text('New customer'),
-                subtitle: Text(query.trim().isEmpty ? 'Add someone who isn’t in the list' : 'Add “${query.trim()}”'),
+                title: Text(tr('New customer')),
+                subtitle: Text(query.trim().isEmpty ? tr('Add someone who isn’t in the list') : tr('Add “{0}”', [query.trim()])),
                 onTap: () async {
                   controller.closeView('');
                   final created = await openCustomerForm(
@@ -86,7 +87,7 @@ class ProductPicker extends StatelessWidget {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const AppText.bodySmall('Which size / color?', color: AppColors.muted),
+            AppText.bodySmall(tr('Which size / color?'), color: AppColors.muted),
             const SizedBox(height: AppSpacing.s12),
             for (final v in p.variants)
               ListTile(
@@ -98,7 +99,7 @@ class ProductPicker extends StatelessWidget {
               ),
           ],
         ),
-        actions: [AppButton.text(label: 'Cancel', onPressed: () => Navigator.pop(context))],
+        actions: [AppButton.text(label: tr('Cancel'), onPressed: () => Navigator.pop(context))],
       ),
     );
     if (variant != null) onSelected(p, variant);
@@ -108,11 +109,11 @@ class ProductPicker extends StatelessWidget {
   Widget build(BuildContext context) {
     final vm = context.watch<ProductVM>();
     return SearchAnchor(
-      viewHintText: 'Product name or SKU',
+      viewHintText: tr('Product name or SKU'),
       isFullScreen: context.isCompact,
       viewBackgroundColor: AppColors.white,
       builder: (_, controller) => _SearchBox(
-        hint: vm.hasLoaded ? 'Add a product by name or SKU' : 'Loading products…',
+        hint: vm.hasLoaded ? tr('Add a product by name or SKU') : tr('Loading products…'),
         icon: Iconsax.box_add_copy,
         errorText: errorText,
         onTap: controller.openView,

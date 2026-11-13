@@ -4,6 +4,7 @@ import 'package:warsha_app/core/state/async_view_model.dart';
 import 'package:warsha_app/core/validation/validators.dart';
 import 'package:warsha_app/models/vendor.dart';
 import 'package:warsha_app/services/vendors_service.dart';
+import 'package:warsha_app/core/l10n/app_locale.dart';
 
 /// Vendors screen: list, search, add, edit and archive.
 class VendorVM extends ChangeNotifier with AsyncViewModel {
@@ -48,26 +49,26 @@ class VendorVM extends ChangeNotifier with AsyncViewModel {
   Map<String, String> validate(VendorRequest r, {int? editingId}) {
     final errors = Validators.collect({
       'name': () => Validators.firstOf([
-            () => Validators.required(r.name, 'Enter the vendor name.'),
-            () => Validators.maxLength(r.name, nameMaxLength, 'Vendor name'),
+            () => Validators.required(r.name, tr('Enter the vendor name.')),
+            () => Validators.maxLength(r.name, nameMaxLength, tr('Vendor name')),
           ]),
       'phone': () => Validators.firstOf([
-            () => Validators.maxLength(r.phone, phoneMaxLength, 'Phone'),
+            () => Validators.maxLength(r.phone, phoneMaxLength, tr('Phone')),
             () => Validators.phone(r.phone),
           ]),
       'email': () => Validators.firstOf([
-            () => Validators.maxLength(r.email, emailMaxLength, 'Email'),
+            () => Validators.maxLength(r.email, emailMaxLength, tr('Email')),
             () => Validators.email(r.email),
           ]),
-      'address': () => Validators.maxLength(r.address, addressMaxLength, 'Address'),
-      'taxNumber': () => Validators.maxLength(r.taxNumber, taxNumberMaxLength, 'Tax number'),
-      'contactPerson': () => Validators.maxLength(r.contactPerson, contactPersonMaxLength, 'Contact person'),
-      'notes': () => Validators.maxLength(r.notes, notesMaxLength, 'Notes'),
+      'address': () => Validators.maxLength(r.address, addressMaxLength, tr('Address')),
+      'taxNumber': () => Validators.maxLength(r.taxNumber, taxNumberMaxLength, tr('Tax number')),
+      'contactPerson': () => Validators.maxLength(r.contactPerson, contactPersonMaxLength, tr('Contact person')),
+      'notes': () => Validators.maxLength(r.notes, notesMaxLength, tr('Notes')),
     });
     if (!errors.containsKey('name')) {
       final key = _key(r.name);
       final clash = _all.where((v) => v.vendorId != editingId && _key(v.name) == key);
-      if (clash.isNotEmpty) errors['name'] = 'A vendor named "${clash.first.name}" already exists.';
+      if (clash.isNotEmpty) errors['name'] = tr('A vendor named "{0}" already exists.', [clash.first.name]);
     }
     return errors;
   }

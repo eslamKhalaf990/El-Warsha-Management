@@ -1,10 +1,13 @@
+import 'package:warsha_app/core/l10n/app_locale.dart';
 /// A choice in the order form's dropdowns: the value stored on the order and
 /// the label staff see.
 class OrderOption {
-  const OrderOption(this.value, this.label);
+  const OrderOption(this.value, this.labelEn);
 
   final String value;
-  final String label;
+  /// English; shown through [label] in the current language.
+  final String labelEn;
+  String get label => tr(labelEn);
 }
 
 /// Where orders come from. Older orders may hold other values; forms keep
@@ -33,6 +36,7 @@ String optionLabel(List<OrderOption> options, String? value) {
   for (final o in options) {
     if (o.value == v.toLowerCase()) return o.label;
   }
-  if (v.toLowerCase() == 'e-commerce') return 'Online store';
-  return v[0].toUpperCase() + v.substring(1);
+  if (v.toLowerCase() == 'e-commerce') return tr('Online store');
+  // Older or store-made values ("website") show as they are, translated when known.
+  return tr(v[0].toUpperCase() + v.substring(1));
 }

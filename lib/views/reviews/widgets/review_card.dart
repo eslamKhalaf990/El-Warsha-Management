@@ -5,6 +5,7 @@ import 'package:warsha_app/core/state/form_draft.dart';
 import 'package:warsha_app/core/widgets/widgets.dart';
 import 'package:warsha_app/models/review.dart';
 import 'package:warsha_app/view_models/reviews_v_m.dart';
+import 'package:warsha_app/core/l10n/app_locale.dart';
 
 extension ReviewStatusTone on ReviewStatus {
   Tone get tone => switch (this) {
@@ -26,7 +27,7 @@ class Stars extends StatelessWidget {
   Widget build(BuildContext context) {
     if (rating <= 0) return const SizedBox.shrink();
     return Semantics(
-      label: '$rating out of 5 stars',
+      label: tr('{0} out of 5 stars', [rating]),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -53,11 +54,11 @@ class ReviewCard extends StatelessWidget {
   Future<void> _delete(BuildContext context) async {
     final ok = await confirmAction(
       context,
-      title: 'Delete review?',
-      message: '${review.customerName}’s review and its replies will be removed for good.',
-      confirmLabel: 'Delete',
+      title: tr('Delete review?'),
+      message: tr('{0}’s review and its replies will be removed for good.', [review.customerName]),
+      confirmLabel: tr('Delete'),
     );
-    if (ok && context.mounted) await _run(context, (vm) => vm.delete(review), 'Review deleted.');
+    if (ok && context.mounted) await _run(context, (vm) => vm.delete(review), tr('Review deleted.'));
   }
 
   @override
@@ -66,7 +67,7 @@ class ReviewCard extends StatelessWidget {
     final saving = context.select<ReviewsVM, bool>((vm) => vm.isSaving);
     final about = [
       if (r.productName != null) r.productName!,
-      if (r.orderId != null) 'Order #${r.orderId}',
+      if (r.orderId != null) tr('Order #{0}', [r.orderId]),
     ].join(' · ');
 
     return AppCard(
@@ -90,8 +91,8 @@ class ReviewCard extends StatelessWidget {
               StatusPill(label: r.status.label, tone: r.status.tone),
               RowActions(
                 [
-                  RowAction(label: 'Reply', icon: Iconsax.message_edit_copy, onPressed: () => openReply(context, r)),
-                  RowAction(label: 'Delete', icon: Iconsax.trash_copy, destructive: true, onPressed: () => _delete(context)),
+                  RowAction(label: tr('Reply'), icon: Iconsax.message_edit_copy, onPressed: () => openReply(context, r)),
+                  RowAction(label: tr('Delete'), icon: Iconsax.trash_copy, destructive: true, onPressed: () => _delete(context)),
                 ],
                 forceMenu: true,
               ),
@@ -119,7 +120,7 @@ class ReviewCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  AppText.caption('Your reply · ${r.repliedBy ?? 'Admin'} · ${Fmt.date(r.repliedAt)}', color: AppColors.burgundy),
+                  AppText.caption(tr('Your reply · {0} · {1}', [r.repliedBy ?? tr('Admin'), Fmt.date(r.repliedAt)]), color: AppColors.burgundy),
                   const SizedBox(height: 2),
                   AppText.bodySmall(r.adminReply!),
                 ],
@@ -136,36 +137,36 @@ class ReviewCard extends StatelessWidget {
             children: [
               if (r.status != ReviewStatus.approved)
                 AppButton.primary(
-                  label: 'Approve',
+                  label: tr('Approve'),
                   icon: Iconsax.tick_circle_copy,
                   compact: true,
-                  onPressed: saving ? null : () => _run(context, (vm) => vm.setStatus(r, ReviewStatus.approved), 'Approved and published.'),
+                  onPressed: saving ? null : () => _run(context, (vm) => vm.setStatus(r, ReviewStatus.approved), tr('Approved and published.')),
                 ),
               if (r.status == ReviewStatus.pending || r.status == ReviewStatus.approved)
                 AppButton.secondary(
-                  label: 'Reject',
+                  label: tr('Reject'),
                   icon: Iconsax.close_circle_copy,
                   compact: true,
-                  onPressed: saving ? null : () => _run(context, (vm) => vm.setStatus(r, ReviewStatus.rejected), 'Review rejected.'),
+                  onPressed: saving ? null : () => _run(context, (vm) => vm.setStatus(r, ReviewStatus.rejected), tr('Review rejected.')),
                 ),
               if (r.type.toUpperCase() != 'PRODUCT' && r.status != ReviewStatus.resolved)
                 AppButton.text(
-                  label: 'Mark resolved',
+                  label: tr('Mark resolved'),
                   icon: Iconsax.task_square_copy,
                   compact: true,
-                  onPressed: saving ? null : () => _run(context, (vm) => vm.setStatus(r, ReviewStatus.resolved), 'Marked as resolved.'),
+                  onPressed: saving ? null : () => _run(context, (vm) => vm.setStatus(r, ReviewStatus.resolved), tr('Marked as resolved.')),
                 ),
               FilterChip(
-                label: const Text('On the store'),
+                label: Text(tr('On the store')),
                 avatar: const Icon(Iconsax.global_copy, size: 16),
                 selected: r.isPublic,
-                onSelected: saving ? null : (v) => _run(context, (vm) => vm.setPublic(r, v), v ? 'Shown on the store.' : 'Hidden from the store.'),
+                onSelected: saving ? null : (v) => _run(context, (vm) => vm.setPublic(r, v), v ? tr('Shown on the store.') : tr('Hidden from the store.')),
               ),
               FilterChip(
-                label: const Text('Featured'),
+                label: Text(tr('Featured')),
                 avatar: const Icon(Iconsax.star_1_copy, size: 16),
                 selected: r.isFeatured,
-                onSelected: saving ? null : (v) => _run(context, (vm) => vm.setFeatured(r, v), v ? 'Featured on the home page.' : 'No longer featured.'),
+                onSelected: saving ? null : (v) => _run(context, (vm) => vm.setFeatured(r, v), v ? tr('Featured on the home page.') : tr('No longer featured.')),
               ),
             ],
           ),
@@ -194,7 +195,7 @@ class _ReplyDialog extends StatelessWidget {
     final vm = context.read<ReviewsVM>();
     final ok = await vm.reply(review, context.read<FormDraft>().text('reply'));
     if (context.mounted) {
-      reportResult(context, ok: ok, pop: true, errorMessage: vm.errorMessage, success: 'Reply posted.', fieldError: vm.fieldError, fields: const ['reply']);
+      reportResult(context, ok: ok, pop: true, errorMessage: vm.errorMessage, success: tr('Reply posted.'), fieldError: vm.fieldError, fields: const ['reply']);
     }
   }
 
@@ -202,17 +203,17 @@ class _ReplyDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     final vm = context.watch<ReviewsVM>();
     return FormDialog(
-      title: 'Reply to ${review.customerName}',
+      title: tr('Reply to {0}', [review.customerName]),
       icon: Iconsax.message_edit_copy,
-      saveLabel: 'Post reply',
+      saveLabel: tr('Post reply'),
       saving: vm.isSaving,
       onSave: () => _send(context),
       children: [
         AppCard(variant: AppCardVariant.ivory, padding: const EdgeInsets.all(AppSpacing.s12), child: AppText.bodySmall(review.comment)),
         AppTextField(
-          label: 'Your reply',
+          label: tr('Your reply'),
           icon: Iconsax.message_text_copy,
-          helperText: 'Shown under the review on the store.',
+          helperText: tr('Shown under the review on the store.'),
           controller: context.read<FormDraft>().controller('reply'),
           errorText: vm.fieldError('reply'),
           maxLength: ReviewsVM.replyMaxLength,

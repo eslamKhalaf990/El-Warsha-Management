@@ -9,6 +9,7 @@ import 'package:warsha_app/core/widgets/app_button.dart';
 import 'package:warsha_app/core/widgets/app_fields.dart';
 import 'package:warsha_app/core/widgets/app_image.dart';
 import 'package:warsha_app/core/widgets/app_text.dart';
+import 'package:warsha_app/core/l10n/app_locale.dart';
 
 /// An image chosen on this device, not uploaded yet.
 class PickedImage {
@@ -50,7 +51,7 @@ class ImagePickerField extends StatelessWidget {
     this.onRemove,
     this.errorText,
     this.height = 220,
-    this.label = 'Image',
+    this.label,
   });
 
   final PickedImage? picked;
@@ -61,7 +62,8 @@ class ImagePickerField extends StatelessWidget {
   final VoidCallback? onRemove;
   final String? errorText;
   final double height;
-  final String label;
+  /// What is being picked, e.g. "cover image"; defaults to "Image".
+  final String? label;
 
   Future<void> _choose() async {
     final image = await pickImage();
@@ -96,7 +98,7 @@ class ImagePickerField extends StatelessWidget {
           onDragDone: _dropped,
           child: Semantics(
             button: true,
-            label: hasImage ? 'Replace $label' : 'Choose $label',
+            label: hasImage ? tr('Replace {0}', [label ?? tr('Image')]) : tr('Choose {0}', [label ?? tr('Image')]),
             child: InkWell(
               onTap: _choose,
               borderRadius: AppRadius.inputBorderRadius,
@@ -109,13 +111,13 @@ class ImagePickerField extends StatelessWidget {
                 ),
                 child: hasImage
                     ? preview
-                    : const Column(
+                    : Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Iconsax.gallery_add_copy, size: 36, color: AppColors.burgundy),
-                          SizedBox(height: AppSpacing.s8),
-                          AppText.label('Click to choose an image'),
-                          AppText.caption('or drop it here · JPG, PNG or WebP'),
+                          const Icon(Iconsax.gallery_add_copy, size: 36, color: AppColors.burgundy),
+                          const SizedBox(height: AppSpacing.s8),
+                          AppText.label(tr('Click to choose an image')),
+                          AppText.caption(tr('or drop it here · JPG, PNG or WebP')),
                         ],
                       ),
               ),
@@ -128,9 +130,9 @@ class ImagePickerField extends StatelessWidget {
           Wrap(
             spacing: AppSpacing.s8,
             children: [
-              AppButton.secondary(label: 'Replace', icon: Iconsax.gallery_edit_copy, compact: true, onPressed: _choose),
+              AppButton.secondary(label: tr('Replace'), icon: Iconsax.gallery_edit_copy, compact: true, onPressed: _choose),
               if (onRemove != null)
-                AppButton.text(label: 'Remove', icon: Iconsax.trash_copy, compact: true, onPressed: onRemove),
+                AppButton.text(label: tr('Remove'), icon: Iconsax.trash_copy, compact: true, onPressed: onRemove),
             ],
           ),
         ],

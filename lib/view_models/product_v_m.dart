@@ -6,6 +6,7 @@ import 'package:warsha_app/models/product_model.dart';
 import 'package:warsha_app/models/product_variant.dart';
 import 'package:warsha_app/services/product_variants_service.dart';
 import 'package:warsha_app/services/products_service.dart';
+import 'package:warsha_app/core/l10n/app_locale.dart';
 
 /// Stock filter of the Products screen.
 enum StockFilter {
@@ -13,8 +14,10 @@ enum StockFilter {
   low('Low stock'),
   out('Out of stock');
 
-  const StockFilter(this.label);
-  final String label;
+  const StockFilter(this.labelEn);
+  /// English; shown through [label] in the current language.
+  final String labelEn;
+  String get label => tr(labelEn);
 }
 
 /// Products screen (list, search, add, edit, delete) and the product pickers
@@ -132,30 +135,30 @@ class ProductVM extends ChangeNotifier with AsyncViewModel {
   Map<String, String> validate(ProductForm form, {required bool isNew, bool hasImage = true, bool hasVariants = false}) {
     final errors = Validators.collect({
       'name': () => Validators.firstOf([
-            () => Validators.required(form.name, 'Enter the product name.'),
-            () => Validators.maxLength(form.name, nameMaxLength, 'Name'),
+            () => Validators.required(form.name, tr('Enter the product name.')),
+            () => Validators.maxLength(form.name, nameMaxLength, tr('Name')),
           ]),
-      'nameAr': () => Validators.maxLength(form.nameAr, nameArMaxLength, 'Arabic name'),
-      'description': () => Validators.maxLength(form.description, descriptionMaxLength, 'Description'),
-      'descriptionAr': () => Validators.maxLength(form.descriptionAr, descriptionArMaxLength, 'Arabic description'),
-      'buyingPrice': () => Validators.nonNegativeNumber(form.buyingPrice, 'Buying price', required: true),
-      'sellingPrice': () => Validators.nonNegativeNumber(form.sellingPrice, 'Selling price', required: true),
-      'discount': () => Validators.nonNegativeNumber(form.discount, 'Discount'),
+      'nameAr': () => Validators.maxLength(form.nameAr, nameArMaxLength, tr('Arabic name')),
+      'description': () => Validators.maxLength(form.description, descriptionMaxLength, tr('Description')),
+      'descriptionAr': () => Validators.maxLength(form.descriptionAr, descriptionArMaxLength, tr('Arabic description')),
+      'buyingPrice': () => Validators.nonNegativeNumber(form.buyingPrice, tr('Buying price'), required: true),
+      'sellingPrice': () => Validators.nonNegativeNumber(form.sellingPrice, tr('Selling price'), required: true),
+      'discount': () => Validators.nonNegativeNumber(form.discount, tr('Discount')),
       'quantity': () {
         if (hasVariants) return null;
         final t = form.quantity.trim();
-        if (t.isEmpty) return 'Enter the stock quantity.';
+        if (t.isEmpty) return tr('Enter the stock quantity.');
         final n = int.tryParse(t);
-        if (n == null) return 'Stock must be a whole number.';
-        return n < 0 ? "Stock can't be negative." : null;
+        if (n == null) return tr('Stock must be a whole number.');
+        return n < 0 ? tr('Stock can\'t be negative.') : null;
       },
-      'categoryId': () => form.categoryId == null ? 'Choose a category.' : null,
-      'image': () => isNew && !hasImage ? 'Choose a product image.' : null,
+      'categoryId': () => form.categoryId == null ? tr('Choose a category.') : null,
+      'image': () => isNew && !hasImage ? tr('Choose a product image.') : null,
     });
     final selling = _number(form.sellingPrice);
     final discount = _number(form.discount) ?? 0;
     if (!errors.containsKey('discount') && selling != null && discount > selling) {
-      errors['discount'] = "Discount can't be more than the selling price.";
+      errors['discount'] = tr('Discount can\'t be more than the selling price.');
     }
     return errors;
   }
@@ -212,9 +215,9 @@ class ProductVM extends ChangeNotifier with AsyncViewModel {
           await _variants.create(productId, ProductVariantRequest(size: size, color: color, quantity: 0));
         }
       }
-      return 'Product added. Set the stock of each size/color from Edit product.';
+      return tr('Product added. Set the stock of each size/color from Edit product.');
     } on ApiException catch (e) {
-      return "Product added, but some sizes/colors weren't saved: ${e.message}";
+      return tr('Product added, but some sizes/colors weren\'t saved: {0}', [e.message]);
     }
   }
 

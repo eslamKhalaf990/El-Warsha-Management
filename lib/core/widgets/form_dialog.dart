@@ -4,6 +4,7 @@ import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:warsha_app/core/theme/app_theme.dart';
 import 'package:warsha_app/core/widgets/app_button.dart';
 import 'package:warsha_app/core/widgets/feedback.dart';
+import 'package:warsha_app/core/l10n/app_locale.dart';
 
 /// A small add/edit form in a dialog, for entities with a few fields
 /// (category, shipping zone, transaction). Ctrl/⌘+S saves.
@@ -53,7 +54,7 @@ class FormDialog extends StatelessWidget {
           ],
         ),
         actions: [
-          AppButton.text(label: 'Cancel', onPressed: () => Navigator.pop(context)),
+          AppButton.text(label: tr('Cancel'), onPressed: () => Navigator.pop(context)),
           danger
               ? AppButton.danger(label: saveLabel, onPressed: onSave, loading: saving)
               : AppButton.primary(label: saveLabel, onPressed: onSave, loading: saving, icon: Iconsax.tick_circle_copy),

@@ -5,23 +5,24 @@ import 'package:warsha_app/core/widgets/widgets.dart';
 import 'package:warsha_app/views/customers/customer_form_page.dart';
 import 'package:warsha_app/models/customer_model.dart';
 import 'package:warsha_app/view_models/customers_v_m.dart';
+import 'package:warsha_app/core/l10n/app_locale.dart';
 
 List<RowAction> _actions(BuildContext context, CustomerModel c) => [
-      RowAction(label: 'Edit', icon: Iconsax.edit_2_copy, onPressed: () => openCustomerForm(context, customer: c)),
-      RowAction(label: 'Delete', icon: Iconsax.trash_copy, destructive: true, onPressed: () => _delete(context, c)),
+      RowAction(label: tr('Edit'), icon: Iconsax.edit_2_copy, onPressed: () => openCustomerForm(context, customer: c)),
+      RowAction(label: tr('Delete'), icon: Iconsax.trash_copy, destructive: true, onPressed: () => _delete(context, c)),
     ];
 
 Future<void> _delete(BuildContext context, CustomerModel c) async {
   final vm = context.read<CustomerVM>();
   final confirmed = await confirmAction(
     context,
-    title: 'Delete customer?',
-    message: '${c.fullName} will be removed. Customers with orders can’t be deleted.',
-    confirmLabel: 'Delete',
+    title: tr('Delete customer?'),
+    message: tr('{0} will be removed. Customers with orders can’t be deleted.', [c.fullName]),
+    confirmLabel: tr('Delete'),
   );
   if (!confirmed || !context.mounted) return;
   final ok = await vm.delete(c);
-  if (context.mounted) reportResult(context, ok: ok, errorMessage: vm.errorMessage, success: '${c.fullName} deleted.');
+  if (context.mounted) reportResult(context, ok: ok, errorMessage: vm.errorMessage, success: tr('{0} deleted.', [c.fullName]));
 }
 
 String _place(CustomerModel c) =>
@@ -71,14 +72,14 @@ class CustomerTable extends StatelessWidget {
     final vm = context.watch<CustomerVM>();
     DataCell text(String s) => DataCell(Text(s.trim().isEmpty ? '—' : s, overflow: TextOverflow.ellipsis));
     return AppDataTable(
-      columns: const [
-        DataColumn(label: Text('#'), numeric: true),
-        DataColumn(label: Text('Customer')),
-        DataColumn(label: Text('Mobile')),
-        DataColumn(label: Text('Second phone')),
-        DataColumn(label: Text('Governorate')),
-        DataColumn(label: Text('Address')),
-        DataColumn(label: Text('')),
+      columns: [
+        const DataColumn(label: Text('#'), numeric: true),
+        DataColumn(label: Text(tr('Customer'))),
+        DataColumn(label: Text(tr('Mobile'))),
+        DataColumn(label: Text(tr('Second phone'))),
+        DataColumn(label: Text(tr('Governorate'))),
+        DataColumn(label: Text(tr('Address'))),
+        const DataColumn(label: Text('')),
       ],
       rows: [
         for (final c in vm.pagedCustomers)

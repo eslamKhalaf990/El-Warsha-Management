@@ -10,6 +10,7 @@ import 'package:warsha_app/models/order_status.dart';
 import 'package:warsha_app/view_models/accountings_v_m.dart';
 import 'package:warsha_app/view_models/product_v_m.dart';
 import 'package:warsha_app/view_models/order_v_m.dart';
+import 'package:warsha_app/core/l10n/app_locale.dart';
 
 /// Every status gets one tone and icon, wherever it shows.
 extension OrderStatusLook on OrderStatus? {
@@ -31,7 +32,8 @@ extension OrderStatusLook on OrderStatus? {
         null => Iconsax.info_circle_copy,
       };
 
-  String get text => this?.label ?? 'Unknown';
+  /// The status in the current language ([OrderStatus.label] is the API value).
+  String get text => this == null ? tr('Unknown') : tr(this!.label);
 }
 
 /// Stock and balances change with every order change.
@@ -61,19 +63,18 @@ Future<void> changeOrderStatus(BuildContext context, OrderModel order, OrderStat
   if (status == OrderStatus.completed) {
     final account = await chooseBankAccount(
       context,
-      title: 'Complete order #$id',
-      message: 'The amount due, ${Fmt.money(order.amountDue)}, is booked into the account you choose.',
-      confirmLabel: 'Complete order',
+      title: tr('Complete order #{0}', [id]),
+      message: tr('The amount due, {0}, is booked into the account you choose.', [Fmt.money(order.amountDue)]),
+      confirmLabel: tr('Complete order'),
     );
     if (account == null) return;
     bankAccountId = account.id;
   } else if (status == OrderStatus.cancelled) {
     final ok = await confirmAction(
       context,
-      title: 'Cancel order #$id?',
-      message: 'This can’t be undone. Items go back to stock and any down payment is refunded '
-          'from the account that received it.',
-      confirmLabel: 'Cancel order',
+      title: tr('Cancel order #{0}?', [id]),
+      message: tr('This can’t be undone. Items go back to stock and any down payment is refunded from the account that received it.'),
+      confirmLabel: tr('Cancel order'),
       icon: Iconsax.close_circle_copy,
     );
     if (!ok) return;
@@ -83,7 +84,7 @@ Future<void> changeOrderStatus(BuildContext context, OrderModel order, OrderStat
   final ok = await vm.updateOrderStatus(orderId: id, status: status, bankAccountId: bankAccountId);
   if (!context.mounted) return;
   if (ok) {
-    showSuccess(context, status == OrderStatus.cancelled ? 'Order #$id cancelled.' : 'Order #$id is now ${status.label}.');
+    showSuccess(context, status == OrderStatus.cancelled ? tr('Order #{0} cancelled.', [id]) : tr('Order #{0} is now {1}.', [id, status.text]));
     refreshAfterOrderChange(context);
   } else {
     showOrderError(context, vm.lastError);
@@ -94,15 +95,15 @@ Future<void> changeOrderStatus(BuildContext context, OrderModel order, OrderStat
 Future<bool> deleteOrder(BuildContext context, OrderModel order) async {
   final ok = await confirmAction(
     context,
-    title: 'Delete order #${order.orderId}?',
-    message: 'The order disappears from every list and report.',
-    confirmLabel: 'Delete',
+    title: tr('Delete order #{0}?', [order.orderId]),
+    message: tr('The order disappears from every list and report.'),
+    confirmLabel: tr('Delete'),
   );
   if (!ok || !context.mounted) return false;
   final vm = context.read<OrderVM>();
   final deleted = await vm.deleteOrder(order.orderId!);
   if (!context.mounted) return deleted;
-  reportResult(context, ok: deleted, errorMessage: vm.errorMessage, success: 'Order #${order.orderId} deleted.');
+  reportResult(context, ok: deleted, errorMessage: vm.errorMessage, success: tr('Order #{0} deleted.', [order.orderId]));
   if (deleted) refreshAfterOrderChange(context);
   return deleted;
 }
@@ -144,7 +145,7 @@ class _AccountDialog extends StatelessWidget {
           AppText.body(message),
           const SizedBox(height: AppSpacing.s16),
           if (accounts.isEmpty)
-            const InlineBanner(message: 'No bank accounts loaded. Open Accounting and try again.', tone: Tone.error)
+            InlineBanner(message: tr('No bank accounts loaded. Open Accounting and try again.'), tone: Tone.error)
           else
             for (final a in accounts)
               Padding(
@@ -168,7 +169,7 @@ class _AccountDialog extends StatelessWidget {
         ],
       ),
       actions: [
-        AppButton.text(label: 'Back', onPressed: () => Navigator.pop(context)),
+        AppButton.text(label: tr('Back'), onPressed: () => Navigator.pop(context)),
         AppButton.primary(
           label: confirmLabel,
           onPressed: selected == null ? null : () => Navigator.pop(context, selected),
@@ -194,7 +195,7 @@ class OrderStatusControl extends StatelessWidget {
       return KeyedSubtree(key: const Key('orderStatusBadge'), child: pill);
     }
     return PopupMenuButton<OrderStatus>(
-      tooltip: 'Change status',
+      tooltip: tr('Change status'),
       onSelected: (s) => changeOrderStatus(context, order, s),
       itemBuilder: (_) => [
         for (final s in next)
@@ -204,7 +205,7 @@ class OrderStatusControl extends StatelessWidget {
               children: [
                 Icon(s.icon, size: 18, color: (s as OrderStatus?).tone.foreground),
                 const SizedBox(width: AppSpacing.s12),
-                Text(s == OrderStatus.cancelled ? 'Cancel order' : 'Mark as ${s.label}'),
+                Text(s == OrderStatus.cancelled ? tr('Cancel order') : tr('Mark as {0}', [s.text])),
               ],
             ),
           ),

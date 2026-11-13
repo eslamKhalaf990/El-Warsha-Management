@@ -3,6 +3,7 @@ import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:warsha_app/core/widgets/widgets.dart';
 import 'package:warsha_app/views/accounting/accounting_dialogs.dart';
 import 'package:warsha_app/models/account_balance.dart';
+import 'package:warsha_app/core/l10n/app_locale.dart';
 
 /// An account's balance with quick "money in / money out" buttons.
 class AccountCard extends StatelessWidget {
@@ -26,18 +27,18 @@ class AccountCard extends StatelessWidget {
       value: Fmt.money(a.currentBalance),
       icon: _icon,
       tone: a.ownerSafe ? Tone.warning : Tone.brand,
-      caption: a.ownerSafe ? 'Owner’s safe' : (a.accountType.isEmpty ? null : a.accountType),
+      caption: a.ownerSafe ? tr('Owner’s safe') : (a.accountType.isEmpty ? null : a.accountType),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           IconButton(
-            tooltip: 'Money in',
+            tooltip: tr('Money in'),
             visualDensity: VisualDensity.compact,
             icon: const Icon(Iconsax.money_recive_copy, size: 18, color: AppStatusColors.successText),
             onPressed: () => openTransactionForm(context, account: a, type: deposit),
           ),
           IconButton(
-            tooltip: 'Money out',
+            tooltip: tr('Money out'),
             visualDensity: VisualDensity.compact,
             icon: const Icon(Iconsax.money_send_copy, size: 18, color: AppStatusColors.errorText),
             onPressed: () => openTransactionForm(context, account: a, type: withdrawal),

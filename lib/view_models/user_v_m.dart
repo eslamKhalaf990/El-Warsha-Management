@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:warsha_app/core/network/api_exception.dart';
 import 'package:warsha_app/services/user_service.dart';
+import 'package:warsha_app/core/l10n/app_locale.dart';
 
 /// Owns the login session: restoring a saved token at startup, logging in and
 /// out, and ending the session when the backend reports it has expired.
@@ -14,7 +15,7 @@ class UserViewModel extends ChangeNotifier {
   UserViewModel(this._userService);
 
   static const _tokenKey = 'auth_token';
-  static const sessionExpiredMessage = 'Your session has expired. Please log in again.';
+  static String get sessionExpiredMessage => tr('Your session has expired. Please log in again.');
 
   final UserService _userService;
 
@@ -60,7 +61,7 @@ class UserViewModel extends ChangeNotifier {
   /// Returns true on success; on failure [errorMessage] explains why.
   Future<bool> login(String username, String password) async {
     if (username.trim().isEmpty || password.isEmpty) {
-      _errorMessage = 'Please enter your username and password.';
+      _errorMessage = tr('Please enter your username and password.');
       notifyListeners();
       return false;
     }
@@ -82,7 +83,7 @@ class UserViewModel extends ChangeNotifier {
       return false;
     } catch (e) {
       debugPrint('Unexpected login error: $e');
-      _errorMessage = 'Something went wrong. Please try again.';
+      _errorMessage = tr('Something went wrong. Please try again.');
       return false;
     } finally {
       _isLoading = false;

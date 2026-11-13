@@ -10,15 +10,16 @@ import 'package:warsha_app/models/order_model.dart';
 import 'package:warsha_app/models/order_options.dart';
 import 'package:warsha_app/models/order_status.dart';
 import 'package:warsha_app/view_models/order_v_m.dart';
+import 'package:warsha_app/core/l10n/app_locale.dart';
 
 List<RowAction> orderRowActions(BuildContext context, OrderModel o) {
   final canEdit = o.status?.isEditable ?? false;
   final canDelete = o.status == OrderStatus.pending || o.status == OrderStatus.cancelled;
   return [
-    RowAction(label: 'Details', icon: Iconsax.eye_copy, onPressed: () => showOrderDetails(context, o)),
-    RowAction(label: 'Invoice', icon: Iconsax.printer_copy, onPressed: () => openInvoice(context, o)),
-    if (canEdit) RowAction(label: 'Edit', icon: Iconsax.edit_2_copy, onPressed: () => openOrderForm(context, order: o)),
-    if (canDelete) RowAction(label: 'Delete', icon: Iconsax.trash_copy, destructive: true, onPressed: () => deleteOrder(context, o)),
+    RowAction(label: tr('Details'), icon: Iconsax.eye_copy, onPressed: () => showOrderDetails(context, o)),
+    RowAction(label: tr('Invoice'), icon: Iconsax.printer_copy, onPressed: () => openInvoice(context, o)),
+    if (canEdit) RowAction(label: tr('Edit'), icon: Iconsax.edit_2_copy, onPressed: () => openOrderForm(context, order: o)),
+    if (canDelete) RowAction(label: tr('Delete'), icon: Iconsax.trash_copy, destructive: true, onPressed: () => deleteOrder(context, o)),
   ];
 }
 
@@ -34,7 +35,7 @@ class OrderCard extends StatelessWidget {
     final items = o.orderItems.fold<int>(0, (n, i) => n + i.quantity);
     return AppCard(
       onTap: () => showOrderDetails(context, o),
-      padding: const EdgeInsets.fromLTRB(AppSpacing.s16, AppSpacing.s12, AppSpacing.s4, AppSpacing.s12),
+      padding: const EdgeInsetsDirectional.fromSTEB(AppSpacing.s16, AppSpacing.s12, AppSpacing.s4, AppSpacing.s12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -49,14 +50,14 @@ class OrderCard extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.s8),
           Padding(
-            padding: const EdgeInsets.only(right: AppSpacing.s12),
+            padding: const EdgeInsetsDirectional.only(end: AppSpacing.s12),
             child: Row(
               children: [
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      AppText.titleSmall(o.customer?.fullName ?? 'No customer', maxLines: 1),
+                      AppText.titleSmall(o.customer?.fullName ?? tr('No customer'), maxLines: 1),
                       AppText.caption(
                         [o.customer?.phone, o.customer?.governorate].where((s) => (s ?? '').trim().isNotEmpty).join(' · '),
                         maxLines: 1,
@@ -68,7 +69,7 @@ class OrderCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     AppText.price(Fmt.money(o.grandTotal ?? 0)),
-                    AppText.caption('${Fmt.count(items, 'piece')} · due ${Fmt.money(o.amountDue)}'),
+                    AppText.caption(tr('{0} · due {1}', [Fmt.count(items, 'piece'), Fmt.money(o.amountDue)])),
                   ],
                 ),
               ],
@@ -92,20 +93,20 @@ class OrderTable extends StatelessWidget {
       sortColumnIndex: vm.sortColumnIndex,
       sortAscending: vm.sortAscending,
       columns: [
-        DataColumn(label: const Text('Order'), onSort: (i, a) => vm.sort<num>((o) => o.orderId ?? 0, i, a)),
+        DataColumn(label: Text(tr('Order')), onSort: (i, a) => vm.sort<num>((o) => o.orderId ?? 0, i, a)),
         DataColumn(
-          label: const Text('Date'),
+          label: Text(tr('Date')),
           onSort: (i, a) => vm.sort<DateTime>((o) => o.orderDate ?? DateTime(2000), i, a),
         ),
-        DataColumn(label: const Text('Customer'), onSort: (i, a) => vm.sort<String>((o) => o.customer?.fullName ?? '', i, a)),
+        DataColumn(label: Text(tr('Customer')), onSort: (i, a) => vm.sort<String>((o) => o.customer?.fullName ?? '', i, a)),
         DataColumn(
-          label: const Text('Governorate'),
+          label: Text(tr('Governorate')),
           onSort: (i, a) => vm.sort<String>((o) => o.customer?.governorate ?? '', i, a),
         ),
-        const DataColumn(label: Text('Source')),
-        DataColumn(label: const Text('Total'), numeric: true, onSort: (i, a) => vm.sort<num>((o) => o.grandTotal ?? 0, i, a)),
-        DataColumn(label: const Text('Due'), numeric: true, onSort: (i, a) => vm.sort<num>((o) => o.amountDue ?? 0, i, a)),
-        DataColumn(label: const Text('Status'), onSort: (i, a) => vm.sort<String>((o) => o.status?.label ?? '', i, a)),
+        DataColumn(label: Text(tr('Source'))),
+        DataColumn(label: Text(tr('Total')), numeric: true, onSort: (i, a) => vm.sort<num>((o) => o.grandTotal ?? 0, i, a)),
+        DataColumn(label: Text(tr('Due')), numeric: true, onSort: (i, a) => vm.sort<num>((o) => o.amountDue ?? 0, i, a)),
+        DataColumn(label: Text(tr('Status')), onSort: (i, a) => vm.sort<String>((o) => o.status?.label ?? '', i, a)),
         const DataColumn(label: Text('')),
       ],
       rows: [

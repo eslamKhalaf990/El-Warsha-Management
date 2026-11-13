@@ -4,6 +4,7 @@ import 'package:warsha_app/core/state/async_view_model.dart';
 import 'package:warsha_app/core/validation/validators.dart';
 import 'package:warsha_app/models/voucher.dart';
 import 'package:warsha_app/services/vouchers_service.dart';
+import 'package:warsha_app/core/l10n/app_locale.dart';
 
 /// What the promo code form holds, as typed.
 class VoucherForm {
@@ -76,31 +77,31 @@ class VouchersVM extends ChangeNotifier with AsyncViewModel {
   Map<String, String> validate(VoucherForm f, {int? editingId}) {
     final errors = Validators.collect({
       'code': () => Validators.firstOf([
-            () => Validators.required(f.code, 'Enter the code customers type.'),
-            () => Validators.maxLength(f.code, codeMaxLength, 'Code'),
-            () => RegExp(r'^[A-Za-z0-9_-]+$').hasMatch(f.code.trim()) ? null : 'Use letters, numbers, - or _ only, no spaces.',
+            () => Validators.required(f.code, tr('Enter the code customers type.')),
+            () => Validators.maxLength(f.code, codeMaxLength, tr('Code')),
+            () => RegExp(r'^[A-Za-z0-9_-]+$').hasMatch(f.code.trim()) ? null : tr('Use letters, numbers, - or _ only, no spaces.'),
           ]),
       'discountValue': () => Validators.firstOf([
-            () => Validators.nonNegativeNumber(f.value, 'Discount', required: true),
-            () => (VoucherForm._n(f.value) ?? 0) <= 0 ? 'Discount must be more than 0.' : null,
-            () => f.kind == DiscountKind.percentage && VoucherForm._n(f.value)! > 100 ? 'A percentage can be at most 100.' : null,
+            () => Validators.nonNegativeNumber(f.value, tr('Discount'), required: true),
+            () => (VoucherForm._n(f.value) ?? 0) <= 0 ? tr('Discount must be more than 0.') : null,
+            () => f.kind == DiscountKind.percentage && VoucherForm._n(f.value)! > 100 ? tr('A percentage can be at most 100.') : null,
           ]),
-      'minOrderAmount': () => Validators.nonNegativeNumber(f.minOrder, 'Minimum order'),
-      'maxDiscountAmount': () => Validators.nonNegativeNumber(f.maxDiscount, 'Maximum discount'),
+      'minOrderAmount': () => Validators.nonNegativeNumber(f.minOrder, tr('Minimum order')),
+      'maxDiscountAmount': () => Validators.nonNegativeNumber(f.maxDiscount, tr('Maximum discount')),
       'maxUsageLimit': () {
         final t = f.usageLimit.trim();
         if (t.isEmpty) return null;
         final n = int.tryParse(t);
-        return n == null || n < 1 ? 'Usage limit must be a whole number from 1.' : null;
+        return n == null || n < 1 ? tr('Usage limit must be a whole number from 1.') : null;
       },
-      'startDate': () => f.startDate == null ? 'Choose the start date.' : null,
+      'startDate': () => f.startDate == null ? tr('Choose the start date.') : null,
       'endDate': () => f.startDate != null && f.endDate != null && f.endDate!.isBefore(f.startDate!)
-          ? "The end date can't be before the start date."
+          ? tr('The end date can\'t be before the start date.')
           : null,
     });
     if (!errors.containsKey('code')) {
       final code = f.code.trim().toUpperCase();
-      if (_all.any((v) => v.id != editingId && v.code == code)) errors['code'] = 'The code $code already exists.';
+      if (_all.any((v) => v.id != editingId && v.code == code)) errors['code'] = tr('The code {0} already exists.', [code]);
     }
     return errors;
   }

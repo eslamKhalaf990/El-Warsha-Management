@@ -5,6 +5,7 @@ import 'package:warsha_app/core/widgets/widgets.dart';
 import 'package:warsha_app/views/reviews/widgets/review_card.dart';
 import 'package:warsha_app/models/review.dart';
 import 'package:warsha_app/view_models/reviews_v_m.dart';
+import 'package:warsha_app/core/l10n/app_locale.dart';
 
 /// What customers wrote in the store, waiting ones first.
 class ReviewsPage extends StatelessWidget {
@@ -19,29 +20,29 @@ class ReviewsPage extends StatelessWidget {
     final avg = vm.averageRating;
 
     return ModulePage(
-      title: 'Reviews',
+      title: tr('Reviews'),
       subtitle: vm.hasLoaded
           ? [
-              waiting == 0 ? 'Nothing waiting' : '$waiting waiting for you',
-              if (avg != null) 'average ${avg.toStringAsFixed(1)} ★',
+              waiting == 0 ? tr('Nothing waiting') : tr('{0} waiting for you', [waiting]),
+              if (avg != null) tr('average {0} ★', [avg.toStringAsFixed(1)]),
             ].join(' · ')
-          : 'Reviews and messages from the store',
-      actions: [IconButton(tooltip: 'Refresh', icon: const Icon(Iconsax.refresh_copy), onPressed: vm.fetch)],
+          : tr('Reviews and messages from the store'),
+      actions: [IconButton(tooltip: tr('Refresh'), icon: const Icon(Iconsax.refresh_copy), onPressed: vm.fetch)],
       toolbar: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(children: [
-            Expanded(child: AppSearchField(hint: 'Search name, product or text', initialValue: vm.query, onChanged: vm.setQuery)),
+            Expanded(child: AppSearchField(hint: tr('Search name, product or text'), initialValue: vm.query, onChanged: vm.setQuery)),
             const SizedBox(width: AppSpacing.s12),
             SizedBox(
               width: context.isCompact ? 130 : 180,
               child: AppDropdown<int?>(
-                label: 'Stars',
+                label: tr('Stars'),
                 icon: Iconsax.star_1_copy,
-                hintText: 'Any',
+                hintText: tr('Any'),
                 items: const [null, 5, 4, 3, 2, 1],
                 value: vm.ratingFilter,
-                itemLabel: (r) => r == null ? 'Any' : '$r ★',
+                itemLabel: (r) => r == null ? tr('Any') : '$r ★',
                 onChanged: vm.setRatingFilter,
               ),
             ),
@@ -60,12 +61,12 @@ class ReviewsPage extends StatelessWidget {
         onRetry: vm.fetch,
         isEmpty: reviews.isEmpty,
         empty: vm.statusFilter == ReviewStatus.pending && vm.query.trim().isEmpty && vm.ratingFilter == null
-            ? const EmptyView(
+            ? EmptyView(
                 icon: Iconsax.tick_circle_copy,
-                title: 'All caught up',
-                message: 'New reviews from the store will wait here for you.',
+                title: tr('All caught up'),
+                message: tr('New reviews from the store will wait here for you.'),
               )
-            : const EmptyView(icon: Iconsax.message_text_copy, title: 'No reviews match', message: 'Try other filters.'),
+            : EmptyView(icon: Iconsax.message_text_copy, title: tr('No reviews match'), message: tr('Try other filters.')),
         builder: (context) => Align(
           alignment: Alignment.topCenter,
           child: ConstrainedBox(

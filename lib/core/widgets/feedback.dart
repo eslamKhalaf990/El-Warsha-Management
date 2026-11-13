@@ -3,6 +3,7 @@ import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:warsha_app/core/theme/app_theme.dart';
 import 'package:warsha_app/core/widgets/app_button.dart';
 import 'package:warsha_app/core/widgets/status_pill.dart';
+import 'package:warsha_app/core/l10n/app_locale.dart';
 
 /// One look for every success and error message in the app.
 void showSuccess(BuildContext context, String message) => _show(context, message, Tone.success);
@@ -28,7 +29,7 @@ void reportResult(
     if (pop) Navigator.pop(context);
     showSuccess(context, success);
   } else if (fieldError == null || fields.every((f) => fieldError(f) == null)) {
-    showError(context, errorMessage ?? 'Something went wrong. Please try again.');
+    showError(context, errorMessage ?? tr('Something went wrong. Please try again.'));
   }
 }
 
@@ -107,7 +108,7 @@ Future<bool> confirmAction(
       tone: destructive ? Tone.error : Tone.brand,
       content: Text(message, textAlign: TextAlign.center),
       actions: [
-        AppButton.text(label: 'Cancel', onPressed: () => Navigator.pop(context, false)),
+        AppButton.text(label: tr('Cancel'), onPressed: () => Navigator.pop(context, false)),
         destructive
             ? AppButton.danger(label: confirmLabel, onPressed: () => Navigator.pop(context, true))
             : AppButton.primary(label: confirmLabel, onPressed: () => Navigator.pop(context, true)),

@@ -5,6 +5,7 @@ import 'package:warsha_app/core/widgets/widgets.dart';
 import 'package:warsha_app/views/shipping_zones/shipping_zone_form_dialog.dart';
 import 'package:warsha_app/views/shipping_zones/widgets/shipping_zone_tile.dart';
 import 'package:warsha_app/view_models/shipping_zone_v_m.dart';
+import 'package:warsha_app/core/l10n/app_locale.dart';
 
 /// Governorates the store delivers to and what delivery costs there.
 class ShippingZonesPage extends StatelessWidget {
@@ -17,13 +18,13 @@ class ShippingZonesPage extends StatelessWidget {
     final active = vm.activeZones.length;
 
     return ModulePage(
-      title: 'Shipping zones',
+      title: tr('Shipping zones'),
       subtitle: vm.hasLoaded
-          ? '$active of ${vm.allZones.length} governorates open for delivery'
-          : 'Where you deliver and what it costs',
-      primaryAction: PageAction(label: 'Add zone', icon: Iconsax.add_copy, onPressed: () => openShippingZoneForm(context)),
-      actions: [IconButton(tooltip: 'Refresh', icon: const Icon(Iconsax.refresh_copy), onPressed: vm.fetch)],
-      toolbar: AppSearchField(hint: 'Search governorates', initialValue: vm.query, onChanged: vm.search),
+          ? tr('{0} of {1} governorates open for delivery', [active, vm.allZones.length])
+          : tr('Where you deliver and what it costs'),
+      primaryAction: PageAction(label: tr('Add zone'), icon: Iconsax.add_copy, onPressed: () => openShippingZoneForm(context)),
+      actions: [IconButton(tooltip: tr('Refresh'), icon: const Icon(Iconsax.refresh_copy), onPressed: vm.fetch)],
+      toolbar: AppSearchField(hint: tr('Search governorates'), initialValue: vm.query, onChanged: vm.search),
       body: AsyncView(
         vm: vm,
         onRetry: vm.fetch,
@@ -32,9 +33,9 @@ class ShippingZonesPage extends StatelessWidget {
             ? EmptyView.noMatch(vm.query)
             : EmptyView(
                 icon: Iconsax.truck_copy,
-                title: 'No shipping zones yet',
-                message: 'Add the governorates you deliver to. Customers and orders need one.',
-                actionLabel: 'Add zone',
+                title: tr('No shipping zones yet'),
+                message: tr('Add the governorates you deliver to. Customers and orders need one.'),
+                actionLabel: tr('Add zone'),
                 onAction: () => openShippingZoneForm(context),
               ),
         builder: (context) => context.isCompact

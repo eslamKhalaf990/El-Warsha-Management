@@ -5,6 +5,7 @@ import 'package:warsha_app/core/widgets/widgets.dart';
 import 'package:warsha_app/views/categories/category_form_dialog.dart';
 import 'package:warsha_app/views/categories/widgets/category_card.dart';
 import 'package:warsha_app/view_models/category_v_m.dart';
+import 'package:warsha_app/core/l10n/app_locale.dart';
 
 /// Categories: a searchable image grid (a list on phones).
 class CategoriesPage extends StatelessWidget {
@@ -17,13 +18,13 @@ class CategoriesPage extends StatelessWidget {
     final products = vm.allCategories.fold<int>(0, (sum, c) => sum + c.productCount);
 
     return ModulePage(
-      title: 'Categories',
+      title: tr('Categories'),
       subtitle: vm.hasLoaded
           ? '${Fmt.count(vm.allCategories.length, 'category', plural: 'categories')} · ${Fmt.count(products, 'product')}'
-          : 'How products are grouped in the store',
-      primaryAction: PageAction(label: 'Add category', icon: Iconsax.add_copy, onPressed: () => openCategoryForm(context)),
-      actions: [IconButton(tooltip: 'Refresh', icon: const Icon(Iconsax.refresh_copy), onPressed: vm.fetch)],
-      toolbar: AppSearchField(hint: 'Search categories', initialValue: vm.query, onChanged: vm.search),
+          : tr('How products are grouped in the store'),
+      primaryAction: PageAction(label: tr('Add category'), icon: Iconsax.add_copy, onPressed: () => openCategoryForm(context)),
+      actions: [IconButton(tooltip: tr('Refresh'), icon: const Icon(Iconsax.refresh_copy), onPressed: vm.fetch)],
+      toolbar: AppSearchField(hint: tr('Search categories'), initialValue: vm.query, onChanged: vm.search),
       body: AsyncView(
         vm: vm,
         onRetry: vm.fetch,
@@ -32,9 +33,9 @@ class CategoriesPage extends StatelessWidget {
             ? EmptyView.noMatch(vm.query)
             : EmptyView(
                 icon: Iconsax.category_2_copy,
-                title: 'No categories yet',
-                message: 'Group your products so customers can find them easily.',
-                actionLabel: 'Add category',
+                title: tr('No categories yet'),
+                message: tr('Group your products so customers can find them easily.'),
+                actionLabel: tr('Add category'),
                 onAction: () => openCategoryForm(context),
               ),
         builder: (context) => context.isCompact

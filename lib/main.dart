@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
+import 'package:warsha_app/core/l10n/app_locale.dart';
 import 'package:warsha_app/core/network/api_client.dart';
 import 'package:warsha_app/core/theme/app_theme.dart';
 import 'package:warsha_app/views/auth/auth_gate.dart';
@@ -33,8 +35,9 @@ import 'package:warsha_app/view_models/vouchers_v_m.dart';
 
 final navigatorKey = GlobalKey<NavigatorState>();
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await AppLocale.instance.load();
   // Room for a few product grids' worth of decoded photos (default 100 MB),
   // so images scrolled out of view are still there when scrolled back.
   PaintingBinding.instance.imageCache.maximumSizeBytes = 256 << 20;
@@ -126,15 +129,22 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'El Warsha · Back office',
-      theme: AppTheme.light(),
-      themeMode: ThemeMode.light,
-      navigatorKey: navigatorKey,
-      debugShowCheckedModeBanner: false,
-      // Session providers wrap the navigator so every route can read them.
-      builder: (context, child) => SessionScope(child: child!),
-      home: const AuthGate(),
+    // Rebuilt when the language changes: locale, text direction and title.
+    return ListenableBuilder(
+      listenable: AppLocale.instance,
+      builder: (context, _) => MaterialApp(
+        title: tr('El Warsha · Back office'),
+        locale: AppLocale.instance.locale,
+        supportedLocales: AppLocale.supported,
+        localizationsDelegates: GlobalMaterialLocalizations.delegates,
+        theme: AppTheme.light(),
+        themeMode: ThemeMode.light,
+        navigatorKey: navigatorKey,
+        debugShowCheckedModeBanner: false,
+        // Session providers wrap the navigator so every route can read them.
+        builder: (context, child) => SessionScope(child: child!),
+        home: const AuthGate(),
+      ),
     );
   }
 }

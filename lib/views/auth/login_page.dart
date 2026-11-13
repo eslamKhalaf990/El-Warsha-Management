@@ -5,6 +5,7 @@ import 'package:warsha_app/core/state/form_draft.dart';
 import 'package:warsha_app/core/widgets/widgets.dart';
 import 'package:warsha_app/views/auth/auth_gate.dart';
 import 'package:warsha_app/view_models/user_v_m.dart';
+import 'package:warsha_app/core/l10n/app_locale.dart';
 
 /// Sign-in. On wide screens a burgundy brand panel sits beside the form.
 class LoginPage extends StatelessWidget {
@@ -42,16 +43,16 @@ class _BrandPanel extends StatelessWidget {
     return Container(
       color: AppColors.burgundy,
       padding: const EdgeInsets.all(AppSpacing.s48),
-      child: const Column(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          BrandLogo(size: 48, showName: true, light: true),
-          Spacer(),
-          AppText.headline('Run the workshop\nfrom one place.', color: AppColors.white),
-          SizedBox(height: AppSpacing.s12),
-          AppText.body('Orders, stock, customers and cash, in sync with the online store.', color: AppColors.blush),
-          Spacer(),
-          AppText.caption('© El Warsha', color: AppColors.champagne),
+          const BrandLogo(size: 48, showName: true, light: true),
+          const Spacer(),
+          AppText.headline(tr('Run the workshop\nfrom one place.'), color: AppColors.white),
+          const SizedBox(height: AppSpacing.s12),
+          AppText.body(tr('Orders, stock, customers and cash, in sync with the online store.'), color: AppColors.blush),
+          const Spacer(),
+          AppText.caption(tr('© El Warsha'), color: AppColors.champagne),
         ],
       ),
     );
@@ -80,13 +81,14 @@ class _LoginForm extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          const Align(alignment: AlignmentDirectional.centerEnd, child: LanguageButton()),
           if (!context.isExpanded) ...[
             const Center(child: BrandLogo(size: 72)),
             const SizedBox(height: AppSpacing.s24),
           ],
-          const AppText.headline('Welcome back'),
+          AppText.headline(tr('Welcome back')),
           const SizedBox(height: AppSpacing.s4),
-          const AppText.body('Sign in to the El Warsha back office.', color: AppColors.muted),
+          AppText.body(tr('Sign in to the El Warsha back office.'), color: AppColors.muted),
           const SizedBox(height: AppSpacing.s32),
           if (message != null) ...[
             InlineBanner(
@@ -97,7 +99,7 @@ class _LoginForm extends StatelessWidget {
             const SizedBox(height: AppSpacing.s16),
           ],
           AppTextField(
-            label: 'Username',
+            label: tr('Username'),
             icon: Iconsax.user_copy,
             controller: draft.controller('username'),
             autofocus: true,
@@ -105,7 +107,7 @@ class _LoginForm extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.s16),
           AppTextField(
-            label: 'Password',
+            label: tr('Password'),
             icon: Iconsax.lock_1_copy,
             controller: draft.controller('password'),
             obscureText: !showPassword,
@@ -113,14 +115,14 @@ class _LoginForm extends StatelessWidget {
             autofillHints: const [AutofillHints.password],
             onSubmitted: (_) => _submit(context),
             suffix: IconButton(
-              tooltip: showPassword ? 'Hide password' : 'Show password',
+              tooltip: showPassword ? tr('Hide password') : tr('Show password'),
               icon: Icon(showPassword ? Iconsax.eye_slash_copy : Iconsax.eye_copy, size: 20),
               onPressed: () => draft.set('showPassword', !showPassword),
             ),
           ),
           const SizedBox(height: AppSpacing.s24),
           AppButton.primary(
-            label: 'Sign in',
+            label: tr('Sign in'),
             icon: Iconsax.login_copy,
             loading: user.isLoading,
             expand: true,

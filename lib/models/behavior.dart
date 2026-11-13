@@ -4,6 +4,7 @@
 library;
 
 import 'package:warsha_app/models/json_read.dart';
+import 'package:warsha_app/core/l10n/app_locale.dart';
 
 int _int(Object? v) => readInt(v) ?? 0;
 
@@ -70,10 +71,10 @@ class DeviceSessions {
   final double share;
 
   String get label => switch (device) {
-        'MOBILE' => 'Mobile',
-        'TABLET' => 'Tablet',
-        'DESKTOP' => 'Desktop',
-        _ => 'Unknown',
+        'MOBILE' => tr('Mobile'),
+        'TABLET' => tr('Tablet'),
+        'DESKTOP' => tr('Desktop'),
+        _ => tr('Unknown'),
       };
 
   factory DeviceSessions.fromJson(Map<String, dynamic> j) =>
@@ -223,7 +224,7 @@ class AbandonedCartItem {
 }
 
 class AbandonedCart {
-  const AbandonedCart({
+  AbandonedCart({
     required this.visitorId,
     this.customerId,
     this.customerName,
@@ -253,7 +254,7 @@ class AbandonedCart {
 
   bool get isGuest => customerId == null;
 
-  String get who => customerName ?? (isGuest ? 'Guest visitor' : 'Customer #$customerId');
+  String get who => customerName ?? (isGuest ? tr('Guest visitor') : tr('Customer #{0}', [customerId]));
 
   factory AbandonedCart.fromJson(Map<String, dynamic> j) => AbandonedCart(
         visitorId: readString(j['visitorId']),
@@ -264,7 +265,7 @@ class AbandonedCart {
         itemCount: _int(j['itemCount']),
         value: readDouble(j['value']),
         lastActivity: readDate(j['lastActivity']),
-        source: readString(j['source'], 'Direct'),
+        source: readString(j['source'], tr('Direct')),
         device: readStringOrNull(j['device']),
         items: _list(j['items'], AbandonedCartItem.fromJson),
       );
@@ -370,15 +371,15 @@ class VoucherAttempts {
   }
 
   static String reasonLabel(String reason) => switch (reason) {
-        'NOT_FOUND' => 'Wrong code',
-        'INACTIVE' => 'Turned off',
-        'NOT_STARTED' => 'Not started yet',
-        'EXPIRED' => 'Expired',
-        'USED_UP' => 'Used up',
-        'MIN_ORDER' => 'Below minimum',
-        'LOGIN_REQUIRED' => 'Not logged in',
-        'EMPTY' => 'Empty',
-        _ => 'Other',
+        'NOT_FOUND' => tr('Wrong code'),
+        'INACTIVE' => tr('Turned off'),
+        'NOT_STARTED' => tr('Not started yet'),
+        'EXPIRED' => tr('Expired'),
+        'USED_UP' => tr('Used up'),
+        'MIN_ORDER' => tr('Below minimum'),
+        'LOGIN_REQUIRED' => tr('Not logged in'),
+        'EMPTY' => tr('Empty'),
+        _ => tr('Other'),
       };
 
   factory VoucherAttempts.fromJson(Map<String, dynamic> j) => VoucherAttempts(
@@ -411,7 +412,7 @@ class TrafficSource {
   final double conversionRate;
 
   factory TrafficSource.fromJson(Map<String, dynamic> j) => TrafficSource(
-        source: readString(j['source'], 'Direct'),
+        source: readString(j['source'], tr('Direct')),
         visitors: _int(j['visitors']),
         orderingVisitors: _int(j['orderingVisitors']),
         orders: _int(j['orders']),

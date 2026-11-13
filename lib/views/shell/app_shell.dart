@@ -6,6 +6,7 @@ import 'package:warsha_app/views/auth/auth_gate.dart';
 import 'package:warsha_app/views/shell/destinations.dart';
 import 'package:warsha_app/views/shell/navigation_v_m.dart';
 import 'package:warsha_app/view_models/user_v_m.dart';
+import 'package:warsha_app/core/l10n/app_locale.dart';
 
 /// The signed-in frame around every page.
 ///
@@ -43,7 +44,7 @@ class AppShell extends StatelessWidget {
               NavigationDestination(
                 icon: const Icon(Iconsax.menu_1_copy),
                 selectedIcon: const Icon(Iconsax.menu_1),
-                label: index < 0 ? current.label : 'More',
+                label: index < 0 ? current.label : tr('More'),
               ),
             ],
           ),
@@ -88,7 +89,7 @@ class _Sidebar extends StatelessWidget {
       width: 260,
       decoration: const BoxDecoration(
         color: AppColors.white,
-        border: Border(right: BorderSide(color: AppColors.line)),
+        border: BorderDirectional(end: BorderSide(color: AppColors.line)),
       ),
       child: const SafeArea(
         child: Column(
@@ -105,6 +106,10 @@ class _Sidebar extends StatelessWidget {
               ),
             ),
             Divider(),
+            Padding(
+              padding: EdgeInsets.fromLTRB(AppSpacing.s12, AppSpacing.s12, AppSpacing.s12, 0),
+              child: LanguageTile(),
+            ),
             Padding(padding: EdgeInsets.all(AppSpacing.s12), child: _SignOutTile()),
           ],
         ),
@@ -152,6 +157,7 @@ class _NavList extends StatelessWidget {
     if (onSelected != null) {
       children
         ..add(const Padding(padding: EdgeInsets.symmetric(vertical: AppSpacing.s8), child: Divider()))
+        ..add(LanguageTile(onSwitched: () => Navigator.maybePop(context)))
         ..add(const _SignOutTile());
     }
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: children);
@@ -166,7 +172,7 @@ class _SignOutTile extends StatelessWidget {
     return ListTile(
       dense: true,
       leading: const Icon(Iconsax.logout_copy, size: 20, color: AppStatusColors.errorText),
-      title: const Text('Sign out', style: TextStyle(color: AppStatusColors.errorText)),
+      title: Text(tr('Sign out'), style: const TextStyle(color: AppStatusColors.errorText)),
       onTap: () => _signOut(context),
     );
   }
@@ -180,7 +186,7 @@ class _Rail extends StatelessWidget {
   Widget build(BuildContext context) {
     final nav = context.watch<NavigationVM>();
     return DecoratedBox(
-      decoration: const BoxDecoration(border: Border(right: BorderSide(color: AppColors.line))),
+      decoration: const BoxDecoration(border: BorderDirectional(end: BorderSide(color: AppColors.line))),
       child: LayoutBuilder(
         builder: (context, constraints) => SingleChildScrollView(
           child: ConstrainedBox(
@@ -199,10 +205,16 @@ class _Rail extends StatelessWidget {
                     alignment: Alignment.bottomCenter,
                     child: Padding(
                       padding: const EdgeInsets.only(bottom: AppSpacing.s16),
-                      child: IconButton(
-                        tooltip: 'Sign out',
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const LanguageButton(iconOnly: true),
+                          IconButton(
+                        tooltip: tr('Sign out'),
                         icon: const Icon(Iconsax.logout_copy, color: AppStatusColors.errorText),
                         onPressed: () => _signOut(context),
+                      ),
+                        ],
                       ),
                     ),
                   ),
@@ -227,9 +239,9 @@ class _Rail extends StatelessWidget {
 Future<void> _signOut(BuildContext context) async {
   final ok = await confirmAction(
     context,
-    title: 'Sign out?',
-    message: "You'll need your username and password to sign back in.",
-    confirmLabel: 'Sign out',
+    title: tr('Sign out?'),
+    message: tr('You\'ll need your username and password to sign back in.'),
+    confirmLabel: tr('Sign out'),
     icon: Iconsax.logout_copy,
   );
   if (ok && context.mounted) await context.read<UserViewModel>().logout();

@@ -1,4 +1,5 @@
 import 'json_read.dart';
+import 'package:warsha_app/core/l10n/app_locale.dart';
 
 /// Moderation state of a review (backend: CustomerFeedback.status).
 enum ReviewStatus {
@@ -7,10 +8,12 @@ enum ReviewStatus {
   rejected('REJECTED', 'Rejected'),
   resolved('RESOLVED', 'Resolved');
 
-  const ReviewStatus(this.api, this.label);
+  const ReviewStatus(this.api, this.labelEn);
 
   final String api;
-  final String label;
+  /// English; shown through [label] in the current language.
+  final String labelEn;
+  String get label => tr(labelEn);
 
   static ReviewStatus parse(Object? v) =>
       values.firstWhere((s) => s.api == '$v'.toUpperCase(), orElse: () => ReviewStatus.pending);
@@ -72,11 +75,11 @@ class Review {
   final DateTime? repliedAt;
   final DateTime? createdAt;
 
-  String get typeLabel => reviewTypes[type.toUpperCase()] ?? type;
+  String get typeLabel => tr(reviewTypes[type.toUpperCase()] ?? type);
 
   factory Review.fromJson(Map<String, dynamic> json) => Review(
         id: readInt(json['id']) ?? 0,
-        customerName: readString(json['customerName'], 'Guest'),
+        customerName: readString(json['customerName'], tr('Guest')),
         customerPhone: readStringOrNull(json['customerPhone']),
         customerEmail: readStringOrNull(json['customerEmail']),
         productId: readInt(json['productId']),

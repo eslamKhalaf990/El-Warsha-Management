@@ -1,12 +1,13 @@
 import 'package:warsha_app/core/widgets/widgets.dart';
 import 'package:warsha_app/models/order_model.dart';
 import 'package:warsha_app/models/order_options.dart';
+import 'package:warsha_app/views/orders/order_actions.dart';
 
 /// The Orders sheet of the Excel export.
 final orderExportColumns = <ExcelColumn<OrderModel>>[
   ExcelColumn('Order', (o) => o.orderId),
   ExcelColumn('Date', (o) => o.orderDate),
-  ExcelColumn('Status', (o) => o.status?.label),
+  ExcelColumn('Status', (o) => o.status.text),
   ExcelColumn('Customer', (o) => o.customer?.fullName),
   ExcelColumn('Mobile', (o) => o.customer?.phone),
   ExcelColumn('Second phone', (o) => o.customer?.secondaryPhone),

@@ -8,6 +8,7 @@ import 'package:warsha_app/models/vendor.dart';
 import 'package:warsha_app/view_models/product_v_m.dart';
 import 'package:warsha_app/view_models/vendors_v_m.dart';
 import 'package:warsha_app/views/products/product_form_page.dart';
+import 'package:warsha_app/core/l10n/app_locale.dart';
 
 const _fields = ['name', 'phone', 'email', 'address', 'taxNumber', 'contactPerson', 'notes'];
 
@@ -53,7 +54,7 @@ class VendorFormPage extends StatelessWidget {
       ok: ok,
       pop: true,
       errorMessage: vm.errorMessage,
-      success: vendor == null ? 'Vendor added.' : 'Vendor updated.',
+      success: vendor == null ? tr('Vendor added.') : tr('Vendor updated.'),
       fieldError: vm.fieldError,
       fields: _fields,
     );
@@ -81,42 +82,42 @@ class VendorFormPage extends StatelessWidget {
         );
 
     return FormPage(
-      title: vendor == null ? 'New vendor' : 'Edit vendor',
+      title: vendor == null ? tr('New vendor') : tr('Edit vendor'),
       subtitle: vendor?.name,
       draft: d,
       saving: vm.isSaving,
-      saveLabel: vendor == null ? 'Add vendor' : 'Save changes',
+      saveLabel: vendor == null ? tr('Add vendor') : tr('Save changes'),
       onSave: () => _save(context),
       sections: [
         FormSection(
-          title: 'Company',
+          title: tr('Company'),
           icon: Iconsax.shop_copy,
           children: [
-            field('name', 'Vendor name', Iconsax.building_4_copy, VendorVM.nameMaxLength, required: true),
-            field('taxNumber', 'Tax number', Iconsax.document_text_copy, VendorVM.taxNumberMaxLength,
-                helper: 'Printed on purchase invoices.', dir: TextDirection.ltr),
+            field('name', tr('Vendor name'), Iconsax.building_4_copy, VendorVM.nameMaxLength, required: true),
+            field('taxNumber', tr('Tax number'), Iconsax.document_text_copy, VendorVM.taxNumberMaxLength,
+                helper: tr('Printed on purchase invoices.'), dir: TextDirection.ltr),
           ],
         ),
         FormSection(
-          title: 'Contact',
+          title: tr('Contact'),
           icon: Iconsax.call_copy,
           children: [
-            field('contactPerson', 'Contact person', Iconsax.user_copy, VendorVM.contactPersonMaxLength),
+            field('contactPerson', tr('Contact person'), Iconsax.user_copy, VendorVM.contactPersonMaxLength),
             FieldRow(children: [
-              field('phone', 'Phone', Iconsax.call_copy, VendorVM.phoneMaxLength,
+              field('phone', tr('Phone'), Iconsax.call_copy, VendorVM.phoneMaxLength,
                   keyboard: TextInputType.phone, dir: TextDirection.ltr),
-              field('email', 'Email', Iconsax.sms_copy, VendorVM.emailMaxLength,
+              field('email', tr('Email'), Iconsax.sms_copy, VendorVM.emailMaxLength,
                   keyboard: TextInputType.emailAddress, dir: TextDirection.ltr),
             ]),
           ],
         ),
         FormSection(
-          title: 'Address & notes',
+          title: tr('Address & notes'),
           icon: Iconsax.location_copy,
           children: [
-            field('address', 'Address', Iconsax.location_copy, VendorVM.addressMaxLength, maxLines: 2),
-            field('notes', 'Notes', Iconsax.note_1_copy, VendorVM.notesMaxLength,
-                maxLines: 4, helper: 'Payment terms, delivery days, anything worth remembering.'),
+            field('address', tr('Address'), Iconsax.location_copy, VendorVM.addressMaxLength, maxLines: 2),
+            field('notes', tr('Notes'), Iconsax.note_1_copy, VendorVM.notesMaxLength,
+                maxLines: 4, helper: tr('Payment terms, delivery days, anything worth remembering.')),
           ],
         ),
       ],
@@ -138,11 +139,11 @@ class _VendorProductsSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final products = context.select<ProductVM, List<ProductModel>>((vm) => vm.productsFromVendor(vendorId));
     return FormSection(
-      title: 'Products',
+      title: tr('Products'),
       icon: Iconsax.box_1_copy,
       subtitle: products.isEmpty
-          ? 'No products yet. Pick this vendor on a product\'s form to link it.'
-          : '${Fmt.count(products.length, 'product')} bought from this vendor.',
+          ? tr('No products yet. Pick this vendor on a product\'s form to link it.')
+          : tr('{0} bought from this vendor.', [Fmt.count(products.length, 'product')]),
       children: [
         for (final p in products)
           ListTile(
@@ -152,11 +153,11 @@ class _VendorProductsSection extends StatelessWidget {
             subtitle: Text(
               [
                 if (p.sku != null && p.sku!.isNotEmpty) p.sku!,
-                'Cost ${Fmt.money(double.tryParse(p.buyingPrice))}',
-                '${p.quantity} in stock',
+                tr('Cost {0}', [Fmt.money(double.tryParse(p.buyingPrice))]),
+                tr('{0} in stock', [p.quantity]),
               ].join(' · '),
             ),
-            trailing: const Icon(Iconsax.arrow_right_3_copy, size: 16),
+            trailing: const DirectionalIcon(Iconsax.arrow_right_3_copy, size: 16),
             onTap: () => openProductForm(context, product: p),
           ),
       ],

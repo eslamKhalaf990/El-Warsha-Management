@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:warsha_app/core/widgets/widgets.dart';
+import 'package:warsha_app/core/l10n/app_locale.dart';
 
 /// Type a value and press Enter (or +) to add it as a chip; tap a chip's ×
 /// to remove it. Used for the sizes and colors of a new product.
@@ -42,10 +43,10 @@ class OptionChipsInput extends StatelessWidget {
           hintText: hint,
           icon: icon,
           controller: controller,
-          helperText: 'Press Enter to add. Separate several with commas.',
+          helperText: tr('Press Enter to add. Separate several with commas.'),
           textInputAction: TextInputAction.done,
           onSubmitted: (_) => _add(),
-          suffix: IconButton(tooltip: 'Add', icon: const Icon(Iconsax.add_circle_copy, size: 20), onPressed: _add),
+          suffix: IconButton(tooltip: tr('Add'), icon: const Icon(Iconsax.add_circle_copy, size: 20), onPressed: _add),
         ),
         if (values.isNotEmpty) ...[
           const SizedBox(height: AppSpacing.s8),

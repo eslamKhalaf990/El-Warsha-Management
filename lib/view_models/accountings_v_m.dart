@@ -7,6 +7,7 @@ import 'package:warsha_app/models/transaction_add_model.dart';
 import 'package:warsha_app/models/transaction_cateogry.dart';
 import 'package:warsha_app/models/transaction_model.dart';
 import 'package:warsha_app/services/accounting_service.dart';
+import 'package:warsha_app/core/l10n/app_locale.dart';
 
 /// Accounting screen (balances, transactions, deposits/withdrawals, reset)
 /// and the bank-account pickers on the order screens.
@@ -145,7 +146,7 @@ class AccountingVM extends ChangeNotifier with AsyncViewModel {
   /// entered becomes the safe's password.
   Future<bool> unlockSafe(String password) async {
     if (password.trim().isEmpty) {
-      return fail(ApiException.validation({'password': 'Enter the owner password.'}));
+      return fail(ApiException.validation({'password': tr('Enter the owner password.')}));
     }
     return run(() async {
       _accounts = await _service.accounts(ownerPassword: password);
@@ -171,17 +172,17 @@ class AccountingVM extends ChangeNotifier with AsyncViewModel {
   }) {
     final errors = Validators.collect({
       'amount': () => Validators.firstOf([
-            () => Validators.nonNegativeNumber(amountText, 'Amount', required: true),
-            () => _amount(amountText)! <= 0 ? 'Amount must be more than 0.' : null,
+            () => Validators.nonNegativeNumber(amountText, tr('Amount'), required: true),
+            () => _amount(amountText)! <= 0 ? tr('Amount must be more than 0.') : null,
             () => RegExp(r'^\d+([.,]\d{1,2})?$').hasMatch(amountText.trim())
                 ? null
-                : 'Amount can have at most 2 decimal places.',
+                : tr('Amount can have at most 2 decimal places.'),
           ]),
-      'description': () => Validators.maxLength(description, descriptionMaxLength, 'Description'),
+      'description': () => Validators.maxLength(description, descriptionMaxLength, tr('Description')),
     });
     final amount = _amount(amountText);
     if (!errors.containsKey('amount') && transactionType == 'Withdrawal' && amount! > account.currentBalance) {
-      errors['amount'] = '${account.name} only has ${_money(account.currentBalance)} EGP.';
+      errors['amount'] = tr('{0} only has {1} EGP.', [account.name, _money(account.currentBalance)]);
     }
     return errors;
   }

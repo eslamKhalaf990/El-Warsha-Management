@@ -4,6 +4,7 @@ import 'package:warsha_app/core/state/async_view_model.dart';
 import 'package:warsha_app/core/validation/validators.dart';
 import 'package:warsha_app/models/product_variant.dart';
 import 'package:warsha_app/services/product_variants_service.dart';
+import 'package:warsha_app/core/l10n/app_locale.dart';
 
 /// What the size/color form holds, as typed.
 class VariantForm {
@@ -58,24 +59,24 @@ class ProductVariantsVM extends ChangeNotifier with AsyncViewModel {
 
   Map<String, String> validate(VariantForm f, {int? editingId}) {
     final errors = Validators.collect({
-      'size': () => f.size.trim().isEmpty && f.color.trim().isEmpty ? 'Enter a size, a color or both.' : null,
+      'size': () => f.size.trim().isEmpty && f.color.trim().isEmpty ? tr('Enter a size, a color or both.') : null,
       'colorHex': () => f.colorHex.trim().isEmpty || RegExp(r'^#?[0-9a-fA-F]{6}$').hasMatch(f.colorHex.trim())
           ? null
-          : 'Use a code like #1A1A1A.',
+          : tr('Use a code like #1A1A1A.'),
       'quantity': () {
         final t = f.quantity.trim();
-        if (t.isEmpty) return 'Enter the stock.';
+        if (t.isEmpty) return tr('Enter the stock.');
         final n = int.tryParse(t);
-        if (n == null) return 'Stock must be a whole number.';
-        return n < 0 ? "Stock can't be negative." : null;
+        if (n == null) return tr('Stock must be a whole number.');
+        return n < 0 ? tr('Stock can\'t be negative.') : null;
       },
-      'sellingPrice': () => Validators.nonNegativeNumber(f.price, 'Price'),
+      'sellingPrice': () => Validators.nonNegativeNumber(f.price, tr('Price')),
     });
     if (!errors.containsKey('size')) {
       String key(String? s) => (s ?? '').trim().toLowerCase();
       final clash = _variants.where(
           (v) => v.id != editingId && key(v.size) == key(f.size) && key(v.color) == key(f.color));
-      if (clash.isNotEmpty) errors['size'] = '${clash.first.label} already exists.';
+      if (clash.isNotEmpty) errors['size'] = tr('{0} already exists.', [clash.first.label]);
     }
     return errors;
   }

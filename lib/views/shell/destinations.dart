@@ -11,6 +11,7 @@ import 'package:warsha_app/views/reviews/reviews_page.dart';
 import 'package:warsha_app/views/shipping_zones/shipping_zones_page.dart';
 import 'package:warsha_app/views/vendors/vendors_page.dart';
 import 'package:warsha_app/views/vouchers/vouchers_page.dart';
+import 'package:warsha_app/core/l10n/app_locale.dart';
 
 /// Sidebar groups, in order.
 enum NavGroup {
@@ -20,8 +21,10 @@ enum NavGroup {
   operations('Operations'),
   finance('Finance');
 
-  const NavGroup(this.label);
-  final String label;
+  const NavGroup(this.labelEn);
+  /// English; shown through [label] in the current language.
+  final String labelEn;
+  String get label => tr(labelEn);
 }
 
 /// Every top-level page of the ERP, grouped like the sidebar shows them.
@@ -38,9 +41,11 @@ enum AppDestination {
   shippingZones('Shipping zones', Iconsax.truck_copy, Iconsax.truck, NavGroup.operations),
   accounting('Accounting', Iconsax.wallet_2_copy, Iconsax.wallet_2, NavGroup.finance);
 
-  const AppDestination(this.label, this.icon, this.selectedIcon, this.group);
+  const AppDestination(this.labelEn, this.icon, this.selectedIcon, this.group);
 
-  final String label;
+  /// English; shown through [label] in the current language.
+  final String labelEn;
+  String get label => tr(labelEn);
   final IconData icon;
   final IconData selectedIcon;
   final NavGroup group;

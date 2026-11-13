@@ -5,6 +5,7 @@ import 'package:warsha_app/core/widgets/widgets.dart';
 import 'package:warsha_app/views/auth/login_page.dart';
 import 'package:warsha_app/views/shell/app_shell.dart';
 import 'package:warsha_app/view_models/user_v_m.dart';
+import 'package:warsha_app/core/l10n/app_locale.dart';
 
 /// Root route: a splash while the saved session is restored, then the app or
 /// the login page. (Routes left open when a session ends are closed in main.)
@@ -72,8 +73,8 @@ class BrandLogo extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            AppText.titleSmall('EL WARSHA', color: light ? AppColors.white : AppColors.deepWine),
-            AppText.caption('Back office', color: light ? AppColors.champagne : AppColors.muted),
+            AppText.titleSmall(tr('EL WARSHA'), color: light ? AppColors.white : AppColors.deepWine),
+            AppText.caption(tr('Back office'), color: light ? AppColors.champagne : AppColors.muted),
           ],
         ),
       ],

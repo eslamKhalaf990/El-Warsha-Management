@@ -5,6 +5,7 @@ import 'package:warsha_app/core/state/form_draft.dart';
 import 'package:warsha_app/core/widgets/widgets.dart';
 import 'package:warsha_app/models/category_model.dart';
 import 'package:warsha_app/view_models/category_v_m.dart';
+import 'package:warsha_app/core/l10n/app_locale.dart';
 
 /// Opens the add form, or the edit form for [category]. Resolves to true
 /// when something was saved.
@@ -44,7 +45,7 @@ class _CategoryFormDialog extends StatelessWidget {
       context,
       ok: ok,
       errorMessage: vm.errorMessage,
-      success: category == null ? 'Category added.' : 'Category updated.',
+      success: category == null ? tr('Category added.') : tr('Category updated.'),
       fieldError: vm.fieldError,
       fields: const ['name', 'description'],
     );
@@ -57,14 +58,14 @@ class _CategoryFormDialog extends StatelessWidget {
     final savedUrl = draft.value<String>('imageUrl');
 
     return FormDialog(
-      title: category == null ? 'New category' : 'Edit category',
+      title: category == null ? tr('New category') : tr('Edit category'),
       icon: Iconsax.category_2_copy,
-      saveLabel: category == null ? 'Add category' : 'Save changes',
+      saveLabel: category == null ? tr('Add category') : tr('Save changes'),
       saving: vm.isSaving,
       onSave: () => _save(context),
       children: [
         AppTextField(
-          label: 'Name',
+          label: tr('Name'),
           required: true,
           icon: Iconsax.tag_copy,
           controller: draft.controller('name'),
@@ -75,9 +76,9 @@ class _CategoryFormDialog extends StatelessWidget {
           onSubmitted: (_) => _save(context),
         ),
         AppTextField(
-          label: 'Description',
+          label: tr('Description'),
           icon: Iconsax.note_text_copy,
-          helperText: 'Shown under the category name in the store.',
+          helperText: tr('Shown under the category name in the store.'),
           controller: draft.controller('description'),
           errorText: vm.fieldError('description'),
           maxLength: CategoryVM.descriptionMaxLength,
@@ -85,7 +86,7 @@ class _CategoryFormDialog extends StatelessWidget {
           onChanged: (_) => vm.clearError(),
         ),
         ImagePickerField(
-          label: 'category image',
+          label: tr('category image'),
           height: 160,
           picked: draft.value<PickedImage>('image'),
           url: savedUrl == null ? null : CategoryModel(categoryId: 0, name: '', imageUrl: savedUrl).imageFullUrl,

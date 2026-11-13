@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:warsha_app/core/widgets/widgets.dart';
+import 'package:warsha_app/core/l10n/app_locale.dart';
 
 /// One row of a [RankedBars] list.
 class RankedItem {
@@ -14,18 +15,19 @@ class RankedItem {
 /// A ranked horizontal bar list with every value written out, so it reads
 /// without colour or hovering. Bars share one scale (the largest value).
 class RankedBars extends StatelessWidget {
-  const RankedBars({super.key, required this.items, this.color = AppChartColors.single, this.emptyText = 'No data yet.'});
+  const RankedBars({super.key, required this.items, this.color = AppChartColors.single, this.emptyText});
 
   final List<RankedItem> items;
   final Color color;
-  final String emptyText;
+  /// Defaults to "No data yet."
+  final String? emptyText;
 
   @override
   Widget build(BuildContext context) {
     if (items.isEmpty) {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: AppSpacing.s24),
-        child: Center(child: AppText.bodySmall(emptyText, color: AppColors.muted)),
+        child: Center(child: AppText.bodySmall(emptyText ?? tr('No data yet.'), color: AppColors.muted)),
       );
     }
     final max = items.map((i) => i.value).fold<double>(0, (a, b) => b > a ? b : a);

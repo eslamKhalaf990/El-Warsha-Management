@@ -7,6 +7,7 @@ import 'package:warsha_app/models/behavior.dart';
 import 'package:warsha_app/view_models/behavior_v_m.dart';
 import 'package:warsha_app/views/behavior/widgets/daily_activity_chart.dart';
 import 'package:warsha_app/views/dashboard/widgets/ranked_bars.dart';
+import 'package:warsha_app/core/l10n/app_locale.dart';
 
 /// What store visitors do: visits, the path from product view to order,
 /// interest per product, carts left behind, searches, promo codes tried and
@@ -18,9 +19,9 @@ class BehaviorPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final vm = context.watch<BehaviorVM>();
     return ModulePage(
-      title: 'Customer behavior',
-      subtitle: '${Fmt.date(vm.from)} – ${Fmt.date(vm.to)} · from the online store',
-      actions: [IconButton(tooltip: 'Refresh', icon: const Icon(Iconsax.refresh_copy), onPressed: vm.fetch)],
+      title: tr('Customer behavior'),
+      subtitle: tr('{0} – {1} · from the online store', [Fmt.date(vm.from), Fmt.date(vm.to)]),
+      actions: [IconButton(tooltip: tr('Refresh'), icon: const Icon(Iconsax.refresh_copy), onPressed: vm.fetch)],
       toolbar: const _RangeBar(),
       scrollable: vm.hasLoaded,
       body: AsyncView(
@@ -71,7 +72,7 @@ class _RangeBar extends StatelessWidget {
         children: [
           for (final p in BehaviorPreset.values.where((p) => p != BehaviorPreset.custom))
             chip(p.label, vm.preset == p, () => vm.setPreset(p)),
-          chip(vm.preset == BehaviorPreset.custom ? '${Fmt.shortDate(vm.from)} – ${Fmt.shortDate(vm.to)}' : 'Custom…',
+          chip(vm.preset == BehaviorPreset.custom ? '${Fmt.shortDate(vm.from)} – ${Fmt.shortDate(vm.to)}' : tr('Custom…'),
               vm.preset == BehaviorPreset.custom, () => _pickCustom(context)),
         ],
       ),
@@ -93,16 +94,16 @@ class _Content extends StatelessWidget {
         if (vm.isBusy) const Padding(padding: EdgeInsets.only(bottom: AppSpacing.s12), child: LinearProgressIndicator(minHeight: 2)),
         if (vm.failedSections.isNotEmpty) ...[
           InlineBanner(
-            message: "Some figures couldn't be loaded: ${vm.failedSections.join(', ')}.",
-            actionLabel: 'Retry',
+            message: tr('Some figures couldn\'t be loaded: {0}.', [vm.failedSections.join(', ')]),
+            actionLabel: tr('Retry'),
             onAction: vm.fetch,
           ),
           gap,
         ],
         if (!vm.hasActivity) ...[
-          const InlineBanner(
+          InlineBanner(
             tone: Tone.info,
-            message: 'Nothing was tracked in this period. Visits show up here once the updated online store is live.',
+            message: tr('Nothing was tracked in this period. Visits show up here once the updated online store is live.'),
           ),
           gap,
         ],
@@ -151,38 +152,38 @@ class _Kpis extends StatelessWidget {
       spacing: AppSpacing.s12,
       children: [
         StatCard(
-          label: 'Visitors',
+          label: tr('Visitors'),
           value: Fmt.number(o?.visitors),
           icon: Iconsax.profile_2user_copy,
           highlighted: true,
-          caption: '${Fmt.number(o?.newVisitors)} new · ${Fmt.number(o?.returningVisitors)} returning',
+          caption: tr('{0} new · {1} returning', [Fmt.number(o?.newVisitors), Fmt.number(o?.returningVisitors)]),
         ),
         StatCard(
-          label: 'Visits',
+          label: tr('Visits'),
           value: Fmt.number(o?.sessions),
           icon: Iconsax.monitor_mobbile_copy,
           caption: Fmt.count(o?.pageViews ?? 0, 'page view'),
         ),
         StatCard(
-          label: 'Product views',
+          label: tr('Product views'),
           value: Fmt.number(o?.productViews),
           icon: Iconsax.eye_copy,
           tone: Tone.info,
-          caption: '${Fmt.count(o?.cartAdds ?? 0, 'cart add')} · ${Fmt.number(o?.cartRemoves)} removed',
+          caption: tr('{0} · {1} removed', [Fmt.count(o?.cartAdds ?? 0, 'cart add'), Fmt.number(o?.cartRemoves)]),
         ),
         StatCard(
-          label: 'Conversion',
+          label: tr('Conversion'),
           value: Fmt.percent(o?.funnel.conversionRate, decimals: 1),
           icon: Iconsax.chart_success_copy,
           tone: Tone.success,
           caption: '${Fmt.count(o?.orders ?? 0, 'order')} · ${Fmt.money(o?.orderValue)}',
         ),
         StatCard(
-          label: 'Abandoned carts',
+          label: tr('Abandoned carts'),
           value: Fmt.number(carts?.count),
           icon: Iconsax.shopping_cart_copy,
           tone: Tone.warning,
-          caption: '${Fmt.money(carts?.value)} left · ${Fmt.percent(carts?.abandonmentRate)} of carts',
+          caption: tr('{0} left · {1} of carts', [Fmt.money(carts?.value), Fmt.percent(carts?.abandonmentRate)]),
         ),
       ],
     );
@@ -197,38 +198,38 @@ class _Funnel extends StatelessWidget {
     final f = context.watch<BehaviorVM>().overview?.funnel ?? const BehaviorFunnel();
     String of(double rate, String step) => '${Fmt.percent(rate)} $step';
     return DashboardPanel(
-      title: 'From visit to order',
-      subtitle: 'Visits that reached each step',
+      title: tr('From visit to order'),
+      subtitle: tr('Visits that reached each step'),
       icon: Iconsax.filter_copy,
       child: RankedBars(
-        emptyText: 'No visits in this period.',
+        emptyText: tr('No visits in this period.'),
         items: f.sessions == 0
             ? const []
             : [
-                RankedItem(label: 'Visited the store', value: f.sessions.toDouble(), valueLabel: Fmt.number(f.sessions)),
+                RankedItem(label: tr('Visited the store'), value: f.sessions.toDouble(), valueLabel: Fmt.number(f.sessions)),
                 RankedItem(
-                  label: 'Opened a product',
+                  label: tr('Opened a product'),
                   value: f.viewedProduct.toDouble(),
                   valueLabel: Fmt.number(f.viewedProduct),
-                  caption: of(f.sessions == 0 ? 0 : f.viewedProduct / f.sessions, 'of visits'),
+                  caption: of(f.sessions == 0 ? 0 : f.viewedProduct / f.sessions, tr('of visits')),
                 ),
                 RankedItem(
-                  label: 'Added to cart',
+                  label: tr('Added to cart'),
                   value: f.addedToCart.toDouble(),
                   valueLabel: Fmt.number(f.addedToCart),
-                  caption: of(f.viewToCartRate, 'of product viewers'),
+                  caption: of(f.viewToCartRate, tr('of product viewers')),
                 ),
                 RankedItem(
-                  label: 'Started checkout',
+                  label: tr('Started checkout'),
                   value: f.startedCheckout.toDouble(),
                   valueLabel: Fmt.number(f.startedCheckout),
-                  caption: of(f.cartToCheckoutRate, 'of carts'),
+                  caption: of(f.cartToCheckoutRate, tr('of carts')),
                 ),
                 RankedItem(
-                  label: 'Ordered',
+                  label: tr('Ordered'),
                   value: f.ordered.toDouble(),
                   valueLabel: Fmt.number(f.ordered),
-                  caption: of(f.checkoutToOrderRate, 'of checkouts'),
+                  caption: of(f.checkoutToOrderRate, tr('of checkouts')),
                 ),
               ],
       ),
@@ -250,7 +251,7 @@ class _DailyState extends State<_Daily> {
   Widget build(BuildContext context) {
     final vm = context.watch<BehaviorVM>();
     return DashboardPanel(
-      title: 'Day by day',
+      title: tr('Day by day'),
       icon: Iconsax.chart_2_copy,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -293,11 +294,10 @@ class _AbandonedCarts extends StatelessWidget {
     final report = vm.abandoned;
     final carts = report?.carts ?? const <AbandonedCart>[];
     return DashboardPanel(
-      title: 'Carts left without ordering',
+      title: tr('Carts left without ordering'),
       subtitle: report == null
           ? null
-          : '${Fmt.count(report.count, 'cart')} worth ${Fmt.money(report.value)} · '
-              '${Fmt.count(report.orderedCarts, 'cart')} did turn into orders',
+          : tr('{0} worth {1} · {2} did turn into orders', [Fmt.count(report.count, 'cart'), Fmt.money(report.value), Fmt.count(report.orderedCarts, 'cart')]),
       icon: Iconsax.shopping_cart_copy,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -308,7 +308,7 @@ class _AbandonedCarts extends StatelessWidget {
             runSpacing: AppSpacing.s8,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              const AppText.bodySmall('Unchanged for at least', color: AppColors.muted),
+              AppText.bodySmall(tr('Unchanged for at least'), color: AppColors.muted),
               for (final idle in IdleCutoff.values)
                 ChoiceChip(
                   label: Text(idle.label),
@@ -321,16 +321,16 @@ class _AbandonedCarts extends StatelessWidget {
                 rows: () => carts,
                 columns: _cartColumns,
                 fileName: 'abandoned_carts',
-                sheetName: 'Abandoned carts',
+                sheetName: tr('Abandoned carts'),
                 noun: 'cart',
               ),
             ],
           ),
           const SizedBox(height: AppSpacing.s12),
           if (carts.isEmpty)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: AppSpacing.s24),
-              child: Center(child: AppText.bodySmall('No abandoned carts in this period.', color: AppColors.muted)),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.s24),
+              child: Center(child: AppText.bodySmall(tr('No abandoned carts in this period.'), color: AppColors.muted)),
             )
           else
             for (final (i, cart) in carts.take(50).indexed) ...[
@@ -340,7 +340,7 @@ class _AbandonedCarts extends StatelessWidget {
           if (carts.length > 50)
             Padding(
               padding: const EdgeInsets.only(top: AppSpacing.s12),
-              child: AppText.caption('Showing the latest 50 of ${Fmt.number(report!.count)}. Export to see them all.',
+              child: AppText.caption(tr('Showing the latest 50 of {0}. Export to see them all.', [Fmt.number(report!.count)]),
                   color: AppColors.muted),
             ),
         ],
@@ -371,7 +371,7 @@ class _CartTile extends StatelessWidget {
                     Flexible(child: AppText.label(cart.who, maxLines: 1)),
                     if (cart.isGuest) ...[
                       const SizedBox(width: AppSpacing.s8),
-                      const StatusPill(label: 'Guest', tone: Tone.neutral),
+                      StatusPill(label: tr('Guest'), tone: Tone.neutral),
                     ],
                   ]),
                   const SizedBox(height: 2),
@@ -394,13 +394,13 @@ class _CartTile extends StatelessWidget {
           Row(children: [
             AppText.bodySmall(phone, color: AppColors.muted),
             IconButton(
-              tooltip: 'Copy number',
+              tooltip: tr('Copy number'),
               visualDensity: VisualDensity.compact,
               iconSize: 16,
               icon: const Icon(Iconsax.copy_copy),
               onPressed: () {
                 Clipboard.setData(ClipboardData(text: phone));
-                showSuccess(context, 'Number copied.');
+                showSuccess(context, tr('Number copied.'));
               },
             ),
           ]),
@@ -431,8 +431,8 @@ class _Products extends StatelessWidget {
     final products = context.watch<BehaviorVM>().products ?? const <ProductInterest>[];
     DataCell n(int v) => DataCell(AppText.bodySmall(Fmt.number(v)));
     return DashboardPanel(
-      title: 'Products people look at',
-      subtitle: 'Most viewed first. Many views but few cart adds may mean the price or photos need a look.',
+      title: tr('Products people look at'),
+      subtitle: tr('Most viewed first. Many views but few cart adds may mean the price or photos need a look.'),
       icon: Iconsax.eye_copy,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -443,26 +443,26 @@ class _Products extends StatelessWidget {
               rows: () => products,
               columns: _productColumns,
               fileName: 'product_interest',
-              sheetName: 'Product interest',
+              sheetName: tr('Product interest'),
               noun: 'product',
             ),
           ),
           if (products.isEmpty)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: AppSpacing.s24),
-              child: Center(child: AppText.bodySmall('No product views in this period.', color: AppColors.muted)),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.s24),
+              child: Center(child: AppText.bodySmall(tr('No product views in this period.'), color: AppColors.muted)),
             )
           else
             AppDataTable(
-              columns: const [
-                DataColumn(label: Text('Product')),
-                DataColumn(label: Text('Views'), numeric: true),
-                DataColumn(label: Text('Viewers'), numeric: true),
-                DataColumn(label: Text('Added'), numeric: true),
-                DataColumn(label: Text('Removed'), numeric: true),
-                DataColumn(label: Text('Orders'), numeric: true),
-                DataColumn(label: Text('View → cart'), numeric: true),
-                DataColumn(label: Text('Cart → order'), numeric: true),
+              columns: [
+                DataColumn(label: Text(tr('Product'))),
+                DataColumn(label: Text(tr('Views')), numeric: true),
+                DataColumn(label: Text(tr('Viewers')), numeric: true),
+                DataColumn(label: Text(tr('Added')), numeric: true),
+                DataColumn(label: Text(tr('Removed')), numeric: true),
+                DataColumn(label: Text(tr('Orders')), numeric: true),
+                DataColumn(label: Text(tr('View → cart')), numeric: true),
+                DataColumn(label: Text(tr('Cart → order')), numeric: true),
               ],
               rows: [
                 for (final p in products.take(25))
@@ -494,18 +494,18 @@ class _Sources extends StatelessWidget {
   Widget build(BuildContext context) {
     final sources = context.watch<BehaviorVM>().sources ?? const <TrafficSource>[];
     return DashboardPanel(
-      title: 'Where visitors come from',
-      subtitle: 'First visit of each visitor',
+      title: tr('Where visitors come from'),
+      subtitle: tr('First visit of each visitor'),
       icon: Iconsax.global_copy,
       child: RankedBars(
-        emptyText: 'No visitors in this period.',
+        emptyText: tr('No visitors in this period.'),
         items: [
           for (final s in sources.take(8))
             RankedItem(
               label: s.source,
               value: s.visitors.toDouble(),
               valueLabel: Fmt.count(s.visitors, 'visitor'),
-              caption: '${Fmt.count(s.orders, 'order')} · ${Fmt.percent(s.conversionRate, decimals: 1)} ordered',
+              caption: tr('{0} · {1} ordered', [Fmt.count(s.orders, 'order'), Fmt.percent(s.conversionRate, decimals: 1)]),
             ),
         ],
       ),
@@ -520,11 +520,11 @@ class _Devices extends StatelessWidget {
   Widget build(BuildContext context) {
     final devices = context.watch<BehaviorVM>().overview?.devices ?? const <DeviceSessions>[];
     return DashboardPanel(
-      title: 'Devices',
-      subtitle: 'Visits per device',
+      title: tr('Devices'),
+      subtitle: tr('Visits per device'),
       icon: Iconsax.mobile_copy,
       child: RankedBars(
-        emptyText: 'No visits in this period.',
+        emptyText: tr('No visits in this period.'),
         items: [
           for (final d in devices)
             RankedItem(label: d.label, value: d.sessions.toDouble(), valueLabel: Fmt.percent(d.share), caption: Fmt.count(d.sessions, 'visit')),
@@ -541,9 +541,9 @@ class _Searches extends StatelessWidget {
   Widget build(BuildContext context) {
     final report = context.watch<BehaviorVM>().searches ?? const SearchReport();
     Widget list(List<SearchTerm> terms, String Function(SearchTerm) value) => terms.isEmpty
-        ? const Padding(
-            padding: EdgeInsets.symmetric(vertical: AppSpacing.s16),
-            child: AppText.bodySmall('None in this period.', color: AppColors.muted),
+        ? Padding(
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.s16),
+            child: AppText.bodySmall(tr('None in this period.'), color: AppColors.muted),
           )
         : Column(
             children: [
@@ -558,18 +558,18 @@ class _Searches extends StatelessWidget {
             ],
           );
     return DashboardPanel(
-      title: 'Searches',
-      subtitle: '${Fmt.count(report.total, 'search', plural: 'searches')} · ${Fmt.number(report.noResults)} found nothing',
+      title: tr('Searches'),
+      subtitle: tr('{0} · {1} found nothing', [Fmt.count(report.total, 'search', plural: 'searches'), Fmt.number(report.noResults)]),
       icon: Iconsax.search_normal_1_copy,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const SizedBox(height: AppSpacing.s8),
-          const AppText.label('Most searched'),
+          AppText.label(tr('Most searched')),
           list(report.top, (t) => Fmt.number(t.searches)),
           const SizedBox(height: AppSpacing.s16),
-          const AppText.label('Searched but not found'),
-          const AppText.caption('Products people want that the store did not show.', color: AppColors.muted),
+          AppText.label(tr('Searched but not found')),
+          AppText.caption(tr('Products people want that the store did not show.'), color: AppColors.muted),
           list(report.withoutResults, (t) => Fmt.number(t.noResultSearches)),
         ],
       ),
@@ -584,13 +584,13 @@ class _Vouchers extends StatelessWidget {
   Widget build(BuildContext context) {
     final vouchers = context.watch<BehaviorVM>().vouchers ?? const <VoucherAttempts>[];
     return DashboardPanel(
-      title: 'Promo codes typed',
-      subtitle: 'At the cart, applied or refused',
+      title: tr('Promo codes typed'),
+      subtitle: tr('At the cart, applied or refused'),
       icon: Iconsax.ticket_discount_copy,
       child: vouchers.isEmpty
-          ? const Padding(
-              padding: EdgeInsets.symmetric(vertical: AppSpacing.s24),
-              child: Center(child: AppText.bodySmall('No codes tried in this period.', color: AppColors.muted)),
+          ? Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.s24),
+              child: Center(child: AppText.bodySmall(tr('No codes tried in this period.'), color: AppColors.muted)),
             )
           : Column(
               children: [
@@ -609,9 +609,9 @@ class _Vouchers extends StatelessWidget {
                             ],
                           ),
                         ),
-                        StatusPill(label: '${v.applied} applied', tone: Tone.success),
+                        StatusPill(label: tr('{0} applied', [v.applied]), tone: Tone.success),
                         const SizedBox(width: AppSpacing.s8),
-                        StatusPill(label: '${v.rejected} refused', tone: v.rejected > 0 ? Tone.error : Tone.neutral),
+                        StatusPill(label: tr('{0} refused', [v.rejected]), tone: v.rejected > 0 ? Tone.error : Tone.neutral),
                       ],
                     ),
                   ),

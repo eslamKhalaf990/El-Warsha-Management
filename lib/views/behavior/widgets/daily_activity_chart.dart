@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 import 'package:warsha_app/core/widgets/widgets.dart';
 import 'package:warsha_app/models/behavior.dart';
+import 'package:warsha_app/core/l10n/app_locale.dart';
 
 /// What the daily chart plots, one measure at a time.
 enum ActivityMeasure {
@@ -11,9 +11,11 @@ enum ActivityMeasure {
   cartAdds('Cart adds'),
   orders('Orders');
 
-  const ActivityMeasure(this.label);
+  const ActivityMeasure(this.labelEn);
 
-  final String label;
+  /// English; shown through [label] in the current language.
+  final String labelEn;
+  String get label => tr(labelEn);
 
   int of(BehaviorDay d) => switch (this) {
         ActivityMeasure.visitors => d.visitors,
@@ -47,7 +49,7 @@ class DailyActivityChart extends StatelessWidget {
   Widget build(BuildContext context) {
     final points = filled(days, from, to);
     if (points.every((p) => measure.of(p) == 0)) {
-      return const SizedBox(height: 220, child: Center(child: AppText.bodySmall('Nothing tracked in this period.', color: AppColors.muted)));
+      return SizedBox(height: 220, child: Center(child: AppText.bodySmall(tr('Nothing tracked in this period.'), color: AppColors.muted)));
     }
     final axisText = Theme.of(context).textTheme.labelSmall;
     return SizedBox(
@@ -57,7 +59,7 @@ class DailyActivityChart extends StatelessWidget {
         margin: EdgeInsets.zero,
         primaryXAxis: DateTimeAxis(
           labelStyle: axisText,
-          dateFormat: DateFormat('d MMM'),
+          dateFormat: Fmt.dateFormat('d MMM'),
           intervalType: DateTimeIntervalType.days,
           axisLine: const AxisLine(width: 0),
           majorGridLines: const MajorGridLines(width: 0),

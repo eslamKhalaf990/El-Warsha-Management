@@ -3,6 +3,7 @@ import 'package:warsha_app/core/network/api_exception.dart';
 import 'package:warsha_app/core/state/async_view_model.dart';
 import 'package:warsha_app/models/behavior.dart';
 import 'package:warsha_app/services/behavior_service.dart';
+import 'package:warsha_app/core/l10n/app_locale.dart';
 
 /// The ranges the behavior page offers. Raw events are kept for a year, so
 /// there is no "all time". [custom] is whatever was picked last.
@@ -14,9 +15,11 @@ enum BehaviorPreset {
   last90('Last 90 days'),
   custom('Custom');
 
-  const BehaviorPreset(this.label);
+  const BehaviorPreset(this.labelEn);
 
-  final String label;
+  /// English; shown through [label] in the current language.
+  final String labelEn;
+  String get label => tr(labelEn);
 }
 
 /// How long a cart must sit unchanged before it counts as abandoned.
@@ -26,9 +29,11 @@ enum IdleCutoff {
   hours6('6 hours', 360),
   day1('1 day', 1440);
 
-  const IdleCutoff(this.label, this.minutes);
+  const IdleCutoff(this.labelEn, this.minutes);
 
-  final String label;
+  /// English; shown through [label] in the current language.
+  final String labelEn;
+  String get label => tr(labelEn);
   final int minutes;
 }
 
@@ -104,7 +109,7 @@ class BehaviorVM extends ChangeNotifier with AsyncViewModel {
       try {
         abandoned = await _service.abandonedCarts(from: from, to: to, idleMinutes: idle.minutes);
       } on ApiException {
-        _failed.add('Abandoned carts');
+        _failed.add(tr('Abandoned carts'));
         rethrow;
       }
     });
