@@ -16,6 +16,7 @@ import 'package:warsha_app/view_models/product_v_m.dart';
 import 'package:warsha_app/view_models/category_v_m.dart';
 import 'package:warsha_app/view_models/product_gallery_v_m.dart';
 import 'package:warsha_app/view_models/product_variants_v_m.dart';
+import 'package:warsha_app/view_models/vendors_v_m.dart';
 
 /// Opens the add form, or the edit form for [product] (which also manages
 /// its gallery and sizes / colors).
@@ -42,6 +43,7 @@ Future<void> openProductForm(BuildContext context, {ProductModel? product}) {
               },
               values: {
                 'categoryId': int.tryParse(product?.categoryId ?? ''),
+                'vendorId': product?.vendorId,
                 'sizes': const <String>[],
                 'colors': const <String>[],
               },
@@ -78,6 +80,7 @@ class ProductFormPage extends StatelessWidget {
       discount: d.text('discount'),
       quantity: d.text('quantity'),
       categoryId: d.value<int>('categoryId'),
+      vendorId: d.value<int>('vendorId'),
     );
     final image = d.value<PickedImage>('image');
     final ok = _isNew
@@ -153,6 +156,16 @@ class ProductFormPage extends StatelessWidget {
               errorText: vm.fieldError('categoryId'),
               onChanged: (id) {
                 d.set('categoryId', id);
+                vm.clearError();
+              },
+            ),
+            _VendorField(
+              value: d.value<int>('vendorId'),
+              linkedName: product?.vendorId == null ? null : product!.vendorName,
+              linkedId: product?.vendorId,
+              errorText: vm.fieldError('vendorId'),
+              onChanged: (id) {
+                d.set('vendorId', id);
                 vm.clearError();
               },
             ),
@@ -248,6 +261,45 @@ class ProductFormPage extends StatelessWidget {
         ),
         if (!_isNew) const GallerySection(),
       ],
+    );
+  }
+}
+
+/// Who the product is bought from. Optional; "No vendor" clears the link.
+/// A vendor archived since it was linked stays listed so the form still opens.
+class _VendorField extends StatelessWidget {
+  const _VendorField({
+    required this.value,
+    required this.onChanged,
+    this.linkedId,
+    this.linkedName,
+    this.errorText,
+  });
+
+  final int? value;
+  final ValueChanged<int?> onChanged;
+  final int? linkedId;
+  final String? linkedName;
+  final String? errorText;
+
+  static const _none = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final vendors = context.watch<VendorVM>().allVendors;
+    final names = {for (final v in vendors) v.vendorId: v.name};
+    if (linkedId != null && !names.containsKey(linkedId)) {
+      names[linkedId!] = '${linkedName ?? 'Vendor #$linkedId'} (archived)';
+    }
+    return AppDropdown<int>(
+      label: 'Vendor',
+      icon: Iconsax.shop_copy,
+      items: [_none, ...names.keys],
+      value: value ?? _none,
+      itemLabel: (id) => id == _none ? 'No vendor' : names[id]!,
+      helperText: vendors.isEmpty ? 'Add vendors on the Vendors page.' : 'Who you buy this product from.',
+      errorText: errorText,
+      onChanged: (id) => onChanged(id == null || id == _none ? null : id),
     );
   }
 }

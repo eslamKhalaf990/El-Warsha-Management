@@ -33,7 +33,7 @@ class ProductVM extends ChangeNotifier with AsyncViewModel {
 
   static const formFields = [
     'name', 'nameAr', 'description', 'descriptionAr', 'buyingPrice', 'sellingPrice', 'discount', 'quantity',
-    'categoryId', 'image',
+    'categoryId', 'vendorId', 'image',
   ];
 
   /// At or below this many pieces a product counts as low on stock.
@@ -49,6 +49,11 @@ class ProductVM extends ChangeNotifier with AsyncViewModel {
 
   /// Products that are not deleted, best sellers first.
   List<ProductModel> get allProducts => List.unmodifiable(_all);
+
+  /// Products bought from this vendor (linked on the product form), A–Z.
+  List<ProductModel> productsFromVendor(int vendorId) =>
+      _all.where((p) => p.vendorId == vendorId).toList()
+        ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
 
   /// Products matching the Products screen's search box and filters.
   List<ProductModel> get products => search(_query)
@@ -166,6 +171,7 @@ class ProductVM extends ChangeNotifier with AsyncViewModel {
         'discount': _number(form.discount) ?? 0,
         'quantity': int.tryParse(form.quantity.trim()) ?? 0,
         'categoryId': form.categoryId,
+        'vendorId': form.vendorId,
       };
 
   // ── CRUD ────────────────────────────────────────────────

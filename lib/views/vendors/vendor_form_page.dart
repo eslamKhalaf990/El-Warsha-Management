@@ -3,8 +3,11 @@ import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:warsha_app/core/state/form_draft.dart';
 import 'package:warsha_app/core/widgets/widgets.dart';
+import 'package:warsha_app/models/product_model.dart';
 import 'package:warsha_app/models/vendor.dart';
+import 'package:warsha_app/view_models/product_v_m.dart';
 import 'package:warsha_app/view_models/vendors_v_m.dart';
+import 'package:warsha_app/views/products/product_form_page.dart';
 
 const _fields = ['name', 'phone', 'email', 'address', 'taxNumber', 'contactPerson', 'notes'];
 
@@ -116,6 +119,46 @@ class VendorFormPage extends StatelessWidget {
                 maxLines: 4, helper: 'Payment terms, delivery days, anything worth remembering.'),
           ],
         ),
+      ],
+      aside: [
+        if (vendor != null) _VendorProductsSection(vendorId: vendor!.vendorId),
+      ],
+    );
+  }
+}
+
+/// What the shop buys from this vendor: every product linked to it on the
+/// product form. Tapping one opens that product.
+class _VendorProductsSection extends StatelessWidget {
+  const _VendorProductsSection({required this.vendorId});
+
+  final int vendorId;
+
+  @override
+  Widget build(BuildContext context) {
+    final products = context.select<ProductVM, List<ProductModel>>((vm) => vm.productsFromVendor(vendorId));
+    return FormSection(
+      title: 'Products',
+      icon: Iconsax.box_1_copy,
+      subtitle: products.isEmpty
+          ? 'No products yet. Pick this vendor on a product\'s form to link it.'
+          : '${Fmt.count(products.length, 'product')} bought from this vendor.',
+      children: [
+        for (final p in products)
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: AppNetworkImage(p.imageFullUrl, width: 44, height: 44),
+            title: Text(p.name, maxLines: 1, overflow: TextOverflow.ellipsis),
+            subtitle: Text(
+              [
+                if (p.sku != null && p.sku!.isNotEmpty) p.sku!,
+                'Cost ${Fmt.money(double.tryParse(p.buyingPrice))}',
+                '${p.quantity} in stock',
+              ].join(' · '),
+            ),
+            trailing: const Icon(Iconsax.arrow_right_3_copy, size: 16),
+            onTap: () => openProductForm(context, product: p),
+          ),
       ],
     );
   }
