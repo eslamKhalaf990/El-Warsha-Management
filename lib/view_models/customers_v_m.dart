@@ -179,6 +179,17 @@ class CustomerVM extends ChangeNotifier with AsyncViewModel {
     });
   }
 
+  /// Minimum store password length (backend CustomerService.MIN_PASSWORD_LENGTH).
+  static const storePasswordMinLength = 6;
+
+  Future<bool> setStorePassword(int id, String password) async {
+    if (password.length < storePasswordMinLength) {
+      return fail(ApiException.validation(
+          {'password': 'At least $storePasswordMinLength characters.'}));
+    }
+    return run(() => _service.setStorePassword(id, password));
+  }
+
   Future<bool> delete(CustomerModel customer) => run(() async {
         await _service.delete(customer.customerId);
         _all = _all.where((c) => c.customerId != customer.customerId).toList();

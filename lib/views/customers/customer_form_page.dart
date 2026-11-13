@@ -99,6 +99,28 @@ class CustomerFormPage extends StatelessWidget {
                 keyboard: TextInputType.emailAddress, dir: TextDirection.ltr),
           ],
         ),
+        if (customer != null)
+          FormSection(
+            title: 'Store login',
+            icon: Iconsax.lock_copy,
+            subtitle: 'The customer logs in to the store with their mobile number and this password.',
+            children: [
+              Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: AppButton.secondary(
+                  label: 'Set store password',
+                  icon: Iconsax.key_copy,
+                  onPressed: () => showDialog<void>(
+                    context: context,
+                    builder: (_) => ChangeNotifierProvider.value(
+                      value: vm,
+                      child: _StorePasswordDialog(customer: customer!),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         FormSection(
           title: 'Delivery address',
           icon: Iconsax.location_copy,
@@ -117,6 +139,66 @@ class CustomerFormPage extends StatelessWidget {
             field('address', 'Street address', Iconsax.location_copy, CustomerVM.addressMaxLength,
                 maxLines: 2, helper: 'Building, street and a landmark help the courier.'),
           ],
+        ),
+      ],
+    );
+  }
+}
+
+/// Staff type a new store password for a customer, e.g. one who signed up with
+/// only a phone and forgot it (the store can only email reset codes).
+class _StorePasswordDialog extends StatefulWidget {
+  const _StorePasswordDialog({required this.customer});
+
+  final CustomerModel customer;
+
+  @override
+  State<_StorePasswordDialog> createState() => _StorePasswordDialogState();
+}
+
+class _StorePasswordDialogState extends State<_StorePasswordDialog> {
+  final _password = TextEditingController();
+
+  @override
+  void dispose() {
+    _password.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    final vm = context.read<CustomerVM>();
+    final ok = await vm.setStorePassword(widget.customer.customerId, _password.text);
+    if (!mounted) return;
+    if (ok) {
+      Navigator.pop(context);
+      showSuccess(context, 'Store password set. Share it with ${widget.customer.fullName}.');
+    } else if (vm.fieldError('password') == null) {
+      showError(context, vm.errorMessage!);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final vm = context.watch<CustomerVM>();
+    return FormDialog(
+      title: 'Set store password',
+      icon: Iconsax.key_copy,
+      saving: vm.isSaving,
+      saveLabel: 'Set password',
+      onSave: _save,
+      children: [
+        Text('${widget.customer.fullName} · ${widget.customer.phone}'),
+        AppTextField(
+          label: 'New password',
+          icon: Iconsax.lock_copy,
+          controller: _password,
+          autofocus: true,
+          required: true,
+          errorText: vm.fieldError('password'),
+          helperText: 'At least ${CustomerVM.storePasswordMinLength} characters.',
+          textDirection: TextDirection.ltr,
+          onChanged: (_) => vm.clearError(),
+          onSubmitted: (_) => _save(),
         ),
       ],
     );

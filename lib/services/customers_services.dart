@@ -22,6 +22,12 @@ class CustomerService {
   Future<CustomerModel> update(int id, CustomerRequest request) async =>
       _customer(await _api.put('customers/$id', body: request.toJson()));
 
+  /// Sets the customer's store login password (at least 6 characters). Customers
+  /// who signed up with only a phone have no email, so they can't reset it themselves.
+  Future<void> setStorePassword(int id, String password) async {
+    await _api.put('customers/$id/password', body: {'password': password});
+  }
+
   /// Refused (409) while the customer has orders or other history.
   Future<void> delete(int id) async {
     await _api.delete('customers/$id');
