@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:warsha_app/core/state/form_draft.dart';
 import 'package:warsha_app/core/widgets/widgets.dart';
 import 'package:warsha_app/models/product_variant.dart';
-import 'package:warsha_app/view_models/add_product_v_m.dart';
+import 'package:warsha_app/view_models/product_v_m.dart';
 import 'package:warsha_app/view_models/product_variants_v_m.dart';
 
 /// Sizes / colors of the product being edited, each with its own stock.

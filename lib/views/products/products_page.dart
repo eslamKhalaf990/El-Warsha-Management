@@ -5,7 +5,7 @@ import 'package:warsha_app/core/widgets/widgets.dart';
 import 'package:warsha_app/views/products/product_form_page.dart';
 import 'package:warsha_app/views/products/widgets/product_card.dart';
 import 'package:warsha_app/models/category_model.dart';
-import 'package:warsha_app/view_models/add_product_v_m.dart';
+import 'package:warsha_app/view_models/product_v_m.dart';
 import 'package:warsha_app/view_models/category_v_m.dart';
 
 /// The catalog: a searchable, filterable product grid.

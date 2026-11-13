@@ -20,7 +20,7 @@ import 'package:warsha_app/services/vendors_service.dart';
 import 'package:warsha_app/services/vouchers_service.dart';
 import 'package:warsha_app/view_models/accountings_v_m.dart';
 import 'package:warsha_app/view_models/behavior_v_m.dart';
-import 'package:warsha_app/view_models/add_product_v_m.dart';
+import 'package:warsha_app/view_models/product_v_m.dart';
 import 'package:warsha_app/view_models/category_v_m.dart';
 import 'package:warsha_app/view_models/customers_v_m.dart';
 import 'package:warsha_app/view_models/analytics_v_m.dart';

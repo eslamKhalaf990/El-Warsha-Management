@@ -12,7 +12,7 @@ import 'package:warsha_app/models/category_model.dart';
 import 'package:warsha_app/models/product_model.dart';
 import 'package:warsha_app/services/product_images_service.dart';
 import 'package:warsha_app/services/product_variants_service.dart';
-import 'package:warsha_app/view_models/add_product_v_m.dart';
+import 'package:warsha_app/view_models/product_v_m.dart';
 import 'package:warsha_app/view_models/category_v_m.dart';
 import 'package:warsha_app/view_models/product_gallery_v_m.dart';
 import 'package:warsha_app/view_models/product_variants_v_m.dart';

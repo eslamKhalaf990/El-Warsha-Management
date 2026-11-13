@@ -12,7 +12,7 @@ import 'package:warsha_app/models/order_item_model.dart';
 import 'package:warsha_app/models/order_model.dart';
 import 'package:warsha_app/models/order_options.dart';
 import 'package:warsha_app/view_models/accountings_v_m.dart';
-import 'package:warsha_app/view_models/add_product_v_m.dart';
+import 'package:warsha_app/view_models/product_v_m.dart';
 import 'package:warsha_app/view_models/order_draft.dart';
 import 'package:warsha_app/view_models/order_v_m.dart';
 import 'package:warsha_app/view_models/shipping_zone_v_m.dart';

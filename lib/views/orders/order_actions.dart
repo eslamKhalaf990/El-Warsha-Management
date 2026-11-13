@@ -8,7 +8,7 @@ import 'package:warsha_app/models/account_balance.dart';
 import 'package:warsha_app/models/order_model.dart';
 import 'package:warsha_app/models/order_status.dart';
 import 'package:warsha_app/view_models/accountings_v_m.dart';
-import 'package:warsha_app/view_models/add_product_v_m.dart';
+import 'package:warsha_app/view_models/product_v_m.dart';
 import 'package:warsha_app/view_models/order_v_m.dart';
 
 /// Every status gets one tone and icon, wherever it shows.

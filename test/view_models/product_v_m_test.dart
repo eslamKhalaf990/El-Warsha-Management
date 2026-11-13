@@ -4,7 +4,7 @@ import 'package:warsha_app/models/product_model.dart';
 import 'package:warsha_app/models/product_variant.dart';
 import 'package:warsha_app/services/product_variants_service.dart';
 import 'package:warsha_app/services/products_service.dart';
-import 'package:warsha_app/view_models/add_product_v_m.dart';
+import 'package:warsha_app/view_models/product_v_m.dart';
 
 ProductModel product(String id, String name, {String discount = '0', String? sku}) => ProductModel.get(
       name: name,

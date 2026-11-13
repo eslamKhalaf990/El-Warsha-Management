@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:warsha_app/core/widgets/widgets.dart';
 import 'package:warsha_app/models/analytics.dart';
 import 'package:warsha_app/models/order_status.dart';
-import 'package:warsha_app/view_models/add_product_v_m.dart';
+import 'package:warsha_app/view_models/product_v_m.dart';
 import 'package:warsha_app/view_models/analytics_v_m.dart';
 import 'package:warsha_app/view_models/order_v_m.dart';
 import 'package:warsha_app/views/dashboard/widgets/ranked_bars.dart';

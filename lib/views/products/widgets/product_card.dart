@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:warsha_app/core/widgets/widgets.dart';
 import 'package:warsha_app/views/products/product_form_page.dart';
 import 'package:warsha_app/models/product_model.dart';
-import 'package:warsha_app/view_models/add_product_v_m.dart';
+import 'package:warsha_app/view_models/product_v_m.dart';
 
 /// Stock as a colored pill: out, low, or the count.
 class StockPill extends StatelessWidget {

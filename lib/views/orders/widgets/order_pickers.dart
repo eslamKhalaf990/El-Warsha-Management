@@ -7,7 +7,7 @@ import 'package:warsha_app/views/products/widgets/product_card.dart';
 import 'package:warsha_app/models/customer_model.dart';
 import 'package:warsha_app/models/product_model.dart';
 import 'package:warsha_app/models/product_variant.dart';
-import 'package:warsha_app/view_models/add_product_v_m.dart';
+import 'package:warsha_app/view_models/product_v_m.dart';
 import 'package:warsha_app/view_models/customers_v_m.dart';
 
 /// Search-as-you-type for a customer, with "New customer" always offered.
